@@ -63,7 +63,9 @@ Otherwise, if you already have a `.config/guix/channels.scm` you can simply prep
 
 ## Contributing
 
-All contributions are welcome. If you have commit access please remember to setup the authentication hook with
+All contributions are welcome. To contribute send your patches to [~fishinthecalculator/public-inbox@lists.sr.ht](https://lists.sr.ht/~fishinthecalculator/public-inbox).
+
+If you have commit access please remember to setup the authentication hook with
 
 ```bash
 cp -v etc/git/pre-push .git/hooks/pre-push
