@@ -1,0 +1,28 @@
+#!/usr/bin/env -S guix repl -L ./modules --
+!#
+
+(use-modules (gnu services configuration)
+             (oci services conduit)
+             (oci services grafana)
+             (oci services prometheus))
+
+(display
+ (generate-documentation
+   `((conduit-configuration ,conduit-configuration-fields))
+   'conduit-configuration))
+(newline)
+
+(display
+ (generate-documentation
+   `((oci-grafana-configuration ,oci-grafana-configuration-fields)
+     (grafana-configuration ,grafana-configuration-fields)
+     (grafana-server-configuration ,grafana-server-configuration-fields)
+     (grafana-smtp-configuration ,grafana-smtp-configuration-fields))
+   'oci-grafana-configuration))
+(newline)
+
+(display
+ (generate-documentation
+   `((oci-prometheus-configuration ,oci-prometheus-configuration-fields))
+   'oci-prometheus-configuration))
+(newline)

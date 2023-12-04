@@ -14,6 +14,7 @@
   #:export (oci-grafana-service-type
             oci-grafana-configuration
             oci-grafana-configuration?
+            oci-grafana-configuration-fields
             oci-grafana-configuration-datadir
             oci-grafana-configuration-image
             oci-grafana-configuration-port
@@ -24,17 +25,20 @@
 
             grafana-configuration
             grafana-configuration?
+            grafana-configuration-fields
             grafana-configuration-server
             grafana-configuration-smtp
             grafana-configuration-extra-content
 
             grafana-server-configuration
             grafana-server-configuration?
+            grafana-server-configuration-fields
             grafana-server-configuration-root-url
             grafana-server-configuration-serve-from-subpath
 
             grafana-smtp-configuration
             grafana-smtp-configuration?
+            grafana-smtp-configuration-fields
             grafana-smtp-configuration-enabled
             grafana-smtp-configuration-host
             grafana-smtp-configuration-user

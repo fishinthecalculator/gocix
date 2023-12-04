@@ -14,6 +14,7 @@
   #:use-module (ice-9 string-fun)
   #:export (conduit-configuration
             conduit-configuration?
+            conduit-configuration-fields
             conduit-configuration-image
             conduit-configuration-port
             conduit-configuration-server-name

@@ -11,6 +11,11 @@
   #:export (oci-prometheus-service-type
             oci-prometheus-configuration
             oci-prometheus-configuration?
+            oci-prometheus-configuration-fields
+            oci-prometheus-configuration-datadir
+            oci-prometheus-configuration-file
+            oci-prometheus-configuration-image
+            oci-prometheus-configuration-port
             oci-prometheus-configuration->oci-container-configuration
             %prometheus-accounts
             %prometheus-activation))
