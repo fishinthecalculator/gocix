@@ -21,8 +21,8 @@
             oci-grafana-configuration-grafana.ini
             oci-grafana-configuration->oci-container-configuration
 
-            grafana-accounts
-            grafana-activation
+            %grafana-accounts
+            %grafana-activation
 
             grafana-configuration
             grafana-configuration?
