@@ -19,9 +19,10 @@
             oci-grafana-configuration-image
             oci-grafana-configuration-port
             oci-grafana-configuration-grafana.ini
-            %oci-grafana-accounts
-            %oci-grafana-activation
             oci-grafana-configuration->oci-container-configuration
+
+            grafana-accounts
+            grafana-activation
 
             grafana-configuration
             grafana-configuration?
@@ -143,7 +144,7 @@
    "This field will be serialized as graphana.ini.")
   (no-serialization))
 
-(define %oci-grafana-accounts
+(define %grafana-accounts
   (list (user-account
          (name "grafana")
          (comment "Grafana's Service Account")
@@ -154,7 +155,7 @@
          (home-directory "/var/empty")
          (shell (file-append shadow "/sbin/nologin")))))
 
-(define (%oci-grafana-activation config)
+(define (%grafana-activation config)
   "Return an activation gexp for Grafana."
   (let* ((datadir (oci-grafana-configuration-datadir config))
          (grafana.ini
@@ -201,9 +202,9 @@
                 (extensions (list (service-extension oci-container-service-type
                                                      oci-grafana-configuration->oci-container-configuration)
                                   (service-extension account-service-type
-                                                     (const %oci-grafana-accounts))
+                                                     (const %grafana-accounts))
                                   (service-extension activation-service-type
-                                                     %oci-grafana-activation)))
+                                                     %grafana-activation)))
                 (default-value (oci-grafana-configuration))
                 (description
                  "This service install a OCI backed Grafana Shepherd Service.")))
