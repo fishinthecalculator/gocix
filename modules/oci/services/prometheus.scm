@@ -96,7 +96,6 @@ scrape_configs:
                 "--config.file=/etc/prometheus/prometheus.yml"
                 "--web.enable-admin-api"))
              (image image)
-             (network "host")
              (ports
               `((,port . "9000")
                 ("9090" . "9090")))

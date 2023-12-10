@@ -184,7 +184,6 @@
            (conduit-configuration-port config)))
       (list (oci-container-configuration
              (image image)
-             (network "host")
              (environment environment)
              (ports
               `((,port . ,port)))

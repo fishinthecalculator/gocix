@@ -188,7 +188,6 @@
            (oci-grafana-configuration-port config)))
       (list (oci-container-configuration
              (image image)
-             (network "host")
              (ports
               `((,port . "3000")))
              (volumes
