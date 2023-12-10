@@ -105,7 +105,7 @@
    (boolean #t)
    "Whether to federate the conduit instance with others in the Matrix network.")
   (allow-check-for-updates?
-   (boolean #t)
+   (boolean #f)
    "Whether conduit will look for new updates.")
   (trusted-servers
    (list-of-strings '("matrix.org"))
