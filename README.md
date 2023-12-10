@@ -4,7 +4,7 @@
 
 ## Services
 
-This channel exposes at `(oci services)` a set of Guix System services for many common applications, such as:
+This channel exposes at `(oci services)` a set of Guix System services for many useful applications, such as:
 
 - Forgejo
 - Grafana
@@ -12,6 +12,20 @@ This channel exposes at `(oci services)` a set of Guix System services for many 
 - Matrix Conduit
 
 These services are supposed to feel like services backed by native Guix packages, please report any inconsistency you may find.
+
+Here's how you would use some of the services from this channel in your `operating-system` record:
+
+``` scheme
+(operating-system
+
+ (services
+  (list (service oci-forgejo-service-type
+                 (forgejo-configuration
+                  (port 3001)))
+        (service oci-grafana-service-type
+                 (grafana-configuration
+                  (port 3000))))))
+```
 
 ## What is a Guix channel?
 
