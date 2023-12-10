@@ -16,8 +16,10 @@ These services are supposed to feel like services backed by native Guix packages
 Here's how you would use some of the services from this channel in your `operating-system` record:
 
 ``` scheme
-(operating-system
+(use-modules (oci services forgejo)
+             (oci services grafana))
 
+(operating-system
  (services
   (list (service oci-forgejo-service-type
                  (forgejo-configuration
