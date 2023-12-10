@@ -6,6 +6,7 @@
 
 This channel exposes at `(oci services)` a set of Guix System services for many common applications, such as:
 
+- Forgejo
 - Grafana
 - Prometheus
 - Matrix Conduit
