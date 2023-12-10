@@ -198,7 +198,7 @@
                 ("/etc/grafana/grafana.ini" . "/opt/bitnami/grafana/conf/grafana.ini"))))))))
 
 (define oci-grafana-service-type
-  (service-type (name 'oci-grafana)
+  (service-type (name 'grafana)
                 (extensions (list (service-extension oci-container-service-type
                                                      oci-grafana-configuration->oci-container-configuration)
                                   (service-extension account-service-type

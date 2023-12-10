@@ -105,7 +105,7 @@ scrape_configs:
                 (,prometheus.yml . "/etc/prometheus/prometheus.yml:ro"))))))))
 
 (define oci-prometheus-service-type
-  (service-type (name 'oci-prometheus)
+  (service-type (name 'prometheus)
                 (extensions (list (service-extension oci-container-service-type
                                                      oci-prometheus-configuration->oci-container-configuration)
                                   (service-extension account-service-type
