@@ -16,7 +16,7 @@ These services are supposed to feel like services backed by native Guix packages
 
 A [channel](https://guix.gnu.org/en/manual/devel/en/guix.html#Channels) is roughly the Guix equivalent of Ubuntu's PPAs or container registries. It's a software repository providing Guix package and service definitions.
 
-This channels hosts some packages, services and opinionated Guix `operating-system` definitions, which are supposed to ease the way into Guix for novice sysadmins.
+You can search for package and service definitions from this channel any many others at [toys.whereis.みんな](https://toys.whereis.xn--q9jyb4c).
 
 ### Configure
 
