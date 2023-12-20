@@ -40,7 +40,7 @@
             grafana-smtp-configuration
             grafana-smtp-configuration?
             grafana-smtp-configuration-fields
-            grafana-smtp-configuration-enabled
+            grafana-smtp-configuration-enabled?
             grafana-smtp-configuration-host
             grafana-smtp-configuration-user
             grafana-smtp-configuration-password
@@ -94,7 +94,7 @@
         value grafana-smtp-configuration-fields)))
 
 (define-configuration grafana-smtp-configuration
-  (enabled
+  (enabled?
    (boolean #f)
    "Whether to enable Grafana's email alerting.")
   (host
