@@ -35,7 +35,7 @@
             grafana-server-configuration?
             grafana-server-configuration-fields
             grafana-server-configuration-root-url
-            grafana-server-configuration-serve-from-subpath
+            grafana-server-configuration-serve-from-subpath?
 
             grafana-smtp-configuration
             grafana-smtp-configuration?
@@ -57,7 +57,9 @@
 
 ;; Turn field names, which are Scheme symbols into strings
 (define (uglify-field-name field-name)
-  (string-replace-substring (symbol->string field-name) "-" "_"))
+  (string-replace-substring
+   (string-replace-substring
+    (symbol->string field-name) "?" "") "-" "_"))
 
 (define (serialize-string field-name value)
   #~(string-append #$(uglify-field-name field-name) " = " #$value "\n"))
@@ -79,10 +81,10 @@
    (string "example.org")
    "The public host where grafana will be exposed.")
   (root-url
-   (string "%(protocol)s://%(domain)s:%(http_port)s/grafana/")
+   (string "%(protocol)s://%(domain)s:%(http_port)s/")
    "The url where grafana will be exposed.")
-  (serve-from-sub-path
-   (boolean #t)
+  (serve-from-sub-path?
+   (boolean #f)
    "The image to use for the OCI backed Shepherd service."))
 
 (define (gf-serialize-grafana-smtp-configuration field-name value)
