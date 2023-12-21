@@ -13,6 +13,7 @@
             oci-prometheus-configuration?
             oci-prometheus-configuration-fields
             oci-prometheus-configuration-datadir
+            oci-prometheus-configuration-host-networking?
             oci-prometheus-configuration-file
             oci-prometheus-configuration-image
             oci-prometheus-configuration-port
@@ -48,6 +49,10 @@ scrape_configs:
   (image
    (string prometheus-image)
    "The image to use for the OCI backed Shepherd service.")
+  (host-networking?
+   (boolean #f)
+   "Whether the container will be connected to the host network. When true,
+the @code{port} field will be ignored.")
   (port
    (string "9000")
    "The port where prometheus will be exposed.")
@@ -82,26 +87,37 @@ scrape_configs:
 
 (define oci-prometheus-configuration->oci-container-configuration
   (lambda (config)
-    (let ((datadir
-           (oci-prometheus-configuration-datadir config))
-          (image
-           (oci-prometheus-configuration-image config))
-          (port
-           (oci-prometheus-configuration-port config))
-          (prometheus.yml
-           (oci-prometheus-configuration-file config)))
-      (list (oci-container-configuration
+    (let* ((datadir
+            (oci-prometheus-configuration-datadir config))
+           (host-networking?
+            (oci-prometheus-configuration-host-networking? config))
+           (image
+            (oci-prometheus-configuration-image config))
+           (port
+            (oci-prometheus-configuration-port config))
+           (prometheus.yml
+            (oci-prometheus-configuration-file config))
+           (container-config
+            (oci-container-configuration
              (command
               '("--web.enable-lifecycle"
                 "--config.file=/etc/prometheus/prometheus.yml"
                 "--web.enable-admin-api"))
              (image image)
-             (ports
-              `((,port . "9000")
-                ("9090" . "9090")))
              (volumes
               `((,datadir . "/prometheus")
-                (,prometheus.yml . "/etc/prometheus/prometheus.yml:ro"))))))))
+                (,prometheus.yml . "/etc/prometheus/prometheus.yml:ro"))))))
+
+      (list
+        (if host-networking?
+            (oci-container-configuration
+             (inherit container-config)
+             (network "host"))
+            (oci-container-configuration
+             (inherit container-config)
+             (ports
+              `((,port . "9000")
+                ("9090" . "9090")))))))))
 
 (define oci-prometheus-service-type
   (service-type (name 'prometheus)
