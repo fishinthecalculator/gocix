@@ -19,7 +19,7 @@
             oci-grafana-configuration-image
             oci-grafana-configuration-port
             oci-grafana-configuration-grafana.ini
-            oci-grafana-configuration-host-networking?
+            oci-grafana-configuration-network
             oci-grafana-configuration->oci-container-configuration
 
             %grafana-accounts
@@ -120,6 +120,8 @@
 (define (gf-serialize-string field-name value)
   value)
 
+(define-maybe string)
+
 (define-configuration grafana-configuration
   (server
    (grafana-server-configuration (grafana-server-configuration))
@@ -141,14 +143,14 @@
    "The image to use for the OCI backed Shepherd service.")
   (port
    (string "3000")
-   "The port where grafana will be exposed.")
+   "This host port will be mapped onto the Grafana configured port inside the container.")
   (grafana.ini
    (grafana-configuration (grafana-configuration))
    "This field will be serialized as graphana.ini.")
-  (host-networking?
-   (boolean #f)
-   "Whether the container will be connected to the host network. When true,
-the @code{port} field will be ignored.")
+  (network
+   (maybe-string)
+   "The docker network where the grafana container will be attached. When equal
+to \"host\" the @code{port} field will be ignored.")
   (no-serialization))
 
 (define %grafana-accounts
@@ -189,8 +191,8 @@ the @code{port} field will be ignored.")
     (let* ((datadir
             (oci-grafana-configuration-datadir config))
            (grafana.ini (oci-grafana-configuration-grafana.ini config))
-           (host-networking?
-            (oci-grafana-configuration-host-networking? config))
+           (network
+            (oci-grafana-configuration-network config))
            (image
             (oci-grafana-configuration-image config))
            (port
@@ -198,20 +200,19 @@ the @code{port} field will be ignored.")
            (container-config
             (oci-container-configuration
              (image image)
+             (ports
+              `((,port . "3000")))
              (volumes
               `((,datadir . "/var/lib/grafana")
                 ;; Needed because grafana.ini is a symlink to an item in the store.
                 ("/gnu/store" . "/gnu/store")
                 ("/etc/grafana/grafana.ini" . "/opt/bitnami/grafana/conf/grafana.ini"))))))
       (list
-       (if host-networking?
+       (if (maybe-value-set? network)
            (oci-container-configuration
             (inherit container-config)
-            (network "host"))
-           (oci-container-configuration
-            (inherit container-config)
-            (ports
-             `((,port . "3000")))))))))
+            (network network))
+           container-config)))))
 
 (define oci-grafana-service-type
   (service-type (name 'grafana)
