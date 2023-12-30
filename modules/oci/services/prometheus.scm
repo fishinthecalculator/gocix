@@ -96,8 +96,8 @@ port inside the container.")
   (lambda (config)
     (let* ((datadir
             (oci-prometheus-configuration-datadir config))
-           (host-networking?
-            (oci-prometheus-configuration-host-networking? config))
+           (network
+            (oci-prometheus-configuration-network config))
            (image
             (oci-prometheus-configuration-image config))
            (port
