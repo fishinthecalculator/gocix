@@ -13,7 +13,7 @@
             oci-prometheus-configuration?
             oci-prometheus-configuration-fields
             oci-prometheus-configuration-datadir
-            oci-prometheus-configuration-host-networking?
+            oci-prometheus-configuration-network
             oci-prometheus-configuration-file
             oci-prometheus-configuration-image
             oci-prometheus-configuration-port
@@ -39,6 +39,8 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090','localhost:9100']\n"))
 
+(define-maybe string)
+
 (define-configuration oci-prometheus-configuration
   (datadir
    (string "/var/lib/prometheus")
@@ -49,13 +51,18 @@ scrape_configs:
   (image
    (string prometheus-image)
    "The image to use for the OCI backed Shepherd service.")
-  (host-networking?
-   (boolean #f)
-   "Whether the container will be connected to the host network. When true,
-the @code{port} field will be ignored.")
+  (network
+   (maybe-string)
+   "The docker network where the grafana container will be attached. When equal
+to \"host\" the @code{port} field will be ignored.")
   (port
    (string "9000")
-   "The port where prometheus will be exposed.")
+   "This host port will be mapped onto the Prometheus dashboard configured port
+inside the container.")
+  (metrics-port
+   (string "9090")
+   "This host port will be mapped onto the Prometheus health endpoint configured
+port inside the container.")
   (no-serialization))
 
 (define %prometheus-accounts
@@ -95,6 +102,8 @@ the @code{port} field will be ignored.")
             (oci-prometheus-configuration-image config))
            (port
             (oci-prometheus-configuration-port config))
+           (metrics-port
+            (oci-prometheus-configuration-metrics-port config))
            (prometheus.yml
             (oci-prometheus-configuration-file config))
            (container-config
@@ -104,20 +113,20 @@ the @code{port} field will be ignored.")
                 "--config.file=/etc/prometheus/prometheus.yml"
                 "--web.enable-admin-api"))
              (image image)
+             (ports
+              `((,port . "9000")
+                (,metrics-port . "9090")))
              (volumes
               `((,datadir . "/prometheus")
                 (,prometheus.yml . "/etc/prometheus/prometheus.yml:ro"))))))
 
       (list
-        (if host-networking?
-            (oci-container-configuration
-             (inherit container-config)
-             (network "host"))
-            (oci-container-configuration
-             (inherit container-config)
-             (ports
-              `((,port . "9000")
-                ("9090" . "9090")))))))))
+       (if (maybe-value-set? network)
+           (oci-container-configuration
+            (inherit container-config)
+            (network network))
+           container-config)))))
+
 
 (define oci-prometheus-service-type
   (service-type (name 'prometheus)
