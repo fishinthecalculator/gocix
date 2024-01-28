@@ -2,6 +2,13 @@
 
  🌿 Welcome to gocix! This project aims at providing a community managed library of Guix services. Code from this channel implements a Guix native experience for services that are not yet guixable, through [OCI backed Shepherd Services](https://guix.gnu.org/en/manual/devel/en/guix.html#index-oci_002dcontainer_002dservice_002dtype).
 
+## Motivation
+
+Services in gocix are supposed to be used to run useful stuff with Guix. They are for the community by the community and there are all the intentions of collaborating with upstream once underlying packages are into Guix proper. To achieve this vision gocix services strive to:
+
+- Separate as much as possible configurations that pertain to the OCI implementation (i.e. ports, volumes, OCI images tags and so on) from application configurations (i.e. whether the application will use https or whatever else). The idea is to make it as little effort as possible upstreaming code from this channel to Guix.
+- Services are configured with sane, secure, privacy aware defaults when possible. This means that each service in this repository is carefully reviewed and analytics are disabled whenever possible.
+
 ## Services
 
 This channel exposes at `(oci services)` a set of Guix System services for many useful applications, such as:
