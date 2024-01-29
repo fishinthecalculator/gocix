@@ -11,7 +11,7 @@
   #:use-module (guix gexp)
   #:use-module (guix i18n)
   #:use-module (ice-9 match)
-  #:use-module (ice-9 string-fun)
+  #:use-module (oci services configuration)
   #:export (conduit-configuration
             conduit-configuration?
             conduit-configuration-fields
@@ -43,39 +43,16 @@
 (define conduit-image
   (string-append "matrixconduit/matrix-conduit:" conduit-tag))
 
-;; Turn field names, which are Scheme symbols into strings
-(define (uglify-field-name field-name)
-  (let ((str (symbol->string field-name)))
-    ;; a-field? -> CONDUIT_A_FIELD
-    (string-append
-     "CONDUIT_"
-     (string-upcase
-      (string-replace-substring
-       (if (string-suffix? "?" str)
-           (string-drop-right str 1)
-           str)
-       "-" "_")))))
-
 (define (serialize-string field-name value)
-  (cons (uglify-field-name field-name) value))
+  (serialize-environment-variable field-name value #:prefix "CONDUIT_"))
 
-(define (serialize-maybe-string field-name value)
-  (if (maybe-value-set? value)
-      (serialize-string field-name value)
-      '()))
+(define serialize-maybe-string serialize-string)
 
 (define (serialize-boolean field-name value)
-  (serialize-string field-name (if value "true" "false")))
+  (serialize-boolean-environment-variable field-name value #:prefix "CONDUIT_"))
 
 (define (serialize-list-of-strings field-name value)
-  (define (format-value val)
-    (string-append "["
-                   (string-join
-                    (map (lambda (s) (string-append "\"" s "\""))
-                         val)
-                    ", ")
-                   "]"))
-  (serialize-string field-name (format-value value)))
+  (serialize-string field-name (format-json-list value)))
 
 (define-maybe/no-serialization string)
 
