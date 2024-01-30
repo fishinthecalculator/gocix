@@ -15,12 +15,12 @@
   #:use-module (sops services sops)
   #:use-module (oci services configuration)
   #:use-module (oci services docker)
-  #:export (oci-bonfire-configuration
-            oci-bonfire-configuration?
-            oci-bonfire-configuration-fields
-            oci-bonfire-configuration-flavour
-            oci-bonfire-configuration-image
-            oci-bonfire-configuration-public-port
+  #:export (bonfire-configuration
+            bonfire-configuration?
+            bonfire-configuration-fields
+            bonfire-configuration-flavour
+            bonfire-configuration-image
+            bonfire-configuration-public-port
 
             oci-bonfire-configuration
             oci-bonfire-configuration?
@@ -142,7 +142,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
   (lambda (config)
     (when config
       (let* ((bonfire-config
-              (oci-container-configuration-configuration config))
+              (oci-bonfire-configuration-configuration config))
              (upload-data-directory
               (oci-bonfire-configuration-upload-data-directory config))
              (environment
