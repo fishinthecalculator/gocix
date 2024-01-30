@@ -21,7 +21,7 @@
                  (string-drop-right str 1)
                  str)
              "-" "_"))))
-    (if (and prefix (string? prefix))
+    (if (and prefix (string? prefix) (not (string-null? prefix)))
         (string-append prefix variable)
         variable)))
 
