@@ -17,6 +17,7 @@ This channel exposes at `(oci services)` a set of Guix System services for many 
 - Grafana
 - Prometheus
 - Matrix Conduit
+- meilisearch
 
 These services are supposed to feel like services backed by native Guix packages, please report any inconsistency you may find.
 
