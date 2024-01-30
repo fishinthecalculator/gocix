@@ -85,19 +85,6 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
             (mkdir-p datadir)
             (mkdir-p database-path))))))
 
-(define oci-meilisearch-setup-secrets
-  (program-file "oci-meilisearch-setup-secrets"
-                #~(execl (string-append #$bash "/bin/bash")
-                         #$(mixed-text-file "oci-meilisearch-setup-secrets-content"
-                                            "set -eu
-
-export MEILI_MASTER_KEY=$(cat /run/secrets/meilisearch/master)
-exec /bin/meilisearch"))))
-
-(define oci-meilisearch-entrypoint
-  (program-file "oci-meilisearch-entrypoint"
-                #~(execl "/sbin/tini" "--" #$oci-meilisearch-setup-secrets)))
-
 (define oci-meilisearch-configuration->oci-container-configuration
   (lambda (config)
     (when config
@@ -117,18 +104,18 @@ exec /bin/meilisearch"))))
               (oci-container-configuration
                (image image)
                (requirement '(sops-secrets))
-               (entrypoint "/entrypoint")
+               (entrypoint "/sbin/tini")
+               (command
+                `("--" "sh" "-c" "export MEILI_MASTER_KEY=$(cat /run/secrets/meilisearch/master) && exec /bin/meilisearch"))
                (environment
                 (append
-                 '(("MEILI_NO_ANALYTICS" . "1"))
+                 '(("MEILI_NO_ANALYTICS" . "true"))
                  extra-variables))
                (ports
                 `((,port . ,port)))
                (volumes
                 `((,datadir . "/meili_data")
                   (,database-path . "/data.ms")
-                  ("/gnu/store" . "/gnu/store")
-                  (,oci-meilisearch-entrypoint . "/entrypoint")
                   ("/run/secrets/meilisearch" . "/run/secrets/meilisearch:ro"))))))
         (list
          (if (maybe-value-set? network)
@@ -144,11 +131,6 @@ exec /bin/meilisearch"))))
                                   (service-extension sops-secrets-service-type
                                                      (lambda (config)
                                                        (list (oci-meilisearch-configuration-master-key config))))
-                                  (service-extension special-files-service-type
-                                                     (const (list (list "/usr/bin/oci-meilisearch-entrypoint"
-                                                                        oci-meilisearch-entrypoint)
-                                                                  (list "/usr/bin/oci-meilisearch-setup-secrets"
-                                                                        oci-meilisearch-setup-secrets))))
                                   (service-extension activation-service-type
                                                      %meilisearch-activation)))
                 (default-value #f)
