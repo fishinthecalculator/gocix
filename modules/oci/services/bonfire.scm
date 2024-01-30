@@ -180,7 +180,12 @@ export POSTGRES_PASSWORD=$(cat /run/secrets/postgres/bonfire); exec ./bin/bonfir
                (environment
                 (append
                  environment
-                 '(("MIX_ENV" . "prod"))
+                 '("LANG"
+                   ("SEEDS_USER" . "root")
+                   ("ERLANG_COOKIE" . "bonfire_cookie")
+                   ("MIX_ENV" . "prod")
+                   ("PLUG_BACKEND" . "bandit")
+                   ("APP_NAME" . "Bonfire"))
                  extra-variables))
                (ports
                 `((,port . ,port)))
