@@ -181,6 +181,7 @@ POSTGRES_PASSWORD=$(cat /run/secrets/postgres/bonfire)
                (environment
                 (append
                  environment
+                 '(("MIX_ENV" . "prod"))
                  extra-variables))
                (ports
                 `((,port . ,port)))
