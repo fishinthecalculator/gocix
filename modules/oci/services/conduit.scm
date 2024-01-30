@@ -5,13 +5,13 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
-  #:use-module (gnu services docker)
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
   #:use-module (ice-9 match)
   #:use-module (oci services configuration)
+  #:use-module (oci services docker)
   #:export (conduit-configuration
             conduit-configuration?
             conduit-configuration-fields

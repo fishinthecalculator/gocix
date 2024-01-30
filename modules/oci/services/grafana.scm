@@ -5,12 +5,12 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
-  #:use-module (gnu services docker)
   #:use-module (gnu system shadow)
   #:use-module (guix gexp)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 string-fun)
+  #:use-module (oci services docker)
   #:export (oci-grafana-service-type
             oci-grafana-configuration
             oci-grafana-configuration?
