@@ -96,7 +96,7 @@ exec /bin/meilisearch"))))
 
 (define oci-meilisearch-entrypoint
   (program-file "oci-meilisearch-entrypoint"
-                #~(execl "tini" "--" #$oci-meilisearch-setup-secrets)))
+                #~(execl "/sbin/tini" "--" #$oci-meilisearch-setup-secrets)))
 
 (define oci-meilisearch-configuration->oci-container-configuration
   (lambda (config)
