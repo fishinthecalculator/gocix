@@ -172,12 +172,11 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                (requirement `(,@requirement sops-secrets))
                (entrypoint "/bin/sh")
                (command
-                `("-c" "export MEILI_MASTER_KEY=$(cat /run/secrets/meilisearch/master)
-SECRET_KEY_BASE=$(cat /run/secrets/bonfire/secret_key_base)
-SIGNING_SALT=$(cat /run/secrets/bonfire/signing_salt)
-ENCRYPTION_SALT=$(cat /run/secrets/bonfire/encryption_salt)
-POSTGRES_PASSWORD=$(cat /run/secrets/postgres/bonfire)
-&& exec ./bin/bonfire start"))
+                `("-c" "export MEILI_MASTER_KEY=$(cat /run/secrets/meilisearch/master);
+export SECRET_KEY_BASE=$(cat /run/secrets/bonfire/secret_key_base);
+export SIGNING_SALT=$(cat /run/secrets/bonfire/signing_salt);
+export ENCRYPTION_SALT=$(cat /run/secrets/bonfire/encryption_salt);
+export POSTGRES_PASSWORD=$(cat /run/secrets/postgres/bonfire); exec ./bin/bonfire start"))
                (environment
                 (append
                  environment
