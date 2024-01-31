@@ -21,6 +21,9 @@
             bonfire-configuration-flavour
             bonfire-configuration-image
             bonfire-configuration-public-port
+            bonfire-configuration-postgres-host
+            bonfire-configuration-postgres-user
+            bonfire-configuration-postgres-db
 
             oci-bonfire-configuration
             oci-bonfire-configuration?
@@ -32,6 +35,7 @@
             oci-bonfire-configuration-secret-key-base
             oci-bonfire-configuration-signing-salt
             oci-bonfire-configuration-encryption-salt
+            oci-bonfire-configuration-mail-password
             oci-bonfire-configuration-postgres-password
             oci-bonfire-configuration-network
             oci-bonfire-configuration-extra-variables
@@ -65,9 +69,36 @@
   (hostname
    (string)
    "The domain name where Bonfire will be exposed.")
+  (postgres-host
+   (string "localhost")
+   "The hostname where postgres will be looked for.")
+  (postgres-db
+   (string "bonfire_db")
+   "The database name of the Bonfire's Postgres database.")
+  (postgres-user
+   (string "bonfire")
+   "The user name that Bonfire will use to authenticate against the Postgres database.")
+  (mail-server
+   (maybe-string)
+   "SMTP domain of the mail server.")
+  (mail-domain
+   (maybe-string)
+   "The bit after @ in your email.")
+  (mail-user
+   (maybe-string)
+   "The bit before @ in your email.")
+  (mail-from
+   (maybe-string)
+   "The email address from which Bonfire will send emails.")
+  (mail-port
+   (string "465")
+   "The port of the SMTP service on your mail server.")
+  (mail-ssl?
+   (boolean #t)
+   "Whether to use SSL for the connection to the SMTP server.")
   (public-port
    (string "4000")
-   "The port where bonfire will be exposed."))
+   "The port where Bonfire will be exposed."))
 
 (define bonfire-configuration->oci-container-environment
   (lambda (config)
@@ -116,6 +147,9 @@
   (encryption-salt
    (sops-secret)
    "ENCRYPTION_SALT Bonfire secret.")
+  (mail-password
+   (sops-secret)
+   "MAIL_PASSWORD Bonfire secret.")
   (postgres-password
    (sops-secret)
    "POSTGRES_PASSWORD Bonfire secret.")
@@ -163,6 +197,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                      (string-append "/run/secrets/" s))
                    '("meilisearch/master"
                      "postgres/bonfire"
+                     "smtp/password"
                      "bonfire/secret_key_base"
                      "bonfire/signing_salt"
                      "bonfire/encryption_salt")))
@@ -176,6 +211,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
 export SECRET_KEY_BASE=$(cat /run/secrets/bonfire/secret_key_base);
 export SIGNING_SALT=$(cat /run/secrets/bonfire/signing_salt);
 export ENCRYPTION_SALT=$(cat /run/secrets/bonfire/encryption_salt);
+export MAIL_PASSWORD=$(cat /run/secrets/smtp/password);
 export POSTGRES_PASSWORD=$(cat /run/secrets/postgres/bonfire); exec ./bin/bonfire start"))
                (environment
                 (append
