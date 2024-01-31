@@ -34,7 +34,7 @@
 ;; Check it out! It's pretty cool.
 
 (define forgejo-tag
-  "1.21.2-0-rootless")
+  "1.21.4-0-rootless")
 
 (define forgejo-image
   (string-append "codeberg.org/forgejo/forgejo:" forgejo-tag))
@@ -43,11 +43,11 @@
 
 (define-configuration/no-serialization forgejo-configuration
   (uid
-     (positive 34595)
-     "The uid assigned to the Forgejo service account.")
+   (positive 34595)
+   "The uid assigned to the Forgejo service account.")
   (gid
-     (positive 98715)
-     "The gid assigned to the Forgejo service account.")
+   (positive 98715)
+   "The gid assigned to the Forgejo service account.")
   (image
    (string forgejo-image)
    "The image to use for the OCI backed Shepherd service.")
@@ -93,7 +93,8 @@
               (uid #$uid))
           ;; Setup datadir
           (mkdir-p datadir)
-          (chown datadir uid gid)
+          ;; FIXME: Forgejo seems to ignore USER_UID and USER_GID
+          (chown datadir 1000 1000)
           (chmod datadir #o770)))))
 
 (define forgejo-configuration->oci-container-configuration
