@@ -233,9 +233,10 @@ export POSTGRES_PASSWORD=$(cat /run/secrets/postgres/bonfire); exec ./bin/bonfir
                 `((,port . ,port)))
                (volumes
                 `((,upload-data-directory . "/opt/app/data/uploads")
-                  ,@(map (lambda (s)
-                           (cons s (string-append s ":ro")))
-                         secrets))))))
+                  ("/run/secrets/bonfire" . "/run/secrets/bonfire:ro")
+                  ("/run/secrets/smtp" . "/run/secrets/smtp:ro")
+                  ("/run/secrets/postgres" . "/run/secrets/postgres:ro")
+                  ("/run/secrets/meilisearch" . "/run/secrets/meilisearch:ro"))))))
         (list
          (if (maybe-value-set? network)
              (oci-container-configuration
