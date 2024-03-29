@@ -211,6 +211,7 @@ to \"host\" the @code{port} field will be ignored.")
        (if (maybe-value-set? network)
            (oci-container-configuration
             (inherit container-config)
+            (ports '())
             (network network))
            container-config)))))
 
