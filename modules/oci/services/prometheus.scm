@@ -207,7 +207,7 @@ inside the container.  If @code{network} is set this field will be ignored.")
             (oci-container-configuration
              (image image)
              (ports
-              `((,port . "80")))
+              `((,port . "9115")))
              (volumes
               `((,datadir . "/blackbox-exporter")
                 (,blackbox-exporter.yml . "/opt/bitnami/blackbox-exporter/conf/config.yml:ro"))))))
