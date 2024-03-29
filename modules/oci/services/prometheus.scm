@@ -226,6 +226,5 @@ inside the container.  If @code{network} is set this field will be ignored.")
                                                      oci-blackbox-exporter-configuration->oci-container-configuration)
                                   (service-extension activation-service-type
                                                      %blackbox-exporter-activation)))
-                (default-value (oci-blackbox-exporter-configuration))
                 (description
                  "This service install a OCI backed Blackbox Exporter Shepherd Service.")))
