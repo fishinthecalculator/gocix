@@ -3,14 +3,27 @@
 
 (define-module (oci services configuration)
   #:use-module (gnu services configuration)
+  #:use-module (guix diagnostics)
+  #:use-module (guix gexp)
+  #:use-module (guix i18n)
+  #:use-module (ice-9 match)
   #:use-module (ice-9 string-fun)
   #:export (field-name->environment-variable
             serialize-environment-variable
             serialize-boolean-environment-variable
 
+            serialize-ini-string
+            serialize-ini-integer
+            serialize-ini-boolean
+
+            serialize-yaml-string
+            serialize-yaml-maybe-string
+            configuration->yaml-block
+
             format-json-list))
 
-;; Turn field names, which are Scheme symbols into strings
+;; Environment variables
+
 (define* (field-name->environment-variable field-name #:key (prefix #f))
   (let* ((str (symbol->string field-name))
          (variable
@@ -40,3 +53,59 @@
                      values)
                 ", ")
                "]"))
+
+;; INI
+
+(define (ini-uglify-field-name field-name)
+  (string-replace-substring
+   (string-replace-substring
+    (symbol->string field-name) "?" "") "-" "_"))
+
+(define (serialize-ini-string field-name value)
+  #~(string-append #$(ini-uglify-field-name field-name) " = " #$value "\n"))
+
+(define (serialize-ini-integer field-name value)
+  (serialize-ini-string field-name (number->string value)))
+
+(define (serialize-ini-boolean field-name value)
+  (serialize-ini-string field-name (if value "true" "false")))
+
+
+;; Yaml
+
+(define (yaml-uglify-field-name field-name)
+  (string-replace-substring
+   (string-replace-substring
+    (symbol->string field-name) "?" "") "-" "_"))
+
+(define* (serialize-yaml-string field-name value #:key (indentation ""))
+  #~(string-append indentation #$(ini-uglify-field-name field-name) ": " #$value "\n"))
+
+(define* (serialize-yaml-maybe-string field-name value #:key (indentation ""))
+  (if (maybe-value-set? value)
+      (serialize-yaml-string field-name value #:indentation indentation)
+      ""))
+
+(define* (configuration->yaml-block config fields #:key (indentation "") (excluded '()))
+    (filter (compose not null?)
+            (map (lambda (f)
+                   (let ((field-name (configuration-field-name f))
+                         (type (configuration-field-type f))
+                         (value ((configuration-field-getter f) config)))
+                     (if (not (member field-name excluded))
+                         (match type
+                           ('string
+                            (serialize-yaml-string field-name value #:indentation indentation))
+                           ('maybe-string
+                            (serialize-yaml-maybe-string field-name value #:indentation indentation))
+                           ('list-of-strings
+                            (serialize-yaml-string field-name
+                                                   (format-json-list value)
+                                                   #:indentation indentation))
+                           (_
+                            (raise
+                             (formatted-message
+                              (G_ "Unknown field type: ~a")
+                              type))))
+                         '())))
+                 fields)))

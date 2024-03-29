@@ -10,6 +10,7 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 string-fun)
+  #:use-module (oci services configuration)
   #:use-module (oci services docker)
   #:export (oci-grafana-service-type
             oci-grafana-configuration
@@ -56,20 +57,9 @@
 (define grafana-image
   (string-append "bitnami/grafana:" grafana-tag))
 
-;; Turn field names, which are Scheme symbols into strings
-(define (uglify-field-name field-name)
-  (string-replace-substring
-   (string-replace-substring
-    (symbol->string field-name) "?" "") "-" "_"))
-
-(define (serialize-string field-name value)
-  #~(string-append #$(uglify-field-name field-name) " = " #$value "\n"))
-
-(define (serialize-integer field-name value)
-  (serialize-string field-name (number->string value)))
-
-(define (serialize-boolean field-name value)
-  (serialize-string field-name (if value "true" "false")))
+(define serialize-string serialize-yaml-string)
+(define serialize-integer serialize-yaml-integer)
+(define serialize-boolean serialize-yaml-boolean)
 
 (define (gf-serialize-grafana-server-configuration field-name value)
   #~(string-append
