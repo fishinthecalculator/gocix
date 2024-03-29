@@ -2,6 +2,7 @@
 (channel
  (version 0)                            ;file format version
  (directory "modules")
+ (news-file "etc/news.txt")
  (dependencies
   (channel
    (name sops-guix)

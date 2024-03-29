@@ -1,0 +1,58 @@
+(channel-news
+  (version 0)
+  (entry (commit "26669a0230e1d8451f6209f60e03fb90ba8909e8")
+         (title (en "Breaking change for @code{oci-prometheus-configuration} users."))
+         (body (en "The @code{oci-prometheus-configuration} has been updated in a breaking way.  The reason for this change is that its default were always not general enough to be in gocix and were always a near copy of a configuration I had lying around.
+
+To achieve what was achieved before with this configuration:
+
+@lisp
+(use-modules (oci services prometheus))
+(operating-system
+  ;; @dots{}
+  (services
+    (service oci-prometheus-service-type
+             (oci-prometheus-configuration
+               (network "host")))))
+@end lisp
+
+you can now use the following:
+
+@lisp
+(use-modules (oci services prometheus))
+(operating-system
+  ;; @dots{}
+  (services
+    (service oci-prometheus-service-type
+             (oci-prometheus-configuration
+               (file %prometheus-file)
+               (network "host")))))
+@end lisp
+
+The @code{%prometheus-file} variable is provided for backward compatibility and @strong{will} be removed in the future.  You are encouraged to migrate your configuration to Guile records.  This is equivalent to the above examples:
+
+@lisp
+(use-modules (oci services prometheus))
+(operating-system
+  ;; @dots{}
+  (services
+    (service oci-prometheus-service-type
+             (oci-prometheus-configuration
+               (network "host")
+               (prometheus-configuration
+                 (global
+                   (prometheus-global-configuration
+                     (scrape-interval "30s")
+                     (scrape-timeout "12s")))
+                 (scrape-configs
+                   (list
+                     (prometheus-scrape-configuration
+                       (job-name "prometheus")
+                       (metrics-path "/metrics")
+                       (static-configs
+                         (list (prometheus-static-config
+                                 (targets '("localhost:9090" "localhost:9100")))))))))))))
+@end lisp
+
+
+This change allowed to implement Prometheus scrape jobs as Guile records so now humans and other Guix services can both use nice parentheses to setup jobs."))))
