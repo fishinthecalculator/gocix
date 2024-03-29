@@ -39,19 +39,20 @@ The @code{%prometheus-file} variable is provided for backward compatibility and 
     (service oci-prometheus-service-type
              (oci-prometheus-configuration
                (network \"host\")
-               (prometheus-configuration
-                 (global
-                   (prometheus-global-configuration
-                     (scrape-interval \"30s\")
-                     (scrape-timeout \"12s\")))
-                 (scrape-configs
-                   (list
-                     (prometheus-scrape-configuration
-                       (job-name \"prometheus\")
-                       (metrics-path \"/metrics\")
-                       (static-configs
-                         (list (prometheus-static-config
-                                 (targets '(\"localhost:9090\" \"localhost:9100\")))))))))))))
+               (record
+                 (prometheus-configuration
+                   (global
+                     (prometheus-global-configuration
+                       (scrape-interval \"30s\")
+                       (scrape-timeout \"12s\")))
+                   (scrape-configs
+                     (list
+                       (prometheus-scrape-configuration
+                         (job-name \"prometheus\")
+                         (metrics-path \"/metrics\")
+                         (static-configs
+                           (list (prometheus-static-config
+                                   (targets '(\"localhost:9090\" \"localhost:9100\"))))))))))))))
 @end lisp
 
 
