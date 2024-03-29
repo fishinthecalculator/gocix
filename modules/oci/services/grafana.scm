@@ -57,9 +57,9 @@
 (define grafana-image
   (string-append "bitnami/grafana:" grafana-tag))
 
-(define serialize-string serialize-yaml-string)
-(define serialize-integer serialize-yaml-integer)
-(define serialize-boolean serialize-yaml-boolean)
+(define serialize-string serialize-ini-string)
+(define serialize-integer serialize-ini-integer)
+(define serialize-boolean serialize-ini-boolean)
 
 (define (gf-serialize-grafana-server-configuration field-name value)
   #~(string-append
