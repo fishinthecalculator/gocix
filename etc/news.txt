@@ -13,7 +13,7 @@ To achieve what was achieved before with this configuration:
   (services
     (service oci-prometheus-service-type
              (oci-prometheus-configuration
-               (network "host")))))
+               (network \"host\")))))
 @end lisp
 
 you can now use the following:
@@ -26,7 +26,7 @@ you can now use the following:
     (service oci-prometheus-service-type
              (oci-prometheus-configuration
                (file %prometheus-file)
-               (network "host")))))
+               (network \"host\")))))
 @end lisp
 
 The @code{%prometheus-file} variable is provided for backward compatibility and @strong{will} be removed in the future.  You are encouraged to migrate your configuration to Guile records.  This is equivalent to the above examples:
@@ -38,20 +38,20 @@ The @code{%prometheus-file} variable is provided for backward compatibility and 
   (services
     (service oci-prometheus-service-type
              (oci-prometheus-configuration
-               (network "host")
+               (network \"host\")
                (prometheus-configuration
                  (global
                    (prometheus-global-configuration
-                     (scrape-interval "30s")
-                     (scrape-timeout "12s")))
+                     (scrape-interval \"30s\")
+                     (scrape-timeout \"12s\")))
                  (scrape-configs
                    (list
                      (prometheus-scrape-configuration
-                       (job-name "prometheus")
-                       (metrics-path "/metrics")
+                       (job-name \"prometheus\")
+                       (metrics-path \"/metrics\")
                        (static-configs
                          (list (prometheus-static-config
-                                 (targets '("localhost:9090" "localhost:9100")))))))))))))
+                                 (targets '(\"localhost:9090\" \"localhost:9100\")))))))))))))
 @end lisp
 
 
