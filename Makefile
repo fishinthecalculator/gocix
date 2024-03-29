@@ -11,7 +11,7 @@ channel_intro_signer = 8D10 60B9 6BB8 292E 829B  7249 AED4 1CC1 93B7 01E2
 authenticate:
 	echo "Authenticating Git checkout..." ;	\
 	guix git authenticate					\
-	    --cache-key=channels/guix --stats			\
+	    --cache-key=channels/gocix --stats			\
 	    "$(channel_intro_commit)" "$(channel_intro_signer)"
 
 # end
