@@ -19,7 +19,20 @@
             oci-prometheus-configuration-port
             oci-prometheus-configuration->oci-container-configuration
             %prometheus-accounts
-            %prometheus-activation))
+            %prometheus-activation
+
+            oci-blackbox-exporter-configuration
+            oci-blackbox-exporter-configuration?
+            oci-blackbox-exporter-configuration-fields
+            oci-blackbox-exporter-configuration-image
+            oci-blackbox-exporter-configuration-datadir
+            oci-blackbox-exporter-configuration-file
+            oci-blackbox-exporter-configuration-network
+            oci-blackbox-exporter-configuration-port
+
+            %blackbox-exporter-activation
+            oci-blackbox-exporter-configuration->oci-container-configuration
+            oci-blackbox-exporter-service-type))
 
 (define prometheus-tag
   "v2.45.0")
@@ -124,6 +137,7 @@ port inside the container.")
        (if (maybe-value-set? network)
            (oci-container-configuration
             (inherit container-config)
+            (ports '())
             (network network))
            container-config)))))
 
@@ -139,3 +153,79 @@ port inside the container.")
                 (default-value (oci-prometheus-configuration))
                 (description
                  "This service install a OCI backed Prometheus Shepherd Service.")))
+
+;; Blackbox exporter
+
+(define blackbox-exporter-tag
+  "0.24.0")
+
+(define blackbox-exporter-image
+  (string-append "bitnami/blackbox-exporter:" blackbox-exporter-tag))
+
+(define-configuration oci-blackbox-exporter-configuration
+  (datadir
+   (string "/var/lib/blackbox-exporter")
+   "The directory where blackbox-exporter writes state.")
+  (file
+   (file-like)
+   "The configuration file to use for Blackbox Exporter.")
+  (image
+   (string blackbox-exporter-image)
+   "The image to use for the OCI backed Shepherd service.")
+  (network
+   (maybe-string)
+   "The docker network where the grafana container will be attached. When equal
+to \"host\" the @code{port} field will be ignored.")
+  (port
+   (string "9115")
+   "This host port will be mapped onto the HTTP port
+inside the container.  If @code{network} is set this field will be ignored.")
+  (no-serialization))
+
+(define (%blackbox-exporter-activation config)
+  "Return an activation gexp for Blackbox Exporter."
+  (let ((datadir (oci-blackbox-exporter-configuration-datadir config)))
+    #~(begin
+        (use-modules (guix build utils))
+        (let* ((datadir #$datadir))
+          (mkdir-p datadir)
+          (chmod datadir #o764)))))
+
+(define oci-blackbox-exporter-configuration->oci-container-configuration
+  (lambda (config)
+    (let* ((datadir
+            (oci-blackbox-exporter-configuration-datadir config))
+           (network
+            (oci-blackbox-exporter-configuration-network config))
+           (image
+            (oci-blackbox-exporter-configuration-image config))
+           (port
+            (oci-blackbox-exporter-configuration-port config))
+           (blackbox-exporter.yml
+            (oci-blackbox-exporter-configuration-file config))
+           (container-config
+            (oci-container-configuration
+             (image image)
+             (ports
+              `((,port . "80")))
+             (volumes
+              `((,datadir . "/blackbox-exporter")
+                (,blackbox-exporter.yml . "/opt/bitnami/blackbox-exporter/conf/config.yml:ro"))))))
+
+      (list
+       (if (maybe-value-set? network)
+           (oci-container-configuration
+            (inherit container-config)
+            (ports '())
+            (network network))
+           container-config)))))
+
+(define oci-blackbox-exporter-service-type
+  (service-type (name 'blackbox-exporter)
+                (extensions (list (service-extension oci-container-service-type
+                                                     oci-blackbox-exporter-configuration->oci-container-configuration)
+                                  (service-extension activation-service-type
+                                                     %blackbox-exporter-activation)))
+                (default-value (oci-blackbox-exporter-configuration))
+                (description
+                 "This service install a OCI backed Blackbox Exporter Shepherd Service.")))
