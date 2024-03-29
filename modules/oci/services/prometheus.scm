@@ -1,5 +1,5 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2023 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2023, 2024 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services prometheus)
   #:use-module (gnu packages admin)
@@ -7,14 +7,47 @@
   #:use-module (gnu services configuration)
   #:use-module (gnu system shadow)
   #:use-module (guix gexp)
+  #:use-module (guix i18n)
+  #:use-module (oci services configuration)
   #:use-module (oci services docker)
-  #:export (oci-prometheus-service-type
+  #:export (%prometheus-file
+
+            prometheus-static-configuration
+            prometheus-static-configuration?
+            prometheus-static-configuration-fields
+            prometheus-static-configuration-targets
+            prometheus-static-configuration-extra-content
+
+            prometheus-scrape-configuration
+            prometheus-scrape-configuration?
+            prometheus-scrape-configuration-fields
+            prometheus-scrape-configuration-job-name
+            prometheus-scrape-configuration-metrics-path
+            prometheus-scrape-configuration-static-configs
+            prometheus-scrape-configuration-extra-content
+
+            prometheus-global-configuration
+            prometheus-global-configuration?
+            prometheus-global-configuration-fields
+            prometheus-global-configuration-scrape-timeout
+            prometheus-global-configuration-scrape-interval
+            prometheus-global-configuration-extra-content
+
+            prometheus-configuration
+            prometheus-configuration?
+            prometheus-configuration-fields
+            prometheus-configuration-global
+            prometheus-configuration-scrape-configs
+            prometheus-configuration-extra-content
+
+            oci-prometheus-service-type
             oci-prometheus-configuration
             oci-prometheus-configuration?
             oci-prometheus-configuration-fields
             oci-prometheus-configuration-datadir
             oci-prometheus-configuration-network
             oci-prometheus-configuration-file
+            oci-prometheus-configuration-record
             oci-prometheus-configuration-image
             oci-prometheus-configuration-port
             oci-prometheus-configuration->oci-container-configuration
@@ -40,7 +73,7 @@
 (define prometheus-image
   (string-append "prom/prometheus:" prometheus-tag))
 
-(define prometheus-file
+(define %prometheus-file
   (plain-file "prometheus.yml"
               "global:
   scrape_interval: 30s
@@ -52,15 +85,117 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090','localhost:9100']\n"))
 
+(define (serialize-string field-name value)
+  (serialize-yaml-string field-name value #:indentation "  "))
+
+(define-configuration/no-serialization prometheus-static-configuration
+  (targets
+   (list-of-strings '())
+   "The target hosts that will be scraped for metrics.")
+  (extra-content
+   (string "")
+   "Everything you want to manually append to this @code{static_config} field."))
+
+(define (serialize-prometheus-static-configuration field-name value)
+  #~(string-append
+     "  static_configs:\n"
+     #$(configuration->yaml-block value prometheus-static-configuration-fields
+                                  #:indentation "    "
+                                  #:excluded '(extra-content))
+     #$(prometheus-static-configuration-extra-content value)))
+
+(define list-of-prometheus-static-configurations?
+  (list-of prometheus-static-configuration?))
+
+(define-configuration/no-serialization prometheus-scrape-configuration
+  (job-name
+   (string)
+   "The name of the scrape job.")
+  (metrics-path
+   (string "/metrics")
+   "The path where this job will scrape metrics.")
+  (static-configs
+   (list-of-prometheus-static-configurations '())
+   "The list of static configurations for this job.")
+  (extra-content
+   (string "")
+   "Everything you want to manually append to this @code{scrape_config} field."))
+
+(define (serialize-prometheus-scrape-configuration value)
+  #~(string-append
+     #$(configuration->yaml-block value prometheus-scrape-configuration-fields
+                                  #:indentation "  "
+                                  #:excluded '(extra-content))
+     #$(prometheus-scrape-configuration-extra-content value)))
+
+(define (pt-serialize-list-of-prometheus-scrape-configurations field-name value)
+  #~(apply string-append '("scrape_configs:\n"
+                           #$@(map serialize-prometheus-scrape-configuration
+                                   value))))
+
+(define list-of-prometheus-scrape-configurations?
+  (list-of prometheus-scrape-configuration?))
+
+(define-configuration/no-serialization prometheus-global-configuration
+  (scrape-interval
+   (string "30s")
+   "Prometheus' @code{scrape_interval} field.")
+  (scrape-timeout
+   (string "12s")
+   "Prometheus' @code{scrape_timeout} field.")
+  (extra-content
+   (string "")
+   "Everything you want to manually append to the @code{global} section."))
+
+(define (pt-serialize-prometheus-global-configuration field-name value)
+  #~(string-append
+     "global:\n"
+     #$(configuration->yaml-block value prometheus-global-configuration-fields
+                                  #:indentation "  "
+                                  #:excluded '(extra-content))
+     #$(prometheus-global-configuration-extra-content value)))
+
+(define pt-serialize-string
+  serialize-yaml-string)
+
 (define-maybe string)
+(define-maybe file-like)
+
+(define-configuration prometheus-configuration
+  (global
+   (prometheus-global-configuration (prometheus-global-configuration))
+   "Prometheus' @code{global} section.")
+  (scrape-configs
+   (list-of-prometheus-scrape-configurations '())
+   "Prometheus' @code{scrape_configs} section.")
+  (extra-content
+   (string "")
+   "Everything you want to manually append to the configuration file.")
+  (prefix pt-))
+
+(define (pt-serialize-prometheus-configuration field-name configuration)
+  (if (maybe-value-set? configuration)
+      (mixed-text-file
+       "prometheus.yml"
+       (serialize-configuration
+        configuration prometheus-configuration-fields))
+      ""))
+
+(define serialize-prometheus-configuration
+  pt-serialize-prometheus-configuration)
+(define-maybe prometheus-configuration)
 
 (define-configuration oci-prometheus-configuration
   (datadir
    (string "/var/lib/prometheus")
    "The directory where prometheus writes state.")
   (file
-   (file-like prometheus-file)
+   (maybe-file-like)
    "The configuration file to use for the OCI backed Shepherd service.")
+  (record
+   (maybe-prometheus-configuration)
+   "The configuration record to use for the OCI backed Shepherd service.  If
+the @code{file} field is set, this field will be ignored.")
   (image
    (string prometheus-image)
    "The image to use for the OCI backed Shepherd service.")
@@ -118,7 +253,14 @@ port inside the container.")
            (metrics-port
             (oci-prometheus-configuration-metrics-port config))
            (prometheus.yml
-            (oci-prometheus-configuration-file config))
+            (let ((file (oci-prometheus-configuration-file config))
+                  (record (oci-prometheus-configuration-record config)))
+              (if (maybe-value-set? file)
+                  file
+                  (if (maybe-value-set? record)
+                   record
+                   (raise
+                    (G_ "oci-prometheus-configuration: You must set either the file or the record field but both are unset!"))))))
            (container-config
             (oci-container-configuration
              (command
