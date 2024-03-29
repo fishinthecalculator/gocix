@@ -8,9 +8,15 @@
   #:use-module (gnu system shadow)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
+  #:use-module (guix records)
   #:use-module (oci services configuration)
   #:use-module (oci services docker)
+  #:use-module (srfi srfi-1)
   #:export (%prometheus-file
+
+            prometheus-extension
+            prometheus-extension?
+            prometheus-extension-scrape-jobs
 
             prometheus-static-configuration
             prometheus-static-configuration?
@@ -283,6 +289,16 @@ port inside the container.")
             (network network))
            container-config)))))
 
+(define-record-type* <prometheus-extension>
+  prometheus-extension make-prometheus-extension
+  prometheus-extension?
+  (scrape-configs           prometheus-extension-scrape-configs
+                            (default '())))         ; list of prometheus-scrape-configurations
+
+(define (prometheus-extension-merge a b)
+  (prometheus-extension
+   (scrape-configs (append (prometheus-extension-scrape-configs a)
+                           (prometheus-extension-scrape-configs b)))))
 
 (define oci-prometheus-service-type
   (service-type (name 'prometheus)
@@ -292,7 +308,27 @@ port inside the container.")
                                                      (const %prometheus-accounts))
                                   (service-extension activation-service-type
                                                      %prometheus-activation)))
-                (default-value (oci-prometheus-configuration))
+                (compose
+                 (lambda (args) (fold prometheus-extension-merge (prometheus-extension) args)))
+                (extend
+                 (lambda (config extension)
+                   (let ((file (oci-prometheus-configuration-file config))
+                         (configuration-record
+                          (oci-prometheus-configuration-record config)))
+                     (if (maybe-value-set? file)
+                         (raise
+                          (G_ "You can't extend the oci-prometheus-service-type if the file field of oci-prometheus-configuration is set!"))
+                         (if (maybe-value-set? configuration-record)
+                             (oci-prometheus-configuration
+                              (inherit config)
+                              (record
+                               (prometheus-configuration
+                                (inherit configuration-record)
+                                (scrape-configs
+                                 (append (prometheus-extension-scrape-configs extension)
+                                         (prometheus-configuration-scrape-configs config))))))
+                             (raise
+                              (G_ "The record field of oci-prometheus-configuration must set to be able to extend it!")))))))
                 (description
                  "This service install a OCI backed Prometheus Shepherd Service.")))
 
