@@ -121,7 +121,6 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
          (if (maybe-value-set? network)
              (oci-container-configuration
               (inherit container-config)
-              (ports '())
               (network network))
              container-config))))))
 
