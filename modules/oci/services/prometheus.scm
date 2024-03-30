@@ -103,17 +103,19 @@ scrape_configs:
    "Everything you want to manually append to this @code{static_config} field."))
 
 (define (serialize-prometheus-static-configuration field-name static-configs)
-  #~(string-append
-     "    static_configs:\n"
-     (string-append
-      #$@(map
-          (lambda (value)
-            #~(string-append
-               #$(configuration->yaml-block value prometheus-static-configuration-fields
-                                            #:indentation "      "
-                                            #:excluded '(extra-content))
-               #$(prometheus-static-configuration-extra-content value)))
-          static-configs))))
+  (if (> (length static-configs) 0)
+      #~(string-append
+         "    static_configs:\n"
+         (string-append
+          #$@(map
+              (lambda (value)
+                #~(string-append
+                   #$(configuration->yaml-block value prometheus-static-configuration-fields
+                                                #:indentation "      "
+                                                #:excluded '(extra-content))
+                   #$(prometheus-static-configuration-extra-content value)))
+              static-configs)))
+      ""))
 
 (define list-of-prometheus-static-configurations?
   (list-of prometheus-static-configuration?))
@@ -143,9 +145,11 @@ scrape_configs:
      #$(prometheus-scrape-configuration-extra-content value)))
 
 (define (pt-serialize-list-of-prometheus-scrape-configurations field-name value)
-  #~(string-append "scrape_configs:\n"
-                   #$@(map serialize-prometheus-scrape-configuration
-                           value)))
+  (if (> (length value 0)
+         #~(string-append "scrape_configs:\n"
+                          #$@(map serialize-prometheus-scrape-configuration
+                                  value))
+         ""))
 
 (define list-of-prometheus-scrape-configurations?
   (list-of prometheus-scrape-configuration?))
