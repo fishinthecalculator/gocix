@@ -149,7 +149,7 @@ scrape_configs:
          #~(string-append "scrape_configs:\n"
                           #$@(map serialize-prometheus-scrape-configuration
                                   value))
-         ""))
+         "")))
 
 (define list-of-prometheus-scrape-configurations?
   (list-of prometheus-scrape-configuration?))
