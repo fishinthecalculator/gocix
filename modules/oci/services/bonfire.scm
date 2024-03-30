@@ -241,6 +241,7 @@ export POSTGRES_PASSWORD=$(cat /run/secrets/postgres/bonfire); exec ./bin/bonfir
          (if (maybe-value-set? network)
              (oci-container-configuration
               (inherit container-config)
+              (ports '())
               (network network))
              container-config))))))
 
