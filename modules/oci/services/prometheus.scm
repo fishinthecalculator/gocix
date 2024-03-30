@@ -300,7 +300,6 @@ port inside the container.")
        (if (maybe-value-set? network)
            (oci-container-configuration
             (inherit container-config)
-            (ports '())
             (network network))
            container-config)))))
 
@@ -409,7 +408,6 @@ inside the container.  If @code{network} is set this field will be ignored.")
        (if (maybe-value-set? network)
            (oci-container-configuration
             (inherit container-config)
-            (ports '())
             (network network))
            container-config)))))
 
