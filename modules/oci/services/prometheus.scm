@@ -113,8 +113,7 @@ scrape_configs:
                                             #:indentation "      "
                                             #:excluded '(extra-content))
                #$(prometheus-static-configuration-extra-content value)))
-          static-configs))
-     "\n"))
+          static-configs))))
 
 (define list-of-prometheus-static-configurations?
   (list-of prometheus-static-configuration?))
@@ -146,8 +145,7 @@ scrape_configs:
 (define (pt-serialize-list-of-prometheus-scrape-configurations field-name value)
   #~(string-append "scrape_configs:\n"
                    #$@(map serialize-prometheus-scrape-configuration
-                           value)
-                   "\n"))
+                           value)))
 
 (define list-of-prometheus-scrape-configurations?
   (list-of prometheus-scrape-configuration?))
