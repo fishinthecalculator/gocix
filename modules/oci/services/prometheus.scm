@@ -102,13 +102,19 @@ scrape_configs:
    (string "")
    "Everything you want to manually append to this @code{static_config} field."))
 
-(define (serialize-prometheus-static-configuration field-name value)
+(define (serialize-prometheus-static-configuration field-name static-configs)
   #~(string-append
-     "  static_configs:\n"
-     #$(configuration->yaml-block value prometheus-static-configuration-fields
-                                  #:indentation "    "
-                                  #:excluded '(extra-content))
-     #$(prometheus-static-configuration-extra-content value)))
+     "    static_configs:\n"
+     (string-append
+      #$@(map
+          (lambda (value)
+            #~(string-append
+               #$(configuration->yaml-block value prometheus-static-configuration-fields
+                                            #:indentation "      "
+                                            #:excluded '(extra-content))
+               #$(prometheus-static-configuration-extra-content value)))
+          static-configs))
+     "\n"))
 
 (define list-of-prometheus-static-configurations?
   (list-of prometheus-static-configuration?))
@@ -131,13 +137,17 @@ scrape_configs:
   #~(string-append
      #$(configuration->yaml-block value prometheus-scrape-configuration-fields
                                   #:indentation "  "
-                                  #:excluded '(extra-content))
+                                  #:excluded '(extra-content static-configs))
+     #$(serialize-prometheus-static-configuration
+        'static-configs
+        (prometheus-scrape-configuration-static-configs value))
      #$(prometheus-scrape-configuration-extra-content value)))
 
 (define (pt-serialize-list-of-prometheus-scrape-configurations field-name value)
-  #~(apply string-append '("scrape_configs:\n"
-                           #$@(map serialize-prometheus-scrape-configuration
-                                   value))))
+  #~(string-append "scrape_configs:\n"
+                   #$@(map serialize-prometheus-scrape-configuration
+                           value)
+                   "\n"))
 
 (define list-of-prometheus-scrape-configurations?
   (list-of prometheus-scrape-configuration?))
@@ -157,9 +167,11 @@ scrape_configs:
   #~(string-append
      "global:\n"
      #$(configuration->yaml-block value prometheus-global-configuration-fields
+                                  #:sequence? #f
                                   #:indentation "  "
                                   #:excluded '(extra-content))
-     #$(prometheus-global-configuration-extra-content value)))
+     #$(prometheus-global-configuration-extra-content value)
+     "\n"))
 
 (define pt-serialize-string
   serialize-yaml-string)
@@ -176,7 +188,8 @@ scrape_configs:
    "Prometheus' @code{scrape_configs} section.")
   (extra-content
    (string "")
-   "Everything you want to manually append to the configuration file.")
+   "Everything you want to manually append to the configuration file."
+   (serializer empty-serializer))
   (prefix pt-))
 
 (define (pt-serialize-prometheus-configuration field-name configuration)
@@ -184,7 +197,9 @@ scrape_configs:
       (mixed-text-file
        "prometheus.yml"
        (serialize-configuration
-        configuration prometheus-configuration-fields))
+        configuration prometheus-configuration-fields)
+       (prometheus-configuration-extra-content configuration)
+       "\n")
       ""))
 
 (define serialize-prometheus-configuration
@@ -203,7 +218,7 @@ scrape_configs:
    "The configuration record to use for the OCI backed Shepherd service.  If
 the @code{file} field is set, this field will be ignored.")
   (image
-   (string prometheus-image)
+  (string prometheus-image)
    "The image to use for the OCI backed Shepherd service.")
   (network
    (maybe-string)
@@ -264,7 +279,7 @@ port inside the container.")
               (if (maybe-value-set? file)
                   file
                   (if (maybe-value-set? record)
-                   record
+                   (pt-serialize-prometheus-configuration 'record record)
                    (raise
                     (G_ "oci-prometheus-configuration: You must set either the file or the record field but both are unset!"))))))
            (container-config
@@ -326,7 +341,7 @@ port inside the container.")
                                 (inherit configuration-record)
                                 (scrape-configs
                                  (append (prometheus-extension-scrape-configs extension)
-                                         (prometheus-configuration-scrape-configs config))))))
+                                         (prometheus-configuration-scrape-configs configuration-record))))))
                              (raise
                               (G_ "The record field of oci-prometheus-configuration must set to be able to extend it!")))))))
                 (description

@@ -20,7 +20,18 @@
             serialize-yaml-maybe-string
             configuration->yaml-block
 
+            format-yaml-list
             format-json-list))
+
+;; Common
+
+(define* (format-squared-list values #:key (quoter "\"") (delimiter ", "))
+  (string-append "["
+               (string-join
+                (map (lambda (s) (string-append quoter s quoter))
+                     values)
+                delimiter)
+               "]"))
 
 ;; Environment variables
 
@@ -47,12 +58,7 @@
   (serialize-environment-variable field-name (if value true-value false-value) #:prefix prefix))
 
 (define (format-json-list values)
-  (string-append "["
-               (string-join
-                (map (lambda (s) (string-append "\"" s "\""))
-                     values)
-                ", ")
-               "]"))
+  (format-squared-list values))
 
 ;; INI
 
@@ -78,34 +84,59 @@
    (string-replace-substring
     (symbol->string field-name) "?" "") "-" "_"))
 
-(define* (serialize-yaml-string field-name value #:key (indentation ""))
-  #~(string-append indentation #$(ini-uglify-field-name field-name) ": " #$value "\n"))
+(define* (serialize-yaml-string field-name value #:key (indentation "") (first? #f))
+  #~(string-append #$indentation (if #$first? "- " "") #$(ini-uglify-field-name field-name) ": " #$value "\n"))
 
-(define* (serialize-yaml-maybe-string field-name value #:key (indentation ""))
+(define* (serialize-yaml-maybe-string field-name value #:key (indentation "") (first? #f))
   (if (maybe-value-set? value)
-      (serialize-yaml-string field-name value #:indentation indentation)
+      (serialize-yaml-string field-name value #:indentation indentation #:first? first?)
       ""))
 
-(define* (configuration->yaml-block config fields #:key (indentation "") (excluded '()))
-    (filter (compose not null?)
-            (map (lambda (f)
-                   (let ((field-name (configuration-field-name f))
-                         (type (configuration-field-type f))
-                         (value ((configuration-field-getter f) config)))
-                     (if (not (member field-name excluded))
-                         (match type
-                           ('string
-                            (serialize-yaml-string field-name value #:indentation indentation))
-                           ('maybe-string
-                            (serialize-yaml-maybe-string field-name value #:indentation indentation))
-                           ('list-of-strings
-                            (serialize-yaml-string field-name
-                                                   (format-json-list value)
-                                                   #:indentation indentation))
-                           (_
-                            (raise
-                             (formatted-message
-                              (G_ "Unknown field type: ~a")
-                              type))))
-                         '())))
-                 fields)))
+(define (format-yaml-list values)
+  (format-squared-list values #:quoter "'"))
+
+(define* (configuration->yaml-block config fields #:key (sequence? #t) (indentation "") (excluded '()))
+  #~(apply string-append
+           (list
+            #$@(filter (compose not null?)
+                       (map (lambda (pair)
+                              (let* ((f (car pair))
+                                     (i (cdr pair))
+                                     (first? (and sequence?
+                                                  (= i 0)))
+                                     (indentation (if (not first?)
+                                                      (string-append indentation "  ")
+                                                      indentation))
+                                     (field-name (configuration-field-name f))
+                                     (type (configuration-field-type f))
+                                     (value ((configuration-field-getter f) config)))
+                                (if (not (member field-name excluded))
+                                    (match type
+                                      ('string
+                                       (serialize-yaml-string field-name value
+                                                              #:indentation indentation
+                                                              #:first? first?))
+                                      ('maybe-string
+                                       (serialize-yaml-maybe-string field-name value
+                                                                    #:indentation indentation
+                                                                    #:first? first?))
+                                      ('list-of-strings
+                                       (serialize-yaml-string field-name
+                                                              (format-yaml-list value)
+                                                              #:indentation indentation
+                                                              #:first? first?))
+                                      (_
+                                       (raise
+                                        (formatted-message
+                                         (G_ "Unknown field type: ~a")
+                                         type))))
+                                    '())))
+                            (let loop ((counter 0)
+                                       (acc '())
+                                       (lst fields))
+                              (if (null? lst)
+                                  acc
+                                  (loop (1+ counter)
+                                        (append acc (list (cons (car lst)
+                                                                counter)))
+                                        (cdr lst)))))))))
