@@ -145,11 +145,11 @@ scrape_configs:
      #$(prometheus-scrape-configuration-extra-content value)))
 
 (define (pt-serialize-list-of-prometheus-scrape-configurations field-name value)
-  (if (> (length value 0)
-         #~(string-append "scrape_configs:\n"
-                          #$@(map serialize-prometheus-scrape-configuration
-                                  value))
-         "")))
+  (if (> (length value) 0)
+      #~(string-append "scrape_configs:\n"
+                       #$@(map serialize-prometheus-scrape-configuration
+                               value))
+      ""))
 
 (define list-of-prometheus-scrape-configurations?
   (list-of prometheus-scrape-configuration?))
