@@ -16,6 +16,7 @@ This channel exposes at `(oci services)` a set of Guix System services for many 
 - Forgejo
 - Grafana
 - Prometheus
+- Prometheus Blackbox Exporter
 - Matrix Conduit
 - meilisearch
 
@@ -24,17 +25,79 @@ These services are supposed to feel like services backed by native Guix packages
 Here's how you would use some of the services from this channel in your `operating-system` record:
 
 ``` scheme
-(use-modules (oci services forgejo)
+(use-modules (oci services prometheus)
              (oci services grafana))
 
 (operating-system
  (services
-  (list (service oci-forgejo-service-type
-                 (forgejo-configuration
-                  (port 3001)))
+        ;; Blackbox exporter OCI backed Guix System service
+  (list (service oci-blackbox-exporter-service-type
+                 (oci-blackbox-exporter-configuration
+                  (network "host")
+                  (file
+                   (plain-file "modules.yml"
+                               "
+modules:
+  http_2xx:
+    prober: http
+    http:
+      preferred_ip_protocol: ip4
+  http_post_2xx:
+    prober: http
+    http:
+      method: POST
+  icmp:
+    prober: icmp
+  icmp_ttl5:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      ttl: 5\n"))))
+
+        ;; Prometheus OCI backed Guix System service
+        (service oci-prometheus-service-type
+                 (oci-prometheus-configuration
+                  (image "prom/prometheus:v2.45.0")
+                  (network "host")
+                  (record
+                   (prometheus-configuration
+                    (global
+                     (prometheus-global-configuration
+                      (scrape-interval "30s")
+                      (scrape-timeout "12s")))
+                    (scrape-configs
+                     (list
+                      (prometheus-scrape-configuration
+                       (job-name "prometheus")
+                       (static-configs
+                        (list (prometheus-static-configuration
+                               (targets '("localhost:9090"))))))
+                      (prometheus-scrape-configuration
+                       (job-name "blackbox")
+                       (static-configs
+                        (list (prometheus-static-configuration
+                               (targets '("localhost:9115"))))))
+                      (prometheus-scrape-configuration
+                       (job-name "blackbox-icmp")
+                       (metrics-path "/probe")
+                       (extra-content "    params:
+      module: [icmp]
+    static_configs:
+      - targets:
+        - 1.1.1.1
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: localhost:9115 # The blackbox exporter's real hostname:port."))))))))
+
+        ;; Grafana OCI backed Guix System service
         (service oci-grafana-service-type
-                 (grafana-configuration
-                  (port 3000))))))
+                 (oci-grafana-configuration
+                  (image "bitnami/grafana:10.1.5")
+                  (network "host"))))))
 ```
 
 ## What is a Guix channel?
