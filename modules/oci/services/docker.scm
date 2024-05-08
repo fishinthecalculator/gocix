@@ -100,6 +100,17 @@ found!")
   ;; '(("/mnt/dir" . "/dir") "/run/current-system/profile:/java")
   (oci-sanitize-mixed-list "volumes" value ":"))
 
+(define (oci-sanitize-shepherd-actions value)
+  (map
+   (lambda (el)
+     (if (shepherd-action? el)
+         el
+         (raise
+          (formatted-message
+           (G_ "shepherd-actions may only be shepherd-action records
+but ~a was found") el))))
+   value))
+
 (define (oci-sanitize-extra-arguments value)
   (define (valid? member)
     (or (string? member)
@@ -280,6 +291,13 @@ documentation for semantics.")
 You can refer to the
 @url{https://docs.docker.com/engine/reference/run/#workdir,upstream}
 documentation for semantics.")
+  (shepherd-actions
+   (list '())
+   "Set the current working for the spawned Shepherd service.
+You can refer to the
+@url{https://docs.docker.com/engine/reference/run/#workdir,upstream}
+documentation for semantics."
+   (sanitizer oci-sanitize-shepherd-actions))
   (extra-arguments
    (list '())
    "A list of strings, gexps or file-like objects that will be directly passed
@@ -439,6 +457,7 @@ operating-system, gexp or file-like records but ~a was found")
                             (oci-image-repository image))))))
 
   (let* ((docker (file-append docker-cli "/bin/docker"))
+         (actions (oci-container-configuration-shepherd-actions config))
          (user (oci-container-configuration-user config))
          (group (oci-container-configuration-group config))
          (host-environment
@@ -465,32 +484,34 @@ operating-system, gexp or file-like records but ~a was found")
                         (if (oci-image? image) name image) "."))
                       (start
                        #~(lambda ()
-                          (when #$(oci-image? image)
-                            (invoke #$loader))
-                          (fork+exec-command
-                           ;; docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
-                           (list #$docker "run" "--rm" "--name" #$name
-                                 #$@options #$@extra-arguments
-                                 #$image-reference #$@command)
-                           #:user #$user
-                           #:group #$group
-                           #:environment-variables
-                           (list #$@host-environment))))
+                           (when #$(oci-image? image)
+                             (invoke #$loader))
+                           (fork+exec-command
+                            ;; docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
+                            (list #$docker "run" "--rm" "--name" #$name
+                                  #$@options #$@extra-arguments
+                                  #$image-reference #$@command)
+                            #:user #$user
+                            #:group #$group
+                            #:environment-variables
+                            (list #$@host-environment))))
                       (stop
                        #~(lambda _
                            (invoke #$docker "rm" "-f" #$name)))
                       (actions
                        (if (oci-image? image)
                            '()
-                           (list
-                            (shepherd-action
-                             (name 'pull)
-                             (documentation
-                              (format #f "Pull ~a's image (~a)."
-                                      name image))
-                             (procedure
-                              #~(lambda _
-                                  (invoke #$docker "pull" #$image))))))))))
+                           (append
+                            (list
+                             (shepherd-action
+                              (name 'pull)
+                              (documentation
+                               (format #f "Pull ~a's image (~a)."
+                                       name image))
+                              (procedure
+                               #~(lambda _
+                                   (invoke #$docker "pull" #$image)))))
+                            actions))))))
 
 (define %oci-container-accounts
   (list (user-account
