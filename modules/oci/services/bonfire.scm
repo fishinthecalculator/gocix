@@ -10,16 +10,18 @@
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
-  #:use-module (ice-9 match)
   #:use-module (sops secrets)
   #:use-module (sops services sops)
   #:use-module (oci services configuration)
   #:use-module (oci services docker)
+  #:use-module (ice-9 match)
+  #:use-module (srfi srfi-1)
   #:export (bonfire-configuration
             bonfire-configuration?
             bonfire-configuration-fields
             bonfire-configuration-flavour
             bonfire-configuration-image
+            bonfire-configuration-port
             bonfire-configuration-public-port
             bonfire-configuration-postgres-host
             bonfire-configuration-postgres-user
@@ -37,6 +39,7 @@
             oci-bonfire-configuration-image
             oci-bonfire-configuration-upload-data-directory
             oci-bonfire-configuration-configuration
+            oci-bonfire-configuration-secrets-directory
             oci-bonfire-configuration-requirement
             oci-bonfire-configuration-secret-key-base
             oci-bonfire-configuration-signing-salt
@@ -102,9 +105,12 @@
   (mail-ssl?
    (boolean #t)
    "Whether to use SSL for the connection to the SMTP server.")
-  (public-port
+  (port
    (string "4000")
-   "The port where Bonfire will be exposed."))
+   "The internal port where Bonfire will be exposed.")
+  (public-port
+   (string "443")
+   "The public port where Bonfire will be exposed."))
 
 (define bonfire-configuration->oci-container-environment
   (lambda (config)
@@ -144,6 +150,9 @@
   (requirement
    (list '(postgresql))
    "A list of Shepherd services that will be waited for before starting Bonfire.")
+  (secrets-directory
+   (string "/run/secrets")
+   "The directory where secrets are looked for.")
   (secret-key-base
    (sops-secret)
    "SECRET_KEY_BASE Bonfire secret.")
@@ -159,6 +168,9 @@
   (postgres-password
    (sops-secret)
    "POSTGRES_PASSWORD Bonfire secret.")
+  (meili-master-key
+   (sops-secret)
+   "MEILI_MASTER_KEY Bonfire secret.")
   (network
    (maybe-string)
    "The docker network where the bonfire container will be attached. When equal
@@ -178,6 +190,20 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
             ;; Setup datadirs
             (mkdir-p upload-data-directory))))))
 
+(define (oci-bonfire-sh-command secrets-specs)
+  "Exports each one of the SECRETS-SPECS as an environment variable
+and returns Bonfire's sh command."
+  (pk 'joined (string-join
+               `("set -e"
+                 "sleep 3"
+                 ,@(map (match-lambda
+                          ((variable secret)
+                           (string-append
+                            "export " variable "=\"$(cat " secret ")\"")))
+                        secrets-specs)
+                 "exec ./bin/bonfire start")
+               "; ")))
+
 (define oci-bonfire-configuration->oci-container-configuration
   (lambda (config)
     (when config
@@ -193,32 +219,38 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
              (network
               (oci-bonfire-configuration-network config))
              (port
-              (bonfire-configuration-public-port bonfire-config))
+              (bonfire-configuration-port bonfire-config))
              (image
               (oci-bonfire-configuration-image config))
              (requirement
               (oci-bonfire-configuration-requirement config))
              (secrets
+              (list (oci-bonfire-configuration-meili-master-key config)
+                    (oci-bonfire-configuration-postgres-password config)
+                    (oci-bonfire-configuration-mail-password config)
+                    (oci-bonfire-configuration-secret-key-base config)
+                    (oci-bonfire-configuration-signing-salt config)
+                    (oci-bonfire-configuration-encryption-salt config)))
+             (secrets-variables
+              '("MEILI_MASTER_KEY"
+                "POSTGRES_PASSWORD"
+                "MAIL_PASSWORD"
+                "SECRET_KEY_BASE"
+                "SIGNING_SALT"
+                "ENCRYPTION_SALT"))
+             (secrets-files
               (map (lambda (s)
-                     (string-append "/run/secrets/" s))
-                   '("meilisearch/master"
-                     "postgres/bonfire"
-                     "smtp/password"
-                     "bonfire/secret_key_base"
-                     "bonfire/signing_salt"
-                     "bonfire/encryption_salt")))
+                     (string-append (oci-bonfire-configuration-secrets-directory config)
+                                    "/" (sops-secret->file-name s)))
+                   secrets))
              (container-config
               (oci-container-configuration
                (image image)
                (requirement `(,@requirement sops-secrets))
                (entrypoint "/bin/sh")
                (command
-                `("-c" "export MEILI_MASTER_KEY=$(cat /run/secrets/meilisearch/master);
-export SECRET_KEY_BASE=$(cat /run/secrets/bonfire/secret_key_base);
-export SIGNING_SALT=$(cat /run/secrets/bonfire/signing_salt);
-export ENCRYPTION_SALT=$(cat /run/secrets/bonfire/encryption_salt);
-export MAIL_PASSWORD=$(cat /run/secrets/smtp/password);
-export POSTGRES_PASSWORD=$(cat /run/secrets/postgres/bonfire); exec ./bin/bonfire start"))
+                `("-c" ,(oci-bonfire-sh-command (zip secrets-variables
+                                                     secrets-files))))
                (environment
                 (append
                  environment
@@ -233,10 +265,7 @@ export POSTGRES_PASSWORD=$(cat /run/secrets/postgres/bonfire); exec ./bin/bonfir
                 `((,port . ,port)))
                (volumes
                 `((,upload-data-directory . "/opt/app/data/uploads")
-                  ("/run/secrets/bonfire" . "/run/secrets/bonfire:ro")
-                  ("/run/secrets/smtp" . "/run/secrets/smtp:ro")
-                  ("/run/secrets/postgres" . "/run/secrets/postgres:ro")
-                  ("/run/secrets/meilisearch" . "/run/secrets/meilisearch:ro"))))))
+                  ,@secrets-files)))))
         (list
          (if (maybe-value-set? network)
              (oci-container-configuration
