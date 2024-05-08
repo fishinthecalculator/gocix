@@ -280,7 +280,7 @@ and returns Bonfire's sh command."
               (delete-duplicates
                (map (lambda (secret-file)
                       (define secret-directory (dirname secret-file))
-                      (string-append dirname ":" dirname ":ro"))
+                      (string-append dirname ":" secret-directory ":ro"))
                     (%bonfire-secrets-files config))))
              (container-config
               (oci-container-configuration
