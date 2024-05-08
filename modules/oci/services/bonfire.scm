@@ -32,12 +32,12 @@
             bonfire-configuration-postgres-host
             bonfire-configuration-postgres-user
             bonfire-configuration-postgres-db
-            bonfire-configuration-postgres-mail-from
-            bonfire-configuration-postgres-mail-domain
-            bonfire-configuration-postgres-mail-server
-            bonfire-configuration-postgres-mail-user
-            bonfire-configuration-postgres-mail-port
-            bonfire-configuration-postgres-mail-ssl?
+            bonfire-configuration-mail-from
+            bonfire-configuration-mail-domain
+            bonfire-configuration-mail-server
+            bonfire-configuration-mail-user
+            bonfire-configuration-mail-port
+            bonfire-configuration-mail-ssl?
 
             oci-bonfire-configuration
             oci-bonfire-configuration?
