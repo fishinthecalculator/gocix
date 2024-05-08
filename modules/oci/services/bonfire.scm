@@ -322,9 +322,9 @@ and returns Bonfire's sh command."
           (first
            (oci-bonfire-configuration->oci-container-configuration
             bonfire-config)))
-         (image (pk 'image  (oci-container-configuration-image config)))
-         (options (pk 'options (oci-container-configuration->options
-                                config))))
+         (image (oci-container-configuration-image config))
+         (options (oci-container-configuration->options
+                   config)))
     (program-file
      "bonfire-iex"
      #~(execlp #$bash #$bash "-c"
