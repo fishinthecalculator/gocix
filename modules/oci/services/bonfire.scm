@@ -70,8 +70,6 @@
 (define (serialize-string field-name value)
   (serialize-environment-variable field-name value))
 
-(define serialize-maybe-string serialize-string)
-
 (define (serialize-boolean field-name value)
   (serialize-boolean-environment-variable field-name value))
 
@@ -121,7 +119,9 @@
 
 (define bonfire-configuration->oci-container-environment
   (lambda (config)
-    (filter (compose not null?)
+    (filter (lambda (variable)
+              (and (not (null? variable))
+                   (not (string-null? variable))))
             (map (lambda (f)
                    (let ((field-name (configuration-field-name f))
                          (type (configuration-field-type f))
@@ -131,7 +131,9 @@
                            ('string
                             (serialize-string field-name value))
                            ('maybe-string
-                            (serialize-maybe-string field-name value))
+                            (if (maybe-value-set? value)
+                                (serialize-string field-name value)
+                                '()))
                            ('list-of-strings
                             (serialize-list-of-strings field-name value))
                            ('boolean
