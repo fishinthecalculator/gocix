@@ -235,7 +235,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
             (mkdir-p upload-data-directory)
 
             (when #$(maybe-value-set? log-file)
-              (let ((logs-directory (dirname log-file)))
+              (let ((logs-directory (dirname #$log-file)))
                 (unless (file-exists? logs-directory)
                   (mkdir-p logs-directory)))))))))
 
