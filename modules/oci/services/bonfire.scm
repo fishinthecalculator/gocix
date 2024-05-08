@@ -329,8 +329,7 @@ and returns Bonfire's sh command."
      "bonfire-iex"
      #~(execlp #$bash #$bash "-c"
                (string-append "docker run -it --rm --name bonfire-iex "
-                              (string-join (list #$@options) " ")
-                              #$image
+                              (string-join (list #$@options #$image) " ")
                               " -c '"
                               #$(oci-bonfire-sh-command secrets-specs
                                                         "bin/bonfire start_iex")
