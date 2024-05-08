@@ -299,7 +299,10 @@ and returns Bonfire's sh command."
                 `((,port . ,port)))
                (volumes
                 `((,upload-data-directory . "/opt/app/data/uploads")
-                  ("/run/secrets" . "/run/secrets:ro")))
+                  ,@(map (lambda (secret-file)
+                           (define secret-directory (dirname secret-file))
+                           (string-append dirname ":" dirname ":ro"))
+                         %bonfire-secrets-files)))
                (log-file log-file))))
         (list
          (if (maybe-value-set? network)
