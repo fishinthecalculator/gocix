@@ -35,6 +35,8 @@
             oci-container-configuration-environment
             oci-container-configuration-image
             oci-container-configuration-provision
+            oci-container-configuration-auto-start?
+            oci-container-configuration-respawn?
             oci-container-configuration-requirement
             oci-container-configuration-network
             oci-container-configuration-ports
@@ -291,6 +293,14 @@ documentation for semantics.")
 You can refer to the
 @url{https://docs.docker.com/engine/reference/run/#workdir,upstream}
 documentation for semantics.")
+  (auto-start?
+   (boolean #t)
+   "Whether this service should be started automatically by the Shepherd.  If it
+is @code{#f} the service has to be started manually with @command{herd start}.")
+  (respawn?
+   (boolean #f)
+   "Whether to restart the service when it stops, for instance when the underlying
+process dies.")
   (shepherd-actions
    (list '())
    "Set the current working for the spawned Shepherd service.
@@ -458,6 +468,8 @@ operating-system, gexp or file-like records but ~a was found")
 
   (let* ((docker (file-append docker-cli "/bin/docker"))
          (actions (oci-container-configuration-shepherd-actions config))
+         (auto-start?
+          (oci-container-configuration-auto-start? config))
          (user (oci-container-configuration-user config))
          (group (oci-container-configuration-group config))
          (host-environment
@@ -465,6 +477,8 @@ operating-system, gexp or file-like records but ~a was found")
          (command (oci-container-configuration-command config))
          (provision (oci-container-configuration-provision config))
          (requirement (oci-container-configuration-requirement config))
+         (respawn?
+          (oci-container-configuration-respawn? config))
          (image (oci-container-configuration-image config))
          (image-reference (oci-image-reference image))
          (loader (if (oci-image? image)
@@ -477,7 +491,8 @@ operating-system, gexp or file-like records but ~a was found")
 
     (shepherd-service (provision `(,(string->symbol name)))
                       (requirement `(dockerd user-processes ,@requirement))
-                      (respawn? #f)
+                      (auto-start? auto-start?)
+                      (respawn? respawn?)
                       (documentation
                        (string-append
                         "Docker backed Shepherd service for "
