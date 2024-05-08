@@ -240,21 +240,26 @@ and returns Bonfire's sh command."
      ,(string-append "exec " command))
    "; "))
 
-(define (bonfire-iex secrets-specs)
-  (let ((bash (file-append bash "/bin/bash")))
+(define (bonfire-iex config secrets-specs)
+  (let ((bash (file-append bash "/bin/bash"))
+        (image (oci-container-configuration-image config))
+        (options (oci-container-configuration->options config)))
     (program-file
      "bonfire-iex"
      #~(execlp #$bash #$bash "-c"
-               (string-append "docker exec -it docker-bonfire /bin/sh -c '"
+               (string-append "docker run --rm --name bonfire-iex "
+                              (string-join (list #$@options) " ")
+                              #$image
+                              " -c '"
                               #$(oci-bonfire-sh-command secrets-specs
                                                         "bin/bonfire start_iex")
                               "'")))))
 
-(define (bonfire-utils-package secrets-specs)
+(define (bonfire-utils-package config secrets-specs)
   (package
     (name "bonfire-utils")
     (version "0.0.0")
-    (source (bonfire-iex secrets-specs))
+    (source (bonfire-iex config secrets-specs))
     (build-system copy-build-system)
     (arguments
      (list #:install-plan #~'(("./bonfire-iex" "/bin/"))))
@@ -326,6 +331,7 @@ for example by starting an interactive shell attached to the Elixir process.")
                                                      (lambda (config)
                                                        (list
                                                         (bonfire-utils-package
+                                                         config
                                                          (%bonfire-secrets-specs config)))))
                                   (service-extension sops-secrets-service-type
                                                      (lambda (config)

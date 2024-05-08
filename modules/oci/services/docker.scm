@@ -44,6 +44,7 @@
             oci-container-configuration-container-user
             oci-container-configuration-workdir
             oci-container-configuration-extra-arguments
+            oci-container-configuration->options
             oci-container-service-type
             oci-container-shepherd-service
             %oci-container-accounts))
