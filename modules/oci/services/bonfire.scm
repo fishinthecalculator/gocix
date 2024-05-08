@@ -180,7 +180,7 @@ is @code{#f} Bonfire has to be started manually with @command{herd start}.")
    "ENCRYPTION_SALT Bonfire secret.")
   (mail-password
    (sops-secret)
-   "MAIL_PASSWORD Bonfire secret.")
+   "MAIL_KEY Bonfire secret.")
   (postgres-password
    (sops-secret)
    "POSTGRES_PASSWORD Bonfire secret.")
@@ -206,7 +206,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
 (define %bonfire-secrets-variables
   '("MEILI_MASTER_KEY"
     "POSTGRES_PASSWORD"
-    "MAIL_PASSWORD"
+    "MAIL_KEY"
     "SECRET_KEY_BASE"
     "SIGNING_SALT"
     "ENCRYPTION_SALT"))
