@@ -276,6 +276,12 @@ and returns Bonfire's sh command."
               (oci-bonfire-configuration-image config))
              (requirement
               (oci-bonfire-configuration-requirement config))
+             (secrets-directories
+              (delete-duplicates
+               (map (lambda (secret-file)
+                      (define secret-directory (dirname secret-file))
+                      (string-append dirname ":" dirname ":ro"))
+                    (%bonfire-secrets-files config))))
              (container-config
               (oci-container-configuration
                (image image)
@@ -299,10 +305,7 @@ and returns Bonfire's sh command."
                 `((,port . ,port)))
                (volumes
                 `((,upload-data-directory . "/opt/app/data/uploads")
-                  ,@(map (lambda (secret-file)
-                           (define secret-directory (dirname secret-file))
-                           (string-append dirname ":" dirname ":ro"))
-                         %bonfire-secrets-files)))
+                  ,@secrets-directories))
                (log-file log-file))))
         (list
          (if (maybe-value-set? network)
