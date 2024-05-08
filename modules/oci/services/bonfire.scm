@@ -6,12 +6,18 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module (gnu services shepherd) ;for shepherd-action
   #:use-module (gnu system shadow)
+  #:use-module (guix build-system copy)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
+  #:use-module ((guix licenses)
+                #:prefix license:)
+  #:use-module (guix packages)
   #:use-module (sops secrets)
   #:use-module (sops services sops)
+  #:use-module (oci self)
   #:use-module (oci services configuration)
   #:use-module (oci services docker)
   #:use-module (ice-9 match)
@@ -41,6 +47,7 @@
             oci-bonfire-configuration-configuration
             oci-bonfire-configuration-secrets-directory
             oci-bonfire-configuration-requirement
+            oci-bonfire-configuration-auto-start?
             oci-bonfire-configuration-secret-key-base
             oci-bonfire-configuration-signing-salt
             oci-bonfire-configuration-encryption-salt
@@ -150,6 +157,10 @@
   (requirement
    (list '(postgresql))
    "A list of Shepherd services that will be waited for before starting Bonfire.")
+  (auto-start?
+   (boolean #t)
+   "Whether Bonfire should be started automatically by the Shepherd.  If it
+is @code{#f} Bonfire has to be started manually with @command{herd start}.")
   (secrets-directory
    (string "/run/secrets")
    "The directory where secrets are looked for.")
@@ -179,6 +190,32 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
    (list '())
    "A list of pairs representing any extra environment variable that should be set inside the container. Refer to the @uref{mainline, https://bonfirenetworks.org/docs/deploy/} documentation for more details."))
 
+(define (%bonfire-secrets config)
+  (list (oci-bonfire-configuration-meili-master-key config)
+        (oci-bonfire-configuration-postgres-password config)
+        (oci-bonfire-configuration-mail-password config)
+        (oci-bonfire-configuration-secret-key-base config)
+        (oci-bonfire-configuration-signing-salt config)
+        (oci-bonfire-configuration-encryption-salt config)))
+
+(define %bonfire-secrets-variables
+  '("MEILI_MASTER_KEY"
+    "POSTGRES_PASSWORD"
+    "MAIL_PASSWORD"
+    "SECRET_KEY_BASE"
+    "SIGNING_SALT"
+    "ENCRYPTION_SALT"))
+
+(define (%bonfire-secrets-files config)
+  (map (lambda (s)
+         (string-append (oci-bonfire-configuration-secrets-directory config)
+                        "/" (sops-secret->file-name s)))
+       (%bonfire-secrets config)))
+
+(define (%bonfire-secrets-specs config)
+  (zip %bonfire-secrets-variables
+       (%bonfire-secrets-files config)))
+
 (define (%bonfire-activation config)
   "Return an activation gexp for Bonfire."
   (when config
@@ -190,19 +227,45 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
             ;; Setup datadirs
             (mkdir-p upload-data-directory))))))
 
-(define (oci-bonfire-sh-command secrets-specs)
+(define* (oci-bonfire-sh-command secrets-specs command)
   "Exports each one of the SECRETS-SPECS as an environment variable
 and returns Bonfire's sh command."
-  (pk 'joined (string-join
-               `("set -e"
-                 "sleep 3"
-                 ,@(map (match-lambda
-                          ((variable secret)
-                           (string-append
-                            "export " variable "=\"$(cat " secret ")\"")))
-                        secrets-specs)
-                 "exec ./bin/bonfire start")
-               "; ")))
+  (string-join
+   `("set -e"
+     ,@(map (match-lambda
+              ((variable secret)
+               (string-append
+                "export " variable "=\"$(cat " secret ")\"")))
+            secrets-specs)
+     ,(string-append "exec " command))
+   "; "))
+
+(define (bonfire-iex secrets-specs)
+  (let ((bash (file-append bash "/bin/bash")))
+    (program-file
+     "bonfire-iex"
+     #~(execlp #$bash #$bash "-c"
+               (string-append "docker exec -it docker-bonfire /bin/sh -c '"
+                              #$(oci-bonfire-sh-command secrets-specs
+                                                        "bin/bonfire start_iex")
+                              "'")))))
+
+(define (bonfire-utils-package secrets-specs)
+  (package
+    (name "bonfire-utils")
+    (version "0.0.0")
+    (source (bonfire-iex secrets-specs))
+    (build-system copy-build-system)
+    (arguments
+     (list #:install-plan #~'(("./bonfire-iex" "/bin/"))))
+    (home-page %oci-channel-url)
+    (synopsis
+     "Easily interact from the CLI with gocix' Bonfire service.")
+    (description
+     "This package provides a simple wrapper around the @code{bonfire} OCI backed Shepherd service.
+It allows for easily interacting with the Bonfire instance,
+for example by starting an interactive shell attached to the Elixir process.")
+    (license license:gpl3+)))
 
 (define oci-bonfire-configuration->oci-container-configuration
   (lambda (config)
@@ -224,33 +287,14 @@ and returns Bonfire's sh command."
               (oci-bonfire-configuration-image config))
              (requirement
               (oci-bonfire-configuration-requirement config))
-             (secrets
-              (list (oci-bonfire-configuration-meili-master-key config)
-                    (oci-bonfire-configuration-postgres-password config)
-                    (oci-bonfire-configuration-mail-password config)
-                    (oci-bonfire-configuration-secret-key-base config)
-                    (oci-bonfire-configuration-signing-salt config)
-                    (oci-bonfire-configuration-encryption-salt config)))
-             (secrets-variables
-              '("MEILI_MASTER_KEY"
-                "POSTGRES_PASSWORD"
-                "MAIL_PASSWORD"
-                "SECRET_KEY_BASE"
-                "SIGNING_SALT"
-                "ENCRYPTION_SALT"))
-             (secrets-files
-              (map (lambda (s)
-                     (string-append (oci-bonfire-configuration-secrets-directory config)
-                                    "/" (sops-secret->file-name s)))
-                   secrets))
              (container-config
               (oci-container-configuration
                (image image)
                (requirement `(,@requirement sops-secrets))
                (entrypoint "/bin/sh")
                (command
-                `("-c" ,(oci-bonfire-sh-command (zip secrets-variables
-                                                     secrets-files))))
+                `("-c" ,(oci-bonfire-sh-command (%bonfire-secrets-specs config)
+                                                "./bin/bonfire start")))
                (environment
                 (append
                  environment
@@ -265,7 +309,7 @@ and returns Bonfire's sh command."
                 `((,port . ,port)))
                (volumes
                 `((,upload-data-directory . "/opt/app/data/uploads")
-                  ,@secrets-files)))))
+                  ,@(%bonfire-secrets-files config))))))
         (list
          (if (maybe-value-set? network)
              (oci-container-configuration
@@ -278,13 +322,14 @@ and returns Bonfire's sh command."
   (service-type (name 'bonfire)
                 (extensions (list (service-extension oci-container-service-type
                                                      oci-bonfire-configuration->oci-container-configuration)
-                                  (service-extension sops-secrets-service-type
+                                  (service-extension profile-service-type
                                                      (lambda (config)
                                                        (list
-                                                        (oci-bonfire-configuration-secret-key-base config)
-                                                        (oci-bonfire-configuration-signing-salt config)
-                                                        (oci-bonfire-configuration-encryption-salt config)
-                                                        (oci-bonfire-configuration-postgres-password config))))
+                                                        (bonfire-utils-package
+                                                         (%bonfire-secrets-specs config)))))
+                                  (service-extension sops-secrets-service-type
+                                                     (lambda (config)
+                                                       (%bonfire-secrets config)))
                                   (service-extension activation-service-type
                                                      %bonfire-activation)))
                 (default-value #f)
