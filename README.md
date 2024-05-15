@@ -13,12 +13,13 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 
 This channel exposes at `(oci services)` a set of Guix System services for many useful applications, such as:
 
+- [Bonfire Classic](https://bonfirenetworks.org/app/classic/)
 - Forgejo
 - Grafana
-- Prometheus
-- Prometheus Blackbox Exporter
 - Matrix Conduit
 - meilisearch
+- Prometheus
+- Prometheus Blackbox Exporter
 
 These services are supposed to feel like services backed by native Guix packages, please report any inconsistency you may find.
 
