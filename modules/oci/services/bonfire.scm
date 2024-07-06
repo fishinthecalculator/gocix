@@ -6,6 +6,7 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module (gnu services docker)
   #:use-module (gnu services shepherd) ;for shepherd-action
   #:use-module (gnu system shadow)
   #:use-module (guix build-system copy)
@@ -19,7 +20,6 @@
   #:use-module (sops services sops)
   #:use-module (oci self)
   #:use-module (oci services configuration)
-  #:use-module (oci services docker)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1)
   #:export (bonfire-configuration
