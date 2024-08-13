@@ -114,7 +114,7 @@ To configure Guix for using this channel you need to create a `.config/guix/chan
 ``` scheme
 (cons* (channel
         (name 'gocix)
-        (url "https://git.sr.ht/~fishinthecalculator/gocix")
+        (url "https://github.com/fishinthecalculator/gocix")
         (branch "main")
         ;; Enable signature verification:
         (introduction
@@ -130,7 +130,7 @@ Otherwise, if you already have a `.config/guix/channels.scm` you can simply prep
 ``` scheme
 (cons* (channel
         (name 'gocix)
-        (url "https://git.sr.ht/~fishinthecalculator/gocix")
+        (url "https://github.com/fishinthecalculator/gocix")
         (branch "main")
         ;; Enable signature verification:
         (introduction
@@ -151,8 +151,6 @@ Otherwise, if you already have a `.config/guix/channels.scm` you can simply prep
 ```
 
 ## Contributing
-
-All contributions are welcome. To contribute send your patches to [~fishinthecalculator/public-inbox@lists.sr.ht](https://lists.sr.ht/~fishinthecalculator/public-inbox).
 
 If you have commit access please remember to setup the authentication hook with
 

@@ -3,6 +3,7 @@
  (version 0)                            ;file format version
  (directory "modules")
  (news-file "etc/news.txt")
+ (url "https://github.com/fishinthecalculator/gocix")
  (dependencies
   (channel
    (name sops-guix)

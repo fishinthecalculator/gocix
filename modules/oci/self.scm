@@ -3,4 +3,4 @@
 
 (define-module (oci self))
 
-(define-public %oci-channel-url "https://git.sr.ht/~fishinthecalculator/gocix")
+(define-public %oci-channel-url "https://github.com/fishinthecalculator/gocix")
