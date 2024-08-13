@@ -1,5 +1,10 @@
 (channel-news
   (version 0)
+  (entry (commit "0085668296d40f8f8ee7b93e41fc6c30dd045708")
+         (title (en "Move channel to Github.")
+                (it "Migrazione a Github."))
+         (body (en "This channel is moving over to https://github.com/fishinthecalculator/gocix to lower the bar for contributions.")
+               (it "Questo channel si trasferisce su https://github.com/fishinthecalculator/gocix per semplificare il processo di contribuzione.")))
   (entry (commit "26669a0230e1d8451f6209f60e03fb90ba8909e8")
          (title (en "Breaking change for @code{oci-prometheus-configuration} users."))
          (body (en "The @code{oci-prometheus-configuration} has been updated in a breaking way.  The reason for this change is that its default were always not general enough to be in gocix and were always a near copy of a configuration I had lying around.
