@@ -97,10 +97,10 @@
    "SMTP domain of the mail server.")
   (mail-domain
    (maybe-string)
-   "The bit after @ in your email.")
+   "The bit after @@ in your email.")
   (mail-user
    (maybe-string)
-   "The bit before @ in your email.")
+   "The bit before @@ in your email.")
   (mail-from
    (maybe-string)
    "The email address from which Bonfire will send emails.")
