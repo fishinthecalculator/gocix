@@ -1,0 +1,55 @@
+
+@c %start of fragment
+
+@deftp {Data Type} conduit-configuration
+Available @code{conduit-configuration} fields are:
+
+@table @asis
+@item @code{image} (default: @code{"matrixconduit/matrix-conduit:v0.6.0"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{port} (default: @code{"6167"}) (type: string)
+The port where conduit will be exposed.
+
+@item @code{server-name} (type: maybe-string)
+The fully qualified domain name where conduit will be exposed.
+
+@item @code{database-path} (default: @code{"/var/lib/matrix-conduit"}) (type: string)
+The directory where conduit writes state.
+
+@item @code{database-backend} (default: @code{"rocksdb"}) (type: string)
+The database backend used by conduit.
+
+@item @code{max-request-size} (default: @code{"20000000"}) (type: string)
+Expressed in bytes.  The default is ~20MB.
+
+@item @code{allow-registration?} (default: @code{#f}) (type: boolean)
+Whether to allow new users to sign up to the conduit instance.
+
+@item @code{allow-federation?} (default: @code{#t}) (type: boolean)
+Whether to federate the conduit instance with others in the Matrix
+network.
+
+@item @code{allow-check-for-updates?} (default: @code{#f}) (type: boolean)
+Whether conduit will look for new updates.
+
+@item @code{trusted-servers} (default: @code{("matrix.org")}) (type: list-of-strings)
+The list of trusted Matrix servers.
+
+@item @code{max-concurrent-requests} (default: @code{"100"}) (type: string)
+The maximum number of concurrent requests handled concurrently by
+conduit.
+
+@item @code{address} (default: @code{"0.0.0.0"}) (type: string)
+The ip address where conduit will bind for connections.
+
+@item @code{log} (default: @code{"warn,rocket=off,_=off,sled=off"}) (type: string)
+The logging configuration for conduit.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

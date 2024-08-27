@@ -1,0 +1,29 @@
+
+@c %start of fragment
+
+@deftp {Data Type} grafana-smtp-configuration
+Available @code{grafana-smtp-configuration} fields are:
+
+@table @asis
+@item @code{enabled?} (default: @code{#f}) (type: boolean)
+Whether to enable Grafana's email alerting.
+
+@item @code{host} (default: @code{"smtp.example.org:587"}) (type: string)
+The connection string representing your SMTP server.
+
+@item @code{user} (default: @code{"you@@example.org"}) (type: string)
+The email used to authenticate with the SMTP server.
+
+@item @code{password} (default: @code{""}) (type: string)
+The password used to authenticate with the SMTP server.
+
+@item @code{from-address} (default: @code{"alert@@example.org"}) (type: string)
+The sender of the email alerts Grafana will send.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

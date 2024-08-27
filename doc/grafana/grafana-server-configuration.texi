@@ -1,0 +1,23 @@
+
+@c %start of fragment
+
+@deftp {Data Type} grafana-server-configuration
+Available @code{grafana-server-configuration} fields are:
+
+@table @asis
+@item @code{domain} (default: @code{"example.org"}) (type: string)
+The public host where grafana will be exposed.
+
+@item @code{root-url} (default: @code{"%(protocol)s://%(domain)s:%(http_port)s/"}) (type: string)
+The url where grafana will be exposed.
+
+@item @code{serve-from-sub-path?} (default: @code{#f}) (type: boolean)
+The image to use for the OCI backed Shepherd service.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

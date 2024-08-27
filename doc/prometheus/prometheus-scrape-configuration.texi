@@ -1,0 +1,27 @@
+
+@c %start of fragment
+
+@deftp {Data Type} prometheus-scrape-configuration
+Available @code{prometheus-scrape-configuration} fields are:
+
+@table @asis
+@item @code{job-name} (type: string)
+The name of the scrape job.
+
+@item @code{metrics-path} (default: @code{"/metrics"}) (type: string)
+The path where this job will scrape metrics.
+
+@item @code{static-configs} (default: @code{()}) (type: list-of-prometheus-static-configurations)
+The list of static configurations for this job.
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Everything you want to manually append to this @code{scrape_config}
+field.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

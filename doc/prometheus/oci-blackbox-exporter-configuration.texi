@@ -1,0 +1,31 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-blackbox-exporter-configuration
+Available @code{oci-blackbox-exporter-configuration} fields are:
+
+@table @asis
+@item @code{datadir} (default: @code{"/var/lib/blackbox-exporter"}) (type: string)
+The directory where blackbox-exporter writes state.
+
+@item @code{file} (type: file-like)
+The configuration file to use for Blackbox Exporter.
+
+@item @code{image} (default: @code{"bitnami/blackbox-exporter:0.24.0"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{network} (type: maybe-string)
+The docker network where the grafana container will be attached.  When
+equal to "host" the @code{port} field will be ignored.
+
+@item @code{port} (default: @code{"9115"}) (type: string)
+This host port will be mapped onto the HTTP port inside the container.
+If @code{network} is set this field will be ignored.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

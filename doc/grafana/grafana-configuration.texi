@@ -1,0 +1,23 @@
+
+@c %start of fragment
+
+@deftp {Data Type} grafana-configuration
+Available @code{grafana-configuration} fields are:
+
+@table @asis
+@item @code{server} (type: grafana-server-configuration)
+grafana.ini's [server] section.
+
+@item @code{smtp} (type: grafana-smtp-configuration)
+grafana.ini's [smtp] section.
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Everything you want to manually add to grafana.ini.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

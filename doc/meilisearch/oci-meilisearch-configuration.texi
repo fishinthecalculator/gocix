@@ -1,0 +1,42 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-meilisearch-configuration
+Available @code{oci-meilisearch-configuration} fields are:
+
+@table @asis
+@item @code{image} (default: @code{"getmeili/meilisearch:v1.6.0"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{port} (default: @code{"7700"}) (type: string)
+The port where meilisearch will be exposed.
+
+@item @code{master-key} (type: sops-secret)
+Sets the instance's master key, automatically protecting all routes
+except GET /health.  This means you will need a valid API key to access
+all other endpoints.
+
+@item @code{datadir} (default: @code{"/var/lib/meilisearch/meili_data"}) (type: string)
+The directory where meilisearch writes state.
+
+@item @code{database-path} (default: @code{"/var/lib/meilisearch/data.ms"}) (type: string)
+The directory used by meilisearch database to store state.
+
+@item @code{network} (type: maybe-string)
+The docker network where the meilisearch container will be attached.
+When equal to "host" the @code{port} field will not be mapped into the
+container's one.
+
+@item @code{extra-variables} (default: @code{()}) (type: list)
+A list of pairs representing any extra environment variable that should
+be set inside the container.  Refer to the
+@uref{upstream,https://www.meilisearch.com/docs/learn/configuration/instance_options}
+documentation for more details.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

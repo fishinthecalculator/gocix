@@ -1,0 +1,23 @@
+
+@c %start of fragment
+
+@deftp {Data Type} prometheus-global-configuration
+Available @code{prometheus-global-configuration} fields are:
+
+@table @asis
+@item @code{scrape-interval} (default: @code{"30s"}) (type: string)
+Prometheus' @code{scrape_interval} field.
+
+@item @code{scrape-timeout} (default: @code{"12s"}) (type: string)
+Prometheus' @code{scrape_timeout} field.
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Everything you want to manually append to the @code{global} section.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

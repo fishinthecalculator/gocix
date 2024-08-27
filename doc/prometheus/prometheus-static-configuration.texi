@@ -1,0 +1,21 @@
+
+@c %start of fragment
+
+@deftp {Data Type} prometheus-static-configuration
+Available @code{prometheus-static-configuration} fields are:
+
+@table @asis
+@item @code{targets} (default: @code{()}) (type: list-of-strings)
+The target hosts that will be scraped for metrics.
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Everything you want to manually append to this @code{static_config}
+field.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

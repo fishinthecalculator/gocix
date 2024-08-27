@@ -1,0 +1,31 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-grafana-configuration
+Available @code{oci-grafana-configuration} fields are:
+
+@table @asis
+@item @code{datadir} (default: @code{"/var/lib/grafana"}) (type: string)
+The directory where grafana writes state.
+
+@item @code{image} (default: @code{"bitnami/grafana:10.1.5"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{port} (default: @code{"3000"}) (type: string)
+This host port will be mapped onto the Grafana configured port inside
+the container.
+
+@item @code{grafana.ini} (type: grafana-configuration)
+This field will be serialized as graphana.ini.
+
+@item @code{network} (type: maybe-string)
+The docker network where the grafana container will be attached.  When
+equal to "host" the @code{port} field will be ignored.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

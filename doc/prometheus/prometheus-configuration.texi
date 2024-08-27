@@ -1,0 +1,23 @@
+
+@c %start of fragment
+
+@deftp {Data Type} prometheus-configuration
+Available @code{prometheus-configuration} fields are:
+
+@table @asis
+@item @code{global} (type: prometheus-global-configuration)
+Prometheus' @code{global} section.
+
+@item @code{scrape-configs} (default: @code{()}) (type: list-of-prometheus-scrape-configurations)
+Prometheus' @code{scrape_configs} section.
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Everything you want to manually append to the configuration file.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

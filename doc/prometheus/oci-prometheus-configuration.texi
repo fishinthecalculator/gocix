@@ -1,0 +1,39 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-prometheus-configuration
+Available @code{oci-prometheus-configuration} fields are:
+
+@table @asis
+@item @code{datadir} (default: @code{"/var/lib/prometheus"}) (type: string)
+The directory where prometheus writes state.
+
+@item @code{file} (type: maybe-file-like)
+The configuration file to use for the OCI backed Shepherd service.
+
+@item @code{record} (type: maybe-prometheus-configuration)
+The configuration record to use for the OCI backed Shepherd service.  If
+the @code{file} field is set, this field will be ignored.
+
+@item @code{image} (default: @code{"prom/prometheus:v2.45.0"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{network} (type: maybe-string)
+The docker network where the grafana container will be attached.  When
+equal to "host" the @code{port} field will be ignored.
+
+@item @code{port} (default: @code{"9000"}) (type: string)
+This host port will be mapped onto the Prometheus dashboard configured
+port inside the container.
+
+@item @code{metrics-port} (default: @code{"9090"}) (type: string)
+This host port will be mapped onto the Prometheus health endpoint
+configured port inside the container.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

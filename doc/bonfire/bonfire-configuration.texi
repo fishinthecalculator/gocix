@@ -1,0 +1,55 @@
+
+@c %start of fragment
+
+@deftp {Data Type} bonfire-configuration
+Available @code{bonfire-configuration} fields are:
+
+@table @asis
+@item @code{flavour} (default: @code{"classic"}) (type: string)
+The flavour of the Bonfire instance.  You can refer to @uref{mainline's
+images,https://bonfirenetworks.org/docs} for details.
+
+@item @code{hostname} (type: string)
+The domain name where Bonfire will be exposed.
+
+@item @code{postgres-host} (default: @code{"localhost"}) (type: string)
+The hostname where postgres will be looked for.
+
+@item @code{postgres-db} (default: @code{"bonfire_db"}) (type: string)
+The database name of the Bonfire's Postgres database.
+
+@item @code{postgres-user} (default: @code{"bonfire"}) (type: string)
+The user name that Bonfire will use to authenticate against the Postgres
+database.
+
+@item @code{mail-server} (type: maybe-string)
+SMTP domain of the mail server.
+
+@item @code{mail-domain} (type: maybe-string)
+The bit after @@ in your email.
+
+@item @code{mail-user} (type: maybe-string)
+The bit before @@ in your email.
+
+@item @code{mail-from} (type: maybe-string)
+The email address from which Bonfire will send emails.
+
+@item @code{mail-port} (default: @code{"465"}) (type: string)
+The port of the SMTP service on your mail server.
+
+@item @code{mail-ssl?} (default: @code{#t}) (type: boolean)
+Whether to use SSL for the connection to the SMTP server.
+
+@item @code{port} (default: @code{"4000"}) (type: string)
+The internal port where Bonfire will be exposed.
+
+@item @code{public-port} (default: @code{"443"}) (type: string)
+The public port where Bonfire will be exposed.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

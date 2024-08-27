@@ -1,28 +1,66 @@
-#!/usr/bin/env -S guix repl -L ./modules --
-!#
+#!/usr/bin/env bash
 
-(use-modules (gnu services configuration)
-             (oci services conduit)
-             (oci services grafana)
-             (oci services prometheus))
+set -euo pipefail
 
-(display
- (generate-documentation
-   `((conduit-configuration ,conduit-configuration-fields))
-   'conduit-configuration))
-(newline)
+doc_dir="$(pwd)/doc"
+out_dir="$(mktemp -d)"
+guile_script="${out_dir}/print-docs.scm"
 
-(display
- (generate-documentation
-   `((oci-grafana-configuration ,oci-grafana-configuration-fields)
-     (grafana-configuration ,grafana-configuration-fields)
-     (grafana-server-configuration ,grafana-server-configuration-fields)
-     (grafana-smtp-configuration ,grafana-smtp-configuration-fields))
-   'oci-grafana-configuration))
-(newline)
+format_modules() {
+  printf '%s' "$*" |
+    # hack to avoid broken wordpress
+    grep -v wordpress |
+    while read -r l; do
+      printf '             %s' "$l" | cut -d$'\t' -f 1
+    done | sort -u
+}
 
-(display
- (generate-documentation
-   `((oci-prometheus-configuration ,oci-prometheus-configuration-fields))
-   'oci-prometheus-configuration))
-(newline)
+print_configurations() {
+  grep -r define-configuration ./modules |
+    sed -E 's/^.*modules\/(.+)\.scm:\(define-configuration(\/no-serialization)? (.*)$/\1\t\3/' |
+    sort -u |
+    while read -r line; do
+      module="($(printf '%s' "$line" | awk '{ print $1 }' | sed -E 's/\// /g'))"
+      name="$(printf '%s' "$line" | awk '{ print $2 }')"
+      printf "%s\t%s\n" "${module}" "${name}"
+    done
+}
+
+configurations="$(print_configurations)"
+modules="$(format_modules "${configurations}")"
+
+format_guile_script() {
+  name="$1"
+  # Header
+  printf '#!/usr/bin/env -S guix repl -L ./modules --\n!#\n(use-modules (gnu services configuration)\n'
+
+  # Imported modules
+  printf '%s)\n\n' "${modules}"
+
+  # Body
+  printf '(display\n (generate-documentation\n   `(('
+  printf "%s ,%s-fields))\n   '%s" "$name" "$name" "$name"
+  printf '))\n(newline)\n\n'
+
+}
+
+generate_documentation() {
+  printf '%s' "$*" |
+    # hack to avoid broken wordpress
+    grep -v wordpress |
+    while read -r line; do
+      var_name="$(printf '%s' "$line" | cut -d$'\t' -f 2)"
+      module_name="$(printf '%s' "$line" | cut -d$'\t' -f 1 | sed -E 's/^.* ([^ ]+)\)$/\1/')"
+      doc_named="${doc_dir}/${module_name}/${var_name}.texi"
+      guile_script="${out_dir}/${var_name}-print-docs.scm"
+
+      format_guile_script "${var_name}" > "${guile_script}"
+
+      mkdir -p "$(dirname "${doc_named}")"
+      chmod +x "${guile_script}"
+      echo Creating "${doc_named}"...
+      "${guile_script}" > "${doc_named}"
+    done
+}
+
+generate_documentation "${names}"

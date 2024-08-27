@@ -1,0 +1,69 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-bonfire-configuration
+Available @code{oci-bonfire-configuration} fields are:
+
+@table @asis
+@item @code{image} (default: @code{"bonfirenetworks/bonfire:0.9.10-beta.70-classic-amd64"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{upload-data-directory} (default: @code{"/var/lib/bonfire/uploads"}) (type: string)
+Upload data directory.
+
+@item @code{configuration} (type: bonfire-configuration)
+A bonfire-configuration record used to configure the Bonfire instance.
+
+@item @code{requirement} (default: @code{(postgresql)}) (type: list)
+A list of Shepherd services that will be waited for before starting
+Bonfire.
+
+@item @code{log-file} (type: maybe-string)
+When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is
+created if it does not exist, otherwise it is appended to.
+
+@item @code{auto-start?} (default: @code{#t}) (type: boolean)
+Whether Bonfire should be started automatically by the Shepherd.  If it
+is @code{#f} Bonfire has to be started manually with @command{herd
+start}.
+
+@item @code{secrets-directory} (default: @code{"/run/secrets"}) (type: string)
+The directory where secrets are looked for.
+
+@item @code{secret-key-base} (type: sops-secret)
+SECRET_KEY_BASE Bonfire secret.
+
+@item @code{signing-salt} (type: sops-secret)
+SIGNING_SALT Bonfire secret.
+
+@item @code{encryption-salt} (type: sops-secret)
+ENCRYPTION_SALT Bonfire secret.
+
+@item @code{mail-password} (type: sops-secret)
+MAIL_KEY Bonfire secret.
+
+@item @code{postgres-password} (type: sops-secret)
+POSTGRES_PASSWORD Bonfire secret.
+
+@item @code{meili-master-key} (type: sops-secret)
+MEILI_MASTER_KEY Bonfire secret.
+
+@item @code{network} (type: maybe-string)
+The docker network where the bonfire container will be attached.  When
+equal to "host" the @code{port} field will not be mapped into the
+container's one.
+
+@item @code{extra-variables} (default: @code{()}) (type: list)
+A list of pairs representing any extra environment variable that should
+be set inside the container.  Refer to the
+@uref{mainline,https://bonfirenetworks.org/docs/deploy/} documentation
+for more details.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+
