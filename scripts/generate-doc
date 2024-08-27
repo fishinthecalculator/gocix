@@ -63,4 +63,4 @@ generate_documentation() {
     done
 }
 
-generate_documentation "${names}"
+generate_documentation "${configurations}"
