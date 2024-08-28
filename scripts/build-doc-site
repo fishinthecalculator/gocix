@@ -4,5 +4,6 @@ set -eu
 
 cd doc
 guix shell -m ./manifest.scm -- texi2html -noheaders gocix.texi
-guix shell -m ./manifest.scm -- ../scripts/clean-doc gocix.html > README.md
-rm gocix.html
+guix shell -m ./manifest.scm -- ../scripts/clean-doc gocix.html > middle.html
+guix shell -m ./manifest.scm -- pandoc -t gfm middle.html > README.md
+rm gocix.html middle.html
