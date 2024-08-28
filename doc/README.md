@@ -74,14 +74,6 @@ copy of the license is included in the section entitled &ldquo;GNU Free
 Documentation License&rdquo;.
 </p><hr>
 <a name="Top"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[ &lt; ]</td>
-<td valign="middle" align="left">[<a href="#Introduction" title="Next section in reading order"> &gt; </a>]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="gocix"></a>
 <h1 class="top">gocix</h1>
 
@@ -96,21 +88,6 @@ Documentation License&rdquo;.
 
 <hr size="6">
 <a name="Introduction"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Top" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Top" title="Previous section in reading order"> &lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Top" title="Up section"> Up </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Next section in reading order"> &gt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Next chapter"> &gt;&gt; </a>]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="Introduction-1"></a>
 <h1 class="chapter">1 Introduction</h1>
 
@@ -137,21 +114,6 @@ Documentation License&rdquo;.
 
 <hr>
 <a name="Services"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Introduction" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Introduction" title="Previous section in reading order"> &lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Top" title="Up section"> Up </a>]</td>
-<td valign="middle" align="left">[<a href="#Bonfire" title="Next section in reading order"> &gt; </a>]</td>
-<td valign="middle" align="left">[ &gt;&gt; ]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="Services-1"></a>
 <h1 class="chapter">2 Services</h1>
 
@@ -174,21 +136,6 @@ Documentation License&rdquo;.
 
 <hr>
 <a name="Bonfire"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Previous section in reading order"> &lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
-<td valign="middle" align="left">[<a href="#Conduit" title="Next section in reading order"> &gt; </a>]</td>
-<td valign="middle" align="left">[ &gt;&gt; ]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="Bonfire-1"></a>
 <h2 class="section">2.1 Bonfire</h2>
 
@@ -347,21 +294,6 @@ for more details.
 
 <hr>
 <a name="Conduit"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Bonfire" title="Previous section in reading order"> &lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
-<td valign="middle" align="left">[<a href="#Forgejo" title="Next section in reading order"> &gt; </a>]</td>
-<td valign="middle" align="left">[ &gt;&gt; ]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="Conduit-1"></a>
 <h2 class="section">2.2 Conduit</h2>
 
@@ -435,21 +367,6 @@ conduit.
 
 <hr>
 <a name="Forgejo"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Conduit" title="Previous section in reading order"> &lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
-<td valign="middle" align="left">[<a href="#Grafana" title="Next section in reading order"> &gt; </a>]</td>
-<td valign="middle" align="left">[ &gt;&gt; ]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="Forgejo-1"></a>
 <h2 class="section">2.3 Forgejo</h2>
 
@@ -497,21 +414,6 @@ conduit.
 
 <hr>
 <a name="Grafana"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Forgejo" title="Previous section in reading order"> &lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
-<td valign="middle" align="left">[<a href="#Meilisearch" title="Next section in reading order"> &gt; </a>]</td>
-<td valign="middle" align="left">[ &gt;&gt; ]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="Grafana-1"></a>
 <h2 class="section">2.4 Grafana</h2>
 
@@ -636,21 +538,6 @@ equal to &quot;host&quot; the <code>port</code> field will be ignored.
 
 <hr>
 <a name="Meilisearch"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Grafana" title="Previous section in reading order"> &lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
-<td valign="middle" align="left">[<a href="#Prometheus" title="Next section in reading order"> &gt; </a>]</td>
-<td valign="middle" align="left">[ &gt;&gt; ]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="Meilisearch-1"></a>
 <h2 class="section">2.5 Meilisearch</h2>
 
@@ -705,21 +592,6 @@ documentation for more details.
 
 <hr>
 <a name="Prometheus"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Meilisearch" title="Previous section in reading order"> &lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
-<td valign="middle" align="left">[<a href="#Prometheus-Blackbox-Exporter" title="Next section in reading order"> &gt; </a>]</td>
-<td valign="middle" align="left">[ &gt;&gt; ]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="Prometheus-1"></a>
 <h2 class="section">2.6 Prometheus</h2>
 
@@ -873,21 +745,6 @@ field.
 
 <hr>
 <a name="Prometheus-Blackbox-Exporter"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Prometheus" title="Previous section in reading order"> &lt; </a>]</td>
-<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
-<td valign="middle" align="left">[ &gt; ]</td>
-<td valign="middle" align="left">[ &gt;&gt; ]</td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left"> &nbsp; </td>
-<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <a name="Prometheus-Blackbox-Exporter-1"></a>
 <h2 class="section">2.7 Prometheus Blackbox Exporter</h2>
 
@@ -929,12 +786,6 @@ If <code>network</code> is set this field will be ignored.
 
 <hr size="6">
 <a name="SEC_Contents"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
 <h1>Table of Contents</h1>
 
 <div class="contents">
@@ -954,116 +805,6 @@ If <code>network</code> is set this field will be ignored.
 </li>
 </ul>
 </div>
-<hr>
-<a name="SEC_About"></a>
-<table class="header" cellpadding="1" cellspacing="1" border="0">
-<tr><td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
-<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
-<td valign="middle" align="left">[Index]</td>
-<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
-</tr></table>
-<h1>About This Document</h1>
-
-<p>
-  This document was generated on <i>August 28, 2024</i> using <a href="http://www.nongnu.org/texi2html/"><i>texi2html 5.0</i></a>.
-</p>
-<p>
-  The buttons in the navigation panels have the following meaning:
-</p>
-<table border="1">
-  <tr>
-    <th> Button </th>
-    <th> Name </th>
-    <th> Go to </th>
-    <th> From 1.2.3 go to</th>
-  </tr>
-  <tr>
-    <td align="center"> [ &lt;&lt; ] </td>
-    <td align="center">FastBack</td>
-    <td>Beginning of this chapter or previous chapter</td>
-    <td>1</td>
-  </tr>
-  <tr>
-    <td align="center"> [ &lt; ] </td>
-    <td align="center">Back</td>
-    <td>Previous section in reading order</td>
-    <td>1.2.2</td>
-  </tr>
-  <tr>
-    <td align="center"> [ Up ] </td>
-    <td align="center">Up</td>
-    <td>Up section</td>
-    <td>1.2</td>
-  </tr>
-  <tr>
-    <td align="center"> [ &gt; ] </td>
-    <td align="center">Forward</td>
-    <td>Next section in reading order</td>
-    <td>1.2.4</td>
-  </tr>
-  <tr>
-    <td align="center"> [ &gt;&gt; ] </td>
-    <td align="center">FastForward</td>
-    <td>Next chapter</td>
-    <td>2</td>
-  </tr>
-  <tr>
-    <td align="center"> [Top] </td>
-    <td align="center">Top</td>
-    <td>Cover (top) of document</td>
-    <td> &nbsp; </td>
-  </tr>
-  <tr>
-    <td align="center"> [Contents] </td>
-    <td align="center">Contents</td>
-    <td>Table of contents</td>
-    <td> &nbsp; </td>
-  </tr>
-  <tr>
-    <td align="center"> [Index] </td>
-    <td align="center">Index</td>
-    <td>Index</td>
-    <td> &nbsp; </td>
-  </tr>
-  <tr>
-    <td align="center"> [ ? ] </td>
-    <td align="center">About</td>
-    <td>About (help)</td>
-    <td> &nbsp; </td>
-  </tr>
-</table>
-
-<p>
-  where the <strong> Example </strong> assumes that the current position is at <strong> Subsubsection One-Two-Three </strong> of a document of the following structure:
-</p>
-
-<ul>
-  <li> 1. Section One
-    <ul>
-      <li>1.1 Subsection One-One
-        <ul>
-          <li>...</li>
-        </ul>
-      </li>
-      <li>1.2 Subsection One-Two
-        <ul>
-          <li>1.2.1 Subsubsection One-Two-One</li>
-          <li>1.2.2 Subsubsection One-Two-Two</li>
-          <li>1.2.3 Subsubsection One-Two-Three &nbsp; &nbsp;
-            <strong>&lt;== Current Position </strong></li>
-          <li>1.2.4 Subsubsection One-Two-Four</li>
-        </ul>
-      </li>
-      <li>1.3 Subsection One-Three
-        <ul>
-          <li>...</li>
-        </ul>
-      </li>
-      <li>1.4 Subsection One-Four</li>
-    </ul>
-  </li>
-</ul>
-
 <hr>
 <p>
  <font size="-1">

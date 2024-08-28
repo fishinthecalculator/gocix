@@ -1,8 +1,7 @@
-#!/usr/bin/env -S guix shell -m ./doc/manifest.scm -- bash
+#!/usr/bin/env -S bash
 
 set -eu
 
 cd doc
-texi2html gocix.texi
-mv gocix.html index.html
-echo Documentation generated in index.html
+guix shell -m ./manifest.scm -- texi2html -noheaders gocix.texi
+mv gocix.html README.md
