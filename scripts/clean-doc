@@ -7,4 +7,4 @@ with open(sys.argv[1]) as fp:
     for s in soup.find_all('head'):
         # removes a tag from the tree, then completely destroys it and its contents
         s.decompose()
-    print(soup.prettify(formatter='html'))
+    print(soup.encode(formatter='html'))
