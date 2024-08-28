@@ -1,0 +1,8 @@
+#!/usr/bin/env -S guix shell -m ./doc/manifest.scm -- bash
+
+set -eu
+
+cd doc
+texi2html gocix.texi
+mv gocix.html index.html
+echo Documentation generated in index.html

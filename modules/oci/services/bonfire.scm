@@ -79,7 +79,7 @@
   (flavour
    (string "classic")
    "The flavour of the Bonfire instance.  You can refer to
-@uref{mainline's images, https://bonfirenetworks.org/docs} for details.")
+@uref{https://bonfirenetworks.org/docs, upstream's documentation} for details.")
   (hostname
    (string)
    "The domain name where Bonfire will be exposed.")

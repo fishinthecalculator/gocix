@@ -1,0 +1,1076 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Copyright (C)Giacomo Leidi 2024
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.  A
+copy of the license is included in the section entitled "GNU Free
+Documentation License".
+ -->
+<!-- Created on August 28, 2024 by texi2html 5.0
+texi2html was written by: 
+            Lionel Cons <Lionel.Cons@cern.ch> (original author)
+            Karl Berry  <karl@freefriends.org>
+            Olaf Bachmann <obachman@mathematik.uni-kl.de>
+            and many others.
+Maintained by: Many creative people.
+Send bugs and suggestions to <texi2html-bug@nongnu.org>
+-->
+<head>
+<title>gocix Reference Manual</title>
+
+<meta name="description" content="gocix Reference Manual">
+<meta name="keywords" content="gocix Reference Manual">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="texi2html 5.0">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.smallquotation {font-size: smaller}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+div.smalldisplay {margin-left: 3.2em}
+div.smallexample {margin-left: 3.2em}
+div.smalllisp {margin-left: 3.2em}
+pre.display {font-family: serif}
+pre.format {font-family: serif}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+pre.smalldisplay {font-family: serif; font-size: smaller}
+pre.smallexample {font-size: smaller}
+pre.smallformat {font-family: serif; font-size: smaller}
+pre.smalllisp {font-size: smaller}
+span.nocodebreak {white-space:pre}
+span.nolinebreak {white-space:pre}
+span.roman {font-family:serif; font-weight:normal}
+span.sansserif {font-family:sans-serif; font-weight:normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+
+
+</head>
+
+<body lang="en" bgcolor="#FFFFFF" text="#000000" link="#0000FF" vlink="#800080" alink="#FF0000">
+
+<h1>The gocix Manual</h1>
+
+
+<p>Edition 0.1 <br>
+28 August 2024 <br>
+</p>
+<p>Copyright &copy;Giacomo Leidi 2024
+</p>
+<p>Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.  A
+copy of the license is included in the section entitled &ldquo;GNU Free
+Documentation License&rdquo;.
+</p><hr>
+<a name="Top"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[ &lt; ]</td>
+<td valign="middle" align="left">[<a href="#Introduction" title="Next section in reading order"> &gt; </a>]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="gocix"></a>
+<h1 class="top">gocix</h1>
+
+<p>This document describes gocix version 0.1.
+</p>
+<table class="menu" border="0" cellspacing="0">
+<tr><td align="left" valign="top"><a href="#Introduction">1 Introduction</a></td><td>&nbsp;&nbsp;</td><td align="left" valign="top">                Why gocix?
+</td></tr>
+<tr><td align="left" valign="top"><a href="#Services">2 Services</a></td><td>&nbsp;&nbsp;</td><td align="left" valign="top">                    Use services from gocix
+</td></tr>
+</table>
+
+<hr size="6">
+<a name="Introduction"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Top" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Top" title="Previous section in reading order"> &lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Top" title="Up section"> Up </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Next section in reading order"> &gt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Next chapter"> &gt;&gt; </a>]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="Introduction-1"></a>
+<h1 class="chapter">1 Introduction</h1>
+
+<p>This channel exposes at <code>(oci services)</code> a set of Guix System services for many useful applications, such as:
+</p>
+<ul>
+<li> Bonfire
+</li><li> Forgejo
+</li><li> Grafana
+</li><li> Matrix Conduit
+</li><li> Meilisearch
+</li><li> Prometheus
+</li><li> Prometheus Blackbox Exporter
+</li></ul>
+
+<p>These services are supposed to feel like services backed by native Guix packages, please report any inconsistency you may find.
+</p>
+<p>Services in gocix are supposed to be used to run useful stuff with Guix. They are for the community by the community and there are all the intentions of collaborating with upstream once underlying packages are into Guix proper. To achieve this vision gocix services strive to:
+</p>
+<ul>
+<li> Separate as much as possible configurations that pertain to the OCI implementation (i.e. ports, volumes, OCI images tags and so on) from application configurations (i.e. whether the application will use https or whatever else). The idea is to make it as little effort as possible upstreaming code from this channel to Guix.
+</li><li> Services are configured with sane, secure, privacy aware defaults when possible. This means that each service in this repository is carefully reviewed and analytics are disabled whenever possible.
+</li></ul>
+
+<hr>
+<a name="Services"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Introduction" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Introduction" title="Previous section in reading order"> &lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Top" title="Up section"> Up </a>]</td>
+<td valign="middle" align="left">[<a href="#Bonfire" title="Next section in reading order"> &gt; </a>]</td>
+<td valign="middle" align="left">[ &gt;&gt; ]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="Services-1"></a>
+<h1 class="chapter">2 Services</h1>
+
+<table class="menu" border="0" cellspacing="0">
+<tr><td align="left" valign="top"><a href="#Bonfire">2.1 Bonfire</a></td><td>&nbsp;&nbsp;</td><td align="left" valign="top">
+</td></tr>
+<tr><td align="left" valign="top"><a href="#Conduit">2.2 Conduit</a></td><td>&nbsp;&nbsp;</td><td align="left" valign="top">
+</td></tr>
+<tr><td align="left" valign="top"><a href="#Forgejo">2.3 Forgejo</a></td><td>&nbsp;&nbsp;</td><td align="left" valign="top">
+</td></tr>
+<tr><td align="left" valign="top"><a href="#Grafana">2.4 Grafana</a></td><td>&nbsp;&nbsp;</td><td align="left" valign="top">
+</td></tr>
+<tr><td align="left" valign="top"><a href="#Meilisearch">2.5 Meilisearch</a></td><td>&nbsp;&nbsp;</td><td align="left" valign="top">
+</td></tr>
+<tr><td align="left" valign="top"><a href="#Prometheus">2.6 Prometheus</a></td><td>&nbsp;&nbsp;</td><td align="left" valign="top">
+</td></tr>
+<tr><td align="left" valign="top"><a href="#Prometheus-Blackbox-Exporter">2.7 Prometheus Blackbox Exporter</a></td><td>&nbsp;&nbsp;</td><td align="left" valign="top">
+</td></tr>
+</table>
+
+<hr>
+<a name="Bonfire"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Previous section in reading order"> &lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
+<td valign="middle" align="left">[<a href="#Conduit" title="Next section in reading order"> &gt; </a>]</td>
+<td valign="middle" align="left">[ &gt;&gt; ]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="Bonfire-1"></a>
+<h2 class="section">2.1 Bonfire</h2>
+
+
+
+<dl>
+<dt><a name="index-bonfire_002dconfiguration"></a>Data Type: <strong>bonfire-configuration</strong></dt>
+<dd><p>Available <code>bonfire-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>flavour</code> (default: <code>&quot;classic&quot;</code>) (type: string)</dt>
+<dd><p>The flavour of the Bonfire instance.  You can refer to
+<a href="https://bonfirenetworks.org/docs">upstream&rsquo;s documentation</a> for
+details.
+</p>
+</dd>
+<dt><code>hostname</code> (type: string)</dt>
+<dd><p>The domain name where Bonfire will be exposed.
+</p>
+</dd>
+<dt><code>postgres-host</code> (default: <code>&quot;localhost&quot;</code>) (type: string)</dt>
+<dd><p>The hostname where postgres will be looked for.
+</p>
+</dd>
+<dt><code>postgres-db</code> (default: <code>&quot;bonfire_db&quot;</code>) (type: string)</dt>
+<dd><p>The database name of the Bonfire&rsquo;s Postgres database.
+</p>
+</dd>
+<dt><code>postgres-user</code> (default: <code>&quot;bonfire&quot;</code>) (type: string)</dt>
+<dd><p>The user name that Bonfire will use to authenticate against the Postgres
+database.
+</p>
+</dd>
+<dt><code>mail-server</code> (type: maybe-string)</dt>
+<dd><p>SMTP domain of the mail server.
+</p>
+</dd>
+<dt><code>mail-domain</code> (type: maybe-string)</dt>
+<dd><p>The bit after @ in your email.
+</p>
+</dd>
+<dt><code>mail-user</code> (type: maybe-string)</dt>
+<dd><p>The bit before @ in your email.
+</p>
+</dd>
+<dt><code>mail-from</code> (type: maybe-string)</dt>
+<dd><p>The email address from which Bonfire will send emails.
+</p>
+</dd>
+<dt><code>mail-port</code> (default: <code>&quot;465&quot;</code>) (type: string)</dt>
+<dd><p>The port of the SMTP service on your mail server.
+</p>
+</dd>
+<dt><code>mail-ssl?</code> (default: <code>#t</code>) (type: boolean)</dt>
+<dd><p>Whether to use SSL for the connection to the SMTP server.
+</p>
+</dd>
+<dt><code>port</code> (default: <code>&quot;4000&quot;</code>) (type: string)</dt>
+<dd><p>The internal port where Bonfire will be exposed.
+</p>
+</dd>
+<dt><code>public-port</code> (default: <code>&quot;443&quot;</code>) (type: string)</dt>
+<dd><p>The public port where Bonfire will be exposed.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+
+
+<dl>
+<dt><a name="index-oci_002dbonfire_002dconfiguration"></a>Data Type: <strong>oci-bonfire-configuration</strong></dt>
+<dd><p>Available <code>oci-bonfire-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>image</code> (default: <code>&quot;bonfirenetworks/bonfire:0.9.10-beta.70-classic-amd64&quot;</code>) (type: string)</dt>
+<dd><p>The image to use for the OCI backed Shepherd service.
+</p>
+</dd>
+<dt><code>upload-data-directory</code> (default: <code>&quot;/var/lib/bonfire/uploads&quot;</code>) (type: string)</dt>
+<dd><p>Upload data directory.
+</p>
+</dd>
+<dt><code>configuration</code> (type: bonfire-configuration)</dt>
+<dd><p>A bonfire-configuration record used to configure the Bonfire instance.
+</p>
+</dd>
+<dt><code>requirement</code> (default: <code>(postgresql)</code>) (type: list)</dt>
+<dd><p>A list of Shepherd services that will be waited for before starting
+Bonfire.
+</p>
+</dd>
+<dt><code>log-file</code> (type: maybe-string)</dt>
+<dd><p>When <code>log-file</code> is set, it names the file to which the service’s
+standard output and standard error are redirected.  <code>log-file</code> is
+created if it does not exist, otherwise it is appended to.
+</p>
+</dd>
+<dt><code>auto-start?</code> (default: <code>#t</code>) (type: boolean)</dt>
+<dd><p>Whether Bonfire should be started automatically by the Shepherd.  If it
+is <code>#f</code> Bonfire has to be started manually with <code>herd
+start</code>.
+</p>
+</dd>
+<dt><code>secrets-directory</code> (default: <code>&quot;/run/secrets&quot;</code>) (type: string)</dt>
+<dd><p>The directory where secrets are looked for.
+</p>
+</dd>
+<dt><code>secret-key-base</code> (type: sops-secret)</dt>
+<dd><p>SECRET_KEY_BASE Bonfire secret.
+</p>
+</dd>
+<dt><code>signing-salt</code> (type: sops-secret)</dt>
+<dd><p>SIGNING_SALT Bonfire secret.
+</p>
+</dd>
+<dt><code>encryption-salt</code> (type: sops-secret)</dt>
+<dd><p>ENCRYPTION_SALT Bonfire secret.
+</p>
+</dd>
+<dt><code>mail-password</code> (type: sops-secret)</dt>
+<dd><p>MAIL_KEY Bonfire secret.
+</p>
+</dd>
+<dt><code>postgres-password</code> (type: sops-secret)</dt>
+<dd><p>POSTGRES_PASSWORD Bonfire secret.
+</p>
+</dd>
+<dt><code>meili-master-key</code> (type: sops-secret)</dt>
+<dd><p>MEILI_MASTER_KEY Bonfire secret.
+</p>
+</dd>
+<dt><code>network</code> (type: maybe-string)</dt>
+<dd><p>The docker network where the bonfire container will be attached.  When
+equal to &quot;host&quot; the <code>port</code> field will not be mapped into the
+container&rsquo;s one.
+</p>
+</dd>
+<dt><code>extra-variables</code> (default: <code>()</code>) (type: list)</dt>
+<dd><p>A list of pairs representing any extra environment variable that should
+be set inside the container.  Refer to the
+<a href="mainline">https://bonfirenetworks.org/docs/deploy/</a> documentation
+for more details.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+<hr>
+<a name="Conduit"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Bonfire" title="Previous section in reading order"> &lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
+<td valign="middle" align="left">[<a href="#Forgejo" title="Next section in reading order"> &gt; </a>]</td>
+<td valign="middle" align="left">[ &gt;&gt; ]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="Conduit-1"></a>
+<h2 class="section">2.2 Conduit</h2>
+
+
+
+<dl>
+<dt><a name="index-conduit_002dconfiguration"></a>Data Type: <strong>conduit-configuration</strong></dt>
+<dd><p>Available <code>conduit-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>image</code> (default: <code>&quot;matrixconduit/matrix-conduit:v0.6.0&quot;</code>) (type: string)</dt>
+<dd><p>The image to use for the OCI backed Shepherd service.
+</p>
+</dd>
+<dt><code>port</code> (default: <code>&quot;6167&quot;</code>) (type: string)</dt>
+<dd><p>The port where conduit will be exposed.
+</p>
+</dd>
+<dt><code>server-name</code> (type: maybe-string)</dt>
+<dd><p>The fully qualified domain name where conduit will be exposed.
+</p>
+</dd>
+<dt><code>database-path</code> (default: <code>&quot;/var/lib/matrix-conduit&quot;</code>) (type: string)</dt>
+<dd><p>The directory where conduit writes state.
+</p>
+</dd>
+<dt><code>database-backend</code> (default: <code>&quot;rocksdb&quot;</code>) (type: string)</dt>
+<dd><p>The database backend used by conduit.
+</p>
+</dd>
+<dt><code>max-request-size</code> (default: <code>&quot;20000000&quot;</code>) (type: string)</dt>
+<dd><p>Expressed in bytes.  The default is ~20MB.
+</p>
+</dd>
+<dt><code>allow-registration?</code> (default: <code>#f</code>) (type: boolean)</dt>
+<dd><p>Whether to allow new users to sign up to the conduit instance.
+</p>
+</dd>
+<dt><code>allow-federation?</code> (default: <code>#t</code>) (type: boolean)</dt>
+<dd><p>Whether to federate the conduit instance with others in the Matrix
+network.
+</p>
+</dd>
+<dt><code>allow-check-for-updates?</code> (default: <code>#f</code>) (type: boolean)</dt>
+<dd><p>Whether conduit will look for new updates.
+</p>
+</dd>
+<dt><code>trusted-servers</code> (default: <code>(&quot;matrix.org&quot;)</code>) (type: list-of-strings)</dt>
+<dd><p>The list of trusted Matrix servers.
+</p>
+</dd>
+<dt><code>max-concurrent-requests</code> (default: <code>&quot;100&quot;</code>) (type: string)</dt>
+<dd><p>The maximum number of concurrent requests handled concurrently by
+conduit.
+</p>
+</dd>
+<dt><code>address</code> (default: <code>&quot;0.0.0.0&quot;</code>) (type: string)</dt>
+<dd><p>The ip address where conduit will bind for connections.
+</p>
+</dd>
+<dt><code>log</code> (default: <code>&quot;warn,rocket=off,_=off,sled=off&quot;</code>) (type: string)</dt>
+<dd><p>The logging configuration for conduit.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+<hr>
+<a name="Forgejo"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Conduit" title="Previous section in reading order"> &lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
+<td valign="middle" align="left">[<a href="#Grafana" title="Next section in reading order"> &gt; </a>]</td>
+<td valign="middle" align="left">[ &gt;&gt; ]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="Forgejo-1"></a>
+<h2 class="section">2.3 Forgejo</h2>
+
+
+
+<dl>
+<dt><a name="index-forgejo_002dconfiguration"></a>Data Type: <strong>forgejo-configuration</strong></dt>
+<dd><p>Available <code>forgejo-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>uid</code> (default: <code>34595</code>) (type: positive)</dt>
+<dd><p>The uid assigned to the Forgejo service account.
+</p>
+</dd>
+<dt><code>gid</code> (default: <code>98715</code>) (type: positive)</dt>
+<dd><p>The gid assigned to the Forgejo service account.
+</p>
+</dd>
+<dt><code>image</code> (default: <code>&quot;codeberg.org/forgejo/forgejo:1.21.4-0-rootless&quot;</code>) (type: string)</dt>
+<dd><p>The image to use for the OCI backed Shepherd service.
+</p>
+</dd>
+<dt><code>port</code> (default: <code>&quot;3000&quot;</code>) (type: string)</dt>
+<dd><p>The port where forgejo will be exposed.
+</p>
+</dd>
+<dt><code>ssh-port</code> (default: <code>&quot;2202&quot;</code>) (type: string)</dt>
+<dd><p>The port where forgejo&rsquo;s ssh service will be exposed.
+</p>
+</dd>
+<dt><code>datadir</code> (default: <code>&quot;/var/lib/forgejo&quot;</code>) (type: string)</dt>
+<dd><p>The directory where forgejo writes state.
+</p>
+</dd>
+<dt><code>app.ini</code> (type: maybe-file-like)</dt>
+<dd><p>The <code>app.ini</code> configuration passed to Forgejo.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+<hr>
+<a name="Grafana"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Forgejo" title="Previous section in reading order"> &lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
+<td valign="middle" align="left">[<a href="#Meilisearch" title="Next section in reading order"> &gt; </a>]</td>
+<td valign="middle" align="left">[ &gt;&gt; ]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="Grafana-1"></a>
+<h2 class="section">2.4 Grafana</h2>
+
+
+
+<dl>
+<dt><a name="index-grafana_002dconfiguration"></a>Data Type: <strong>grafana-configuration</strong></dt>
+<dd><p>Available <code>grafana-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>server</code> (type: grafana-server-configuration)</dt>
+<dd><p>grafana.ini&rsquo;s [server] section.
+</p>
+</dd>
+<dt><code>smtp</code> (type: grafana-smtp-configuration)</dt>
+<dd><p>grafana.ini&rsquo;s [smtp] section.
+</p>
+</dd>
+<dt><code>extra-content</code> (default: <code>&quot;&quot;</code>) (type: string)</dt>
+<dd><p>Everything you want to manually add to grafana.ini.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+
+<dl>
+<dt><a name="index-grafana_002dserver_002dconfiguration"></a>Data Type: <strong>grafana-server-configuration</strong></dt>
+<dd><p>Available <code>grafana-server-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>domain</code> (default: <code>&quot;example.org&quot;</code>) (type: string)</dt>
+<dd><p>The public host where grafana will be exposed.
+</p>
+</dd>
+<dt><code>root-url</code> (default: <code>&quot;%(protocol)s://%(domain)s:%(http_port)s/&quot;</code>) (type: string)</dt>
+<dd><p>The url where grafana will be exposed.
+</p>
+</dd>
+<dt><code>serve-from-sub-path?</code> (default: <code>#f</code>) (type: boolean)</dt>
+<dd><p>The image to use for the OCI backed Shepherd service.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+
+<dl>
+<dt><a name="index-grafana_002dsmtp_002dconfiguration"></a>Data Type: <strong>grafana-smtp-configuration</strong></dt>
+<dd><p>Available <code>grafana-smtp-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>enabled?</code> (default: <code>#f</code>) (type: boolean)</dt>
+<dd><p>Whether to enable Grafana&rsquo;s email alerting.
+</p>
+</dd>
+<dt><code>host</code> (default: <code>&quot;smtp.example.org:587&quot;</code>) (type: string)</dt>
+<dd><p>The connection string representing your SMTP server.
+</p>
+</dd>
+<dt><code>user</code> (default: <code>&quot;you@example.org&quot;</code>) (type: string)</dt>
+<dd><p>The email used to authenticate with the SMTP server.
+</p>
+</dd>
+<dt><code>password</code> (default: <code>&quot;&quot;</code>) (type: string)</dt>
+<dd><p>The password used to authenticate with the SMTP server.
+</p>
+</dd>
+<dt><code>from-address</code> (default: <code>&quot;alert@example.org&quot;</code>) (type: string)</dt>
+<dd><p>The sender of the email alerts Grafana will send.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+
+<dl>
+<dt><a name="index-oci_002dgrafana_002dconfiguration"></a>Data Type: <strong>oci-grafana-configuration</strong></dt>
+<dd><p>Available <code>oci-grafana-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>datadir</code> (default: <code>&quot;/var/lib/grafana&quot;</code>) (type: string)</dt>
+<dd><p>The directory where grafana writes state.
+</p>
+</dd>
+<dt><code>image</code> (default: <code>&quot;bitnami/grafana:10.1.5&quot;</code>) (type: string)</dt>
+<dd><p>The image to use for the OCI backed Shepherd service.
+</p>
+</dd>
+<dt><code>port</code> (default: <code>&quot;3000&quot;</code>) (type: string)</dt>
+<dd><p>This host port will be mapped onto the Grafana configured port inside
+the container.
+</p>
+</dd>
+<dt><code>grafana.ini</code> (type: grafana-configuration)</dt>
+<dd><p>This field will be serialized as graphana.ini.
+</p>
+</dd>
+<dt><code>network</code> (type: maybe-string)</dt>
+<dd><p>The docker network where the grafana container will be attached.  When
+equal to &quot;host&quot; the <code>port</code> field will be ignored.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+<hr>
+<a name="Meilisearch"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Grafana" title="Previous section in reading order"> &lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
+<td valign="middle" align="left">[<a href="#Prometheus" title="Next section in reading order"> &gt; </a>]</td>
+<td valign="middle" align="left">[ &gt;&gt; ]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="Meilisearch-1"></a>
+<h2 class="section">2.5 Meilisearch</h2>
+
+
+
+<dl>
+<dt><a name="index-oci_002dmeilisearch_002dconfiguration"></a>Data Type: <strong>oci-meilisearch-configuration</strong></dt>
+<dd><p>Available <code>oci-meilisearch-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>image</code> (default: <code>&quot;getmeili/meilisearch:v1.6.0&quot;</code>) (type: string)</dt>
+<dd><p>The image to use for the OCI backed Shepherd service.
+</p>
+</dd>
+<dt><code>port</code> (default: <code>&quot;7700&quot;</code>) (type: string)</dt>
+<dd><p>The port where meilisearch will be exposed.
+</p>
+</dd>
+<dt><code>master-key</code> (type: sops-secret)</dt>
+<dd><p>Sets the instance&rsquo;s master key, automatically protecting all routes
+except GET /health.  This means you will need a valid API key to access
+all other endpoints.
+</p>
+</dd>
+<dt><code>datadir</code> (default: <code>&quot;/var/lib/meilisearch/meili_data&quot;</code>) (type: string)</dt>
+<dd><p>The directory where meilisearch writes state.
+</p>
+</dd>
+<dt><code>database-path</code> (default: <code>&quot;/var/lib/meilisearch/data.ms&quot;</code>) (type: string)</dt>
+<dd><p>The directory used by meilisearch database to store state.
+</p>
+</dd>
+<dt><code>network</code> (type: maybe-string)</dt>
+<dd><p>The docker network where the meilisearch container will be attached.
+When equal to &quot;host&quot; the <code>port</code> field will not be mapped into the
+container&rsquo;s one.
+</p>
+</dd>
+<dt><code>extra-variables</code> (default: <code>()</code>) (type: list)</dt>
+<dd><p>A list of pairs representing any extra environment variable that should
+be set inside the container.  Refer to the
+<a href="upstream">https://www.meilisearch.com/docs/learn/configuration/instance_options</a>
+documentation for more details.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+<hr>
+<a name="Prometheus"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Meilisearch" title="Previous section in reading order"> &lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
+<td valign="middle" align="left">[<a href="#Prometheus-Blackbox-Exporter" title="Next section in reading order"> &gt; </a>]</td>
+<td valign="middle" align="left">[ &gt;&gt; ]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="Prometheus-1"></a>
+<h2 class="section">2.6 Prometheus</h2>
+
+
+
+<dl>
+<dt><a name="index-oci_002dprometheus_002dconfiguration"></a>Data Type: <strong>oci-prometheus-configuration</strong></dt>
+<dd><p>Available <code>oci-prometheus-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>datadir</code> (default: <code>&quot;/var/lib/prometheus&quot;</code>) (type: string)</dt>
+<dd><p>The directory where prometheus writes state.
+</p>
+</dd>
+<dt><code>file</code> (type: maybe-file-like)</dt>
+<dd><p>The configuration file to use for the OCI backed Shepherd service.
+</p>
+</dd>
+<dt><code>record</code> (type: maybe-prometheus-configuration)</dt>
+<dd><p>The configuration record to use for the OCI backed Shepherd service.  If
+the <code>file</code> field is set, this field will be ignored.
+</p>
+</dd>
+<dt><code>image</code> (default: <code>&quot;prom/prometheus:v2.45.0&quot;</code>) (type: string)</dt>
+<dd><p>The image to use for the OCI backed Shepherd service.
+</p>
+</dd>
+<dt><code>network</code> (type: maybe-string)</dt>
+<dd><p>The docker network where the grafana container will be attached.  When
+equal to &quot;host&quot; the <code>port</code> field will be ignored.
+</p>
+</dd>
+<dt><code>port</code> (default: <code>&quot;9000&quot;</code>) (type: string)</dt>
+<dd><p>This host port will be mapped onto the Prometheus dashboard configured
+port inside the container.
+</p>
+</dd>
+<dt><code>metrics-port</code> (default: <code>&quot;9090&quot;</code>) (type: string)</dt>
+<dd><p>This host port will be mapped onto the Prometheus health endpoint
+configured port inside the container.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+
+<dl>
+<dt><a name="index-prometheus_002dconfiguration"></a>Data Type: <strong>prometheus-configuration</strong></dt>
+<dd><p>Available <code>prometheus-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>global</code> (type: prometheus-global-configuration)</dt>
+<dd><p>Prometheus&rsquo; <code>global</code> section.
+</p>
+</dd>
+<dt><code>scrape-configs</code> (default: <code>()</code>) (type: list-of-prometheus-scrape-configurations)</dt>
+<dd><p>Prometheus&rsquo; <code>scrape_configs</code> section.
+</p>
+</dd>
+<dt><code>extra-content</code> (default: <code>&quot;&quot;</code>) (type: string)</dt>
+<dd><p>Everything you want to manually append to the configuration file.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+
+<dl>
+<dt><a name="index-prometheus_002dglobal_002dconfiguration"></a>Data Type: <strong>prometheus-global-configuration</strong></dt>
+<dd><p>Available <code>prometheus-global-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>scrape-interval</code> (default: <code>&quot;30s&quot;</code>) (type: string)</dt>
+<dd><p>Prometheus&rsquo; <code>scrape_interval</code> field.
+</p>
+</dd>
+<dt><code>scrape-timeout</code> (default: <code>&quot;12s&quot;</code>) (type: string)</dt>
+<dd><p>Prometheus&rsquo; <code>scrape_timeout</code> field.
+</p>
+</dd>
+<dt><code>extra-content</code> (default: <code>&quot;&quot;</code>) (type: string)</dt>
+<dd><p>Everything you want to manually append to the <code>global</code> section.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+
+<dl>
+<dt><a name="index-prometheus_002dscrape_002dconfiguration"></a>Data Type: <strong>prometheus-scrape-configuration</strong></dt>
+<dd><p>Available <code>prometheus-scrape-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>job-name</code> (type: string)</dt>
+<dd><p>The name of the scrape job.
+</p>
+</dd>
+<dt><code>metrics-path</code> (default: <code>&quot;/metrics&quot;</code>) (type: string)</dt>
+<dd><p>The path where this job will scrape metrics.
+</p>
+</dd>
+<dt><code>static-configs</code> (default: <code>()</code>) (type: list-of-prometheus-static-configurations)</dt>
+<dd><p>The list of static configurations for this job.
+</p>
+</dd>
+<dt><code>extra-content</code> (default: <code>&quot;&quot;</code>) (type: string)</dt>
+<dd><p>Everything you want to manually append to this <code>scrape_config</code>
+field.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+
+<dl>
+<dt><a name="index-prometheus_002dstatic_002dconfiguration"></a>Data Type: <strong>prometheus-static-configuration</strong></dt>
+<dd><p>Available <code>prometheus-static-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>targets</code> (default: <code>()</code>) (type: list-of-strings)</dt>
+<dd><p>The target hosts that will be scraped for metrics.
+</p>
+</dd>
+<dt><code>extra-content</code> (default: <code>&quot;&quot;</code>) (type: string)</dt>
+<dd><p>Everything you want to manually append to this <code>static_config</code>
+field.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+<hr>
+<a name="Prometheus-Blackbox-Exporter"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Services" title="Beginning of this chapter or previous chapter"> &lt;&lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Prometheus" title="Previous section in reading order"> &lt; </a>]</td>
+<td valign="middle" align="left">[<a href="#Services" title="Up section"> Up </a>]</td>
+<td valign="middle" align="left">[ &gt; ]</td>
+<td valign="middle" align="left">[ &gt;&gt; ]</td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left"> &nbsp; </td>
+<td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<a name="Prometheus-Blackbox-Exporter-1"></a>
+<h2 class="section">2.7 Prometheus Blackbox Exporter</h2>
+
+
+
+<dl>
+<dt><a name="index-oci_002dblackbox_002dexporter_002dconfiguration"></a>Data Type: <strong>oci-blackbox-exporter-configuration</strong></dt>
+<dd><p>Available <code>oci-blackbox-exporter-configuration</code> fields are:
+</p>
+<dl compact="compact">
+<dt><code>datadir</code> (default: <code>&quot;/var/lib/blackbox-exporter&quot;</code>) (type: string)</dt>
+<dd><p>The directory where blackbox-exporter writes state.
+</p>
+</dd>
+<dt><code>file</code> (type: file-like)</dt>
+<dd><p>The configuration file to use for Blackbox Exporter.
+</p>
+</dd>
+<dt><code>image</code> (default: <code>&quot;bitnami/blackbox-exporter:0.24.0&quot;</code>) (type: string)</dt>
+<dd><p>The image to use for the OCI backed Shepherd service.
+</p>
+</dd>
+<dt><code>network</code> (type: maybe-string)</dt>
+<dd><p>The docker network where the grafana container will be attached.  When
+equal to &quot;host&quot; the <code>port</code> field will be ignored.
+</p>
+</dd>
+<dt><code>port</code> (default: <code>&quot;9115&quot;</code>) (type: string)</dt>
+<dd><p>This host port will be mapped onto the HTTP port inside the container.
+If <code>network</code> is set this field will be ignored.
+</p>
+</dd>
+</dl>
+
+</dd></dl>
+
+
+
+
+<hr size="6">
+<a name="SEC_Contents"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<h1>Table of Contents</h1>
+
+<div class="contents">
+
+<ul class="no-bullet">
+  <li><a name="toc-Introduction-1" href="#Introduction">1 Introduction</a></li>
+  <li><a name="toc-Services-1" href="#Services">2 Services</a>
+  <ul class="no-bullet">
+    <li><a name="toc-Bonfire-1" href="#Bonfire">2.1 Bonfire</a></li>
+    <li><a name="toc-Conduit-1" href="#Conduit">2.2 Conduit</a></li>
+    <li><a name="toc-Forgejo-1" href="#Forgejo">2.3 Forgejo</a></li>
+    <li><a name="toc-Grafana-1" href="#Grafana">2.4 Grafana</a></li>
+    <li><a name="toc-Meilisearch-1" href="#Meilisearch">2.5 Meilisearch</a></li>
+    <li><a name="toc-Prometheus-1" href="#Prometheus">2.6 Prometheus</a></li>
+    <li><a name="toc-Prometheus-Blackbox-Exporter-1" href="#Prometheus-Blackbox-Exporter">2.7 Prometheus Blackbox Exporter</a></li>
+  </ul>
+</li>
+</ul>
+</div>
+<hr>
+<a name="SEC_About"></a>
+<table class="header" cellpadding="1" cellspacing="1" border="0">
+<tr><td valign="middle" align="left">[<a href="#Top" title="Cover (top) of document">Top</a>]</td>
+<td valign="middle" align="left">[<a href="#SEC_Contents" title="Table of contents">Contents</a>]</td>
+<td valign="middle" align="left">[Index]</td>
+<td valign="middle" align="left">[<a href="#SEC_About" title="About (help)"> ? </a>]</td>
+</tr></table>
+<h1>About This Document</h1>
+
+<p>
+  This document was generated on <i>August 28, 2024</i> using <a href="http://www.nongnu.org/texi2html/"><i>texi2html 5.0</i></a>.
+</p>
+<p>
+  The buttons in the navigation panels have the following meaning:
+</p>
+<table border="1">
+  <tr>
+    <th> Button </th>
+    <th> Name </th>
+    <th> Go to </th>
+    <th> From 1.2.3 go to</th>
+  </tr>
+  <tr>
+    <td align="center"> [ &lt;&lt; ] </td>
+    <td align="center">FastBack</td>
+    <td>Beginning of this chapter or previous chapter</td>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td align="center"> [ &lt; ] </td>
+    <td align="center">Back</td>
+    <td>Previous section in reading order</td>
+    <td>1.2.2</td>
+  </tr>
+  <tr>
+    <td align="center"> [ Up ] </td>
+    <td align="center">Up</td>
+    <td>Up section</td>
+    <td>1.2</td>
+  </tr>
+  <tr>
+    <td align="center"> [ &gt; ] </td>
+    <td align="center">Forward</td>
+    <td>Next section in reading order</td>
+    <td>1.2.4</td>
+  </tr>
+  <tr>
+    <td align="center"> [ &gt;&gt; ] </td>
+    <td align="center">FastForward</td>
+    <td>Next chapter</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td align="center"> [Top] </td>
+    <td align="center">Top</td>
+    <td>Cover (top) of document</td>
+    <td> &nbsp; </td>
+  </tr>
+  <tr>
+    <td align="center"> [Contents] </td>
+    <td align="center">Contents</td>
+    <td>Table of contents</td>
+    <td> &nbsp; </td>
+  </tr>
+  <tr>
+    <td align="center"> [Index] </td>
+    <td align="center">Index</td>
+    <td>Index</td>
+    <td> &nbsp; </td>
+  </tr>
+  <tr>
+    <td align="center"> [ ? ] </td>
+    <td align="center">About</td>
+    <td>About (help)</td>
+    <td> &nbsp; </td>
+  </tr>
+</table>
+
+<p>
+  where the <strong> Example </strong> assumes that the current position is at <strong> Subsubsection One-Two-Three </strong> of a document of the following structure:
+</p>
+
+<ul>
+  <li> 1. Section One
+    <ul>
+      <li>1.1 Subsection One-One
+        <ul>
+          <li>...</li>
+        </ul>
+      </li>
+      <li>1.2 Subsection One-Two
+        <ul>
+          <li>1.2.1 Subsubsection One-Two-One</li>
+          <li>1.2.2 Subsubsection One-Two-Two</li>
+          <li>1.2.3 Subsubsection One-Two-Three &nbsp; &nbsp;
+            <strong>&lt;== Current Position </strong></li>
+          <li>1.2.4 Subsubsection One-Two-Four</li>
+        </ul>
+      </li>
+      <li>1.3 Subsection One-Three
+        <ul>
+          <li>...</li>
+        </ul>
+      </li>
+      <li>1.4 Subsection One-Four</li>
+    </ul>
+  </li>
+</ul>
+
+<hr>
+<p>
+ <font size="-1">
+  This document was generated on <i>August 28, 2024</i> using <a href="http://www.nongnu.org/texi2html/"><i>texi2html 5.0</i></a>.
+ </font>
+ <br>
+
+</p>
+</body>
+</html>

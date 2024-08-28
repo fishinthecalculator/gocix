@@ -6,8 +6,9 @@ Available @code{bonfire-configuration} fields are:
 
 @table @asis
 @item @code{flavour} (default: @code{"classic"}) (type: string)
-The flavour of the Bonfire instance.  You can refer to @uref{mainline's
-images,https://bonfirenetworks.org/docs} for details.
+The flavour of the Bonfire instance.  You can refer to
+@uref{https://bonfirenetworks.org/docs,upstream's documentation} for
+details.
 
 @item @code{hostname} (type: string)
 The domain name where Bonfire will be exposed.

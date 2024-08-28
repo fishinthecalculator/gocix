@@ -59,6 +59,7 @@ generate_documentation() {
       mkdir -p "$(dirname "${doc_named}")"
       chmod +x "${guile_script}"
       echo Creating "${doc_named}"...
+      #printf 'title: %s documentation\n---\n' "${var_name}" > "${doc_named}"
       "${guile_script}" > "${doc_named}"
     done
 }
