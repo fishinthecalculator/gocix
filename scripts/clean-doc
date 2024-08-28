@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+import sys
+from bs4 import BeautifulSoup
+
+with open(sys.argv[1]) as fp:
+    soup = BeautifulSoup(fp, 'html.parser')
+    for s in soup.find_all('head'):
+        # removes a tag from the tree, then completely destroys it and its contents
+        s.decompose()
+    print(soup.prettify(formatter='html'))
