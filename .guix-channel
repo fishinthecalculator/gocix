@@ -5,6 +5,18 @@
  (news-file "etc/news.txt")
  (url "https://github.com/fishinthecalculator/gocix")
  (dependencies
+  ;; For rootless-podman and subids
+  (channel
+   (name small-guix)
+   (url "https://gitlab.com/orang3/small-guix")
+   (branch "master")
+   ;; Enable signature verification:
+   (introduction
+    (channel-introduction
+     (version 0)
+     (commit "f260da13666cd41ae3202270784e61e062a3999c")
+     (signer "8D10 60B9 6BB8 292E 829B  7249 AED4 1CC1 93B7 01E2"))))
+  ;; For SOPS secrets
   (channel
    (name sops-guix)
    (url "https://github.com/fishinthecalculator/sops-guix")
