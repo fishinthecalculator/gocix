@@ -20,6 +20,7 @@
             oci-pict-rs-configuration-port
             oci-pict-rs-configuration-datadir
             oci-pict-rs-configuration-log-file
+            oci-pict-rs-configuration-secrets-requirement
             oci-pict-rs-configuration-secrets-directory
             oci-pict-rs-configuration-server-api-key
             oci-pict-rs-configuration-network
@@ -142,6 +143,9 @@ path = \"/mnt/files\"
   (datadir
    (string "/var/lib/pict-rs")
    "The directory where pict-rs writes state.")
+  (requirement
+   (list '())
+   "A list of Shepherd services that will be waited for before starting pict-rs.")
   (log-file
    (string "/var/log/pict-rs.log")
    "The path where pict-rs writes logs.")
@@ -235,6 +239,8 @@ and returns pict-rs's sh command."
               (oci-pict-rs-configuration-datadir config))
              (config-file
               (oci-pict-rs-configuration-config-file config))
+             (requirement
+              (oci-pict-rs-configuration-requirement config))
              (network
               (oci-pict-rs-configuration-network config))
              (log-file
@@ -254,6 +260,11 @@ and returns pict-rs's sh command."
               (oci-container-configuration
                (image image)
                (log-file log-file)
+               (requirement
+                (append requirement
+                        (if (> (length secrets-directories) 0)
+                            '(sops-secrets)
+                            '())))
                (entrypoint
                 "/sbin/tini")
                (command

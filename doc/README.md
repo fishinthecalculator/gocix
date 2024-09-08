@@ -395,6 +395,10 @@ The port where pict-rs will be exposed.
 ` datadir ` (default: ` "/var/lib/pict-rs" ` ) (type: string)  
 The directory where pict-rs writes state.
 
+` requirement ` (default: ` () ` ) (type: list)  
+A list of Shepherd services that will be waited for before starting
+pict-rs.
+
 ` log-file ` (default: ` "/var/log/pict-rs.log" ` ) (type: string)  
 The path where pict-rs writes logs.
 
