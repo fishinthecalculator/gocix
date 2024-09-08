@@ -53,6 +53,7 @@
             oci-bonfire-configuration-encryption-salt
             oci-bonfire-configuration-mail-password
             oci-bonfire-configuration-postgres-password
+            oci-bonfire-configuration-log-file
             oci-bonfire-configuration-network
             oci-bonfire-configuration-extra-variables
 
