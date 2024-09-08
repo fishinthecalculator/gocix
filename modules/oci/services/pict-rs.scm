@@ -2,7 +2,6 @@
 ;;; Copyright © 2024 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services pict-rs)
-  ;; #:use-module (gnu packages bash)
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
@@ -15,17 +14,109 @@
   #:export (oci-pict-rs-configuration
             oci-pict-rs-configuration?
             oci-pict-rs-configuration-fields
-            ;; oci-pict-rs-configuration-image
-            ;; oci-pict-rs-configuration-port
-            ;; oci-pict-rs-configuration-datadir
-            ;; oci-pict-rs-configuration-database-path
-            ;; oci-pict-rs-configuration-network
-            ;; oci-pict-rs-configuration-extra-variables
+            oci-pict-rs-configuration-image
+            oci-pict-rs-configuration-port
+            oci-pict-rs-configuration-datadir
+            oci-pict-rs-configuration-network
+            oci-pict-rs-configuration-config-file
             oci-pict-rs-configuration->oci-container-configuration
             oci-pict-rs-service-type))
 
-;; Some of this code comes from the Guix manual.
-;; Check it out! It's pretty cool.
+(define %pict-rs-default.toml
+  (plain-file
+   "default.toml"
+   "# This content comes from https://git.asonix.dog/asonix/pict-rs/src/branch/main/defaults.toml
+[server]
+address = \"0.0.0.0:8080\"
+read_only = false
+danger_dummy_mode = false
+max_file_count = 1
+temporary_directory = \"/tmp\"
+cleanup_temporary_directory = true
+
+[client]
+timeout = 30
+
+[upgrade]
+concurrency = 32
+
+[tracing.logging]
+format = \"normal\"
+targets = \"info\"
+log_spans = false
+no_ansi = false
+log_requests = false
+
+[tracing.console]
+buffer_capacity = 102400
+
+[tracing.opentelemetry]
+service_name = \"pict-rs\"
+targets = \"info\"
+
+[metrics]
+
+[old_repo]
+
+[media]
+external_validation_timeout = 30
+max_file_size = 40
+process_timeout = 30
+filters = [
+    \"blur\",
+    \"crop\",
+    \"identity\",
+    \"resize\",
+    \"thumbnail\",
+]
+
+[media.retention]
+variants = \"7d\"
+proxy = \"7d\"
+
+[media.magick]
+max_width = 10000
+max_height = 10000
+max_area = 20000
+memory = 256
+map = 512
+disk = 1024
+
+[media.image]
+max_width = 10000
+max_height = 10000
+max_area = 40000000
+max_file_size = 40
+
+[media.animation]
+max_width = 1920
+max_height = 1920
+max_area = 2073600
+max_file_size = 40
+max_frame_count = 900
+
+[media.video]
+enable = true
+allow_audio = false
+max_width = 3840
+max_height = 3840
+max_area = 8294400
+max_file_size = 40
+max_frame_count = 900
+
+[media.video.quality]
+crf_max = 32
+
+[repo]
+type = \"sled\"
+path = \"/mnt/sled-repo\"
+cache_capacity = 67108864
+export_path = \"/mnt/exports\"
+
+[store]
+type = \"filesystem\"
+path = \"/mnt/files\"
+"))
 
 (define pict-rs-tag
   "v1.6.0")
@@ -49,8 +140,8 @@
    (maybe-string)
    "The docker network where the pict-rs container will be attached. When equal
 to \"host\" the @code{port} field will not be mapped into the container's one.")
-  (extra-variables
-   (list '())
+  (config-file
+   (file-like %pict-rs-default.toml)
    "A list of pairs representing any extra environment variable that should be set inside the container. Refer to the @uref{upstream, https://git.asonix.dog/asonix/pict-rs} documentation for more details."))
 
 (define (%pict-rs-activation config)
@@ -87,8 +178,8 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
     (when config
       (let* ((datadir
               (oci-pict-rs-configuration-datadir config))
-             (extra-variables
-              (oci-pict-rs-configuration-extra-variables config))
+             (config-file
+              (oci-pict-rs-configuration-config-file config))
              (network
               (oci-pict-rs-configuration-network config))
              (image
@@ -98,11 +189,16 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
              (container-config
               (oci-container-configuration
                (image image)
-               (environment extra-variables)
+               (entrypoint
+                "/sbin/tini --")
+               (command
+                '("/usr/local/bin/pict-rs" "run" "--config-file" "/pict-rs.toml"))
                (ports
                 `((,port . ,port)))
                (volumes
-                `((,datadir . "/mnt"))))))
+                `((,config-file . "/pict-rs.toml:ro")
+                  ("/gnu/store" . "/gnu/store:ro")
+                  (,datadir . "/mnt"))))))
         (list
          (if (maybe-value-set? network)
              (oci-container-configuration

@@ -400,7 +400,7 @@ The docker network where the pict-rs container will be attached. When
 equal to "host" the ` port ` field will not be mapped into the
 container’s one.
 
-` extra-variables ` (default: ` () ` ) (type: list)  
+` config-file ` (type: file-like)  
 A list of pairs representing any extra environment variable that should
 be set inside the container. Refer to the
 [https://git.asonix.dog/asonix/pict-rs](upstream) documentation for more
