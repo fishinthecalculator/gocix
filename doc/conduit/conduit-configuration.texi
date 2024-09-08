@@ -5,7 +5,7 @@
 Available @code{conduit-configuration} fields are:
 
 @table @asis
-@item @code{image} (default: @code{"matrixconduit/matrix-conduit:v0.6.0"}) (type: string)
+@item @code{image} (default: @code{"docker.io/matrixconduit/matrix-conduit:v0.6.0"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{port} (default: @code{"6167"}) (type: string)

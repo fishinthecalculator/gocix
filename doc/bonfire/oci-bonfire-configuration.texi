@@ -5,7 +5,7 @@
 Available @code{oci-bonfire-configuration} fields are:
 
 @table @asis
-@item @code{image} (default: @code{"bonfirenetworks/bonfire:0.9.10-beta.70-classic-amd64"}) (type: string)
+@item @code{image} (default: @code{"docker.io/bonfirenetworks/bonfire:0.9.10-beta.70-classic-amd64"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{upload-data-directory} (default: @code{"/var/lib/bonfire/uploads"}) (type: string)

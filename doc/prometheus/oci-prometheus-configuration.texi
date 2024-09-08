@@ -15,7 +15,7 @@ The configuration file to use for the OCI backed Shepherd service.
 The configuration record to use for the OCI backed Shepherd service.  If
 the @code{file} field is set, this field will be ignored.
 
-@item @code{image} (default: @code{"prom/prometheus:v2.45.0"}) (type: string)
+@item @code{image} (default: @code{"docker.io/prom/prometheus:v2.45.0"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{network} (type: maybe-string)

@@ -8,7 +8,7 @@ Available @code{oci-grafana-configuration} fields are:
 @item @code{datadir} (default: @code{"/var/lib/grafana"}) (type: string)
 The directory where grafana writes state.
 
-@item @code{image} (default: @code{"bitnami/grafana:10.1.5"}) (type: string)
+@item @code{image} (default: @code{"docker.io/bitnami/grafana:10.1.5"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{port} (default: @code{"3000"}) (type: string)
