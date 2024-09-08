@@ -14,6 +14,9 @@ The port where pict-rs will be exposed.
 @item @code{datadir} (default: @code{"/var/lib/pict-rs"}) (type: string)
 The directory where pict-rs writes state.
 
+@item @code{log-file} (default: @code{"/var/log/pict-rs.log"}) (type: string)
+The path where pict-rs writes logs.
+
 @item @code{network} (type: maybe-string)
 The docker network where the pict-rs container will be attached.  When
 equal to "host" the @code{port} field will not be mapped into the

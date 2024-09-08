@@ -17,6 +17,7 @@
             oci-pict-rs-configuration-image
             oci-pict-rs-configuration-port
             oci-pict-rs-configuration-datadir
+            oci-pict-rs-configuration-log-file
             oci-pict-rs-configuration-network
             oci-pict-rs-configuration-config-file
             oci-pict-rs-configuration->oci-container-configuration
@@ -136,6 +137,9 @@ path = \"/mnt/files\"
   (datadir
    (string "/var/lib/pict-rs")
    "The directory where pict-rs writes state.")
+  (log-file
+   (string "/var/log/pict-rs.log")
+   "The path where pict-rs writes logs.")
   (network
    (maybe-string)
    "The docker network where the pict-rs container will be attached. When equal
@@ -182,6 +186,8 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
               (oci-pict-rs-configuration-config-file config))
              (network
               (oci-pict-rs-configuration-network config))
+             (log-file
+              (oci-pict-rs-configuration-log-file config))
              (image
               (oci-pict-rs-configuration-image config))
              (port
@@ -189,6 +195,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
              (container-config
               (oci-container-configuration
                (image image)
+               (log-file log-file)
                (entrypoint
                 "/sbin/tini --")
                (command

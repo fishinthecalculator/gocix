@@ -395,6 +395,9 @@ The port where pict-rs will be exposed.
 ` datadir ` (default: ` "/var/lib/pict-rs" ` ) (type: string)  
 The directory where pict-rs writes state.
 
+` log-file ` (default: ` "/var/log/pict-rs.log" ` ) (type: string)  
+The path where pict-rs writes logs.
+
 ` network ` (type: maybe-string)  
 The docker network where the pict-rs container will be attached. When
 equal to "host" the ` port ` field will not be mapped into the
