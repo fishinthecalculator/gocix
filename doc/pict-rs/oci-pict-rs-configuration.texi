@@ -5,7 +5,7 @@
 Available @code{oci-pict-rs-configuration} fields are:
 
 @table @asis
-@item @code{image} (default: @code{"docker.io/asonix/pictrs:v1.6.0"}) (type: string)
+@item @code{image} (default: @code{"docker.io/asonix/pictrs:0.5"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{port} (default: @code{"8080"}) (type: string)

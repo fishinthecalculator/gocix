@@ -386,7 +386,7 @@ documentation for more details.
 <span id="index-oci_002dpict_002drs_002dconfiguration"></span> Data Type: **oci-pict-rs-configuration**  
 Available ` oci-pict-rs-configuration ` fields are:
 
-` image ` (default: ` "docker.io/asonix/pictrs:v1.6.0" ` ) (type: string)  
+` image ` (default: ` "docker.io/asonix/pictrs:0.5" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "8080" ` ) (type: string)  

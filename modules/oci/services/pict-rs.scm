@@ -120,7 +120,7 @@ path = \"/mnt/files\"
 "))
 
 (define pict-rs-tag
-  "v1.6.0")
+  "0.5")
 
 (define pict-rs-image
   (string-append "docker.io/asonix/pictrs:" pict-rs-tag))
@@ -197,14 +197,14 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                (image image)
                (log-file log-file)
                (entrypoint
-                "/sbin/tini --")
+                "/sbin/tini")
                (command
-                '("/usr/local/bin/pict-rs" "run" "--config-file" "/pict-rs.toml"))
+                '("/usr/local/bin/pict-rs" "--config-file" "/pict-rs.toml" "run"))
                (ports
                 `((,port . ,port)))
                (volumes
                 `((,config-file . "/pict-rs.toml:ro")
-                  ("/gnu/store" . "/gnu/store:ro")
+                  ("/gnu/store" . "/gnu/store")
                   (,datadir . "/mnt"))))))
         (list
          (if (maybe-value-set? network)
@@ -222,6 +222,6 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                                                      (const %pict-rs-accounts))
                                   (service-extension activation-service-type
                                                      %pict-rs-activation)))
-                (default-value #f)
+                (default-value (oci-pict-rs-configuration))
                 (description
-                 "This service install a OCI backed Pict-Rs Shepherd Service.")))
+                 "This service install a OCI backed pict-rs Shepherd Service.")))
