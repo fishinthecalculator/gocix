@@ -65,7 +65,7 @@
   (string-append "0.9.10-beta.70-" flavour "-" system))
 
 (define (bonfire-image flavour system)
-  (string-append "bonfirenetworks/bonfire:" (bonfire-tag flavour system)))
+  (string-append "docker.io/bonfirenetworks/bonfire:" (bonfire-tag flavour system)))
 
 (define (serialize-string field-name value)
   (serialize-environment-variable field-name value))

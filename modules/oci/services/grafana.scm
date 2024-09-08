@@ -55,7 +55,7 @@
   "10.1.5")
 
 (define grafana-image
-  (string-append "bitnami/grafana:" grafana-tag))
+  (string-append "docker.io/bitnami/grafana:" grafana-tag))
 
 (define serialize-string serialize-ini-string)
 (define serialize-integer serialize-ini-integer)

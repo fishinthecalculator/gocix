@@ -34,7 +34,7 @@
   "v1.6.0")
 
 (define meilisearch-image
-  (string-append "getmeili/meilisearch:" meilisearch-tag))
+  (string-append "docker.io/getmeili/meilisearch:" meilisearch-tag))
 
 (define (serialize-string field-name value)
   (serialize-environment-variable field-name value #:prefix "MEILISEARCH_"))

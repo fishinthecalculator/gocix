@@ -77,7 +77,7 @@
   "v2.45.0")
 
 (define prometheus-image
-  (string-append "prom/prometheus:" prometheus-tag))
+  (string-append "docker.io/prom/prometheus:" prometheus-tag))
 
 (define %prometheus-file
   (plain-file "prometheus.yml"
