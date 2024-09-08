@@ -398,6 +398,12 @@ The directory where pict-rs writes state.
 ` log-file ` (default: ` "/var/log/pict-rs.log" ` ) (type: string)  
 The path where pict-rs writes logs.
 
+` secrets-directory ` (default: ` "/run/secrets" ` ) (type: string)  
+The directory where secrets are looked for.
+
+` server-api-key ` (type: maybe-sops-secret)  
+` PICTRS__SERVER__API_KEY ` pict-rs secret.
+
 ` network ` (type: maybe-string)  
 The docker network where the pict-rs container will be attached. When
 equal to "host" the ` port ` field will not be mapped into the

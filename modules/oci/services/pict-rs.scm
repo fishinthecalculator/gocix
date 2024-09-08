@@ -21,6 +21,7 @@
             oci-pict-rs-configuration-datadir
             oci-pict-rs-configuration-log-file
             oci-pict-rs-configuration-secrets-directory
+            oci-pict-rs-configuration-server-api-key
             oci-pict-rs-configuration-network
             oci-pict-rs-configuration-config-file
             oci-pict-rs-configuration->oci-container-configuration
