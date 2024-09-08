@@ -62,6 +62,7 @@ This channel exposes at @code{(oci services)} a set of Guix System services for 
 @item Grafana
 @item Matrix Conduit
 @item Meilisearch
+@item pict-rs
 @item Prometheus
 @item Prometheus Blackbox Exporter
 @end itemize
@@ -85,6 +86,7 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 * Forgejo::
 * Grafana::
 * Meilisearch::
+* pict-rs::
 * Prometheus::
 * Prometheus Blackbox Exporter::
 @end menu
@@ -118,6 +120,11 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 @section Meilisearch
 
 @include meilisearch/oci-meilisearch-configuration.texi
+
+@node pict-rs
+@section pict-rs
+
+@include pict-rs/oci-pict-rs-configuration.texi
 
 @node Prometheus
 @section Prometheus

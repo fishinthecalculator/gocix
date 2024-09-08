@@ -39,6 +39,7 @@ for many useful applications, such as:
 - Grafana
 - Matrix Conduit
 - Meilisearch
+- pict-rs
 - Prometheus
 - Prometheus Blackbox Exporter
 
@@ -72,8 +73,9 @@ into Guix proper. To achieve this vision gocix services strive to:
 | [2.3 Forgejo](#Forgejo)                                           |     |     |
 | [2.4 Grafana](#Grafana)                                           |     |     |
 | [2.5 Meilisearch](#Meilisearch)                                   |     |     |
-| [2.6 Prometheus](#Prometheus)                                     |     |     |
-| [2.7 Prometheus Blackbox Exporter](#Prometheus-Blackbox-Exporter) |     |     |
+| [2.6 pict-rs](#pict_002drs)                                       |     |     |
+| [2.7 Prometheus](#Prometheus)                                     |     |     |
+| [2.8 Prometheus Blackbox Exporter](#Prometheus-Blackbox-Exporter) |     |     |
 
 ------------------------------------------------------------------------
 
@@ -130,7 +132,7 @@ The public port where Bonfire will be exposed.
 <span id="index-oci_002dbonfire_002dconfiguration"></span> Data Type: **oci-bonfire-configuration**  
 Available ` oci-bonfire-configuration ` fields are:
 
-` image ` (default: ` "bonfirenetworks/bonfire:0.9.10-beta.70-classic-amd64" ` ) (type: string)  
+` image ` (default: ` "docker.io/bonfirenetworks/bonfire:0.9.10-beta.70-classic-amd64" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` upload-data-directory ` (default: ` "/var/lib/bonfire/uploads" ` ) (type: string)  
@@ -193,7 +195,7 @@ more details.
 <span id="index-conduit_002dconfiguration"></span> Data Type: **conduit-configuration**  
 Available ` conduit-configuration ` fields are:
 
-` image ` (default: ` "matrixconduit/matrix-conduit:v0.6.0" ` ) (type: string)  
+` image ` (default: ` "docker.io/matrixconduit/matrix-conduit:v0.6.0" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "6167" ` ) (type: string)  
@@ -324,7 +326,7 @@ Available ` oci-grafana-configuration ` fields are:
 ` datadir ` (default: ` "/var/lib/grafana" ` ) (type: string)  
 The directory where grafana writes state.
 
-` image ` (default: ` "bitnami/grafana:10.1.5" ` ) (type: string)  
+` image ` (default: ` "docker.io/bitnami/grafana:10.1.5" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "3000" ` ) (type: string)  
@@ -347,7 +349,7 @@ equal to "host" the ` port ` field will be ignored.
 <span id="index-oci_002dmeilisearch_002dconfiguration"></span> Data Type: **oci-meilisearch-configuration**  
 Available ` oci-meilisearch-configuration ` fields are:
 
-` image ` (default: ` "getmeili/meilisearch:v1.6.0" ` ) (type: string)  
+` image ` (default: ` "docker.io/getmeili/meilisearch:v1.6.0" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "7700" ` ) (type: string)  
@@ -377,9 +379,38 @@ documentation for more details.
 
 ------------------------------------------------------------------------
 
+<span id="pict_002drs"></span> <span id="pict_002drs-1"></span>
+
+## 2.6 pict-rs
+
+<span id="index-oci_002dpict_002drs_002dconfiguration"></span> Data Type: **oci-pict-rs-configuration**  
+Available ` oci-pict-rs-configuration ` fields are:
+
+` image ` (default: ` "docker.io/asonix/pictrs:v1.6.0" ` ) (type: string)  
+The image to use for the OCI backed Shepherd service.
+
+` port ` (default: ` "8080" ` ) (type: string)  
+The port where pict-rs will be exposed.
+
+` datadir ` (default: ` "/var/lib/pict-rs" ` ) (type: string)  
+The directory where pict-rs writes state.
+
+` network ` (type: maybe-string)  
+The docker network where the pict-rs container will be attached. When
+equal to "host" the ` port ` field will not be mapped into the
+container’s one.
+
+` extra-variables ` (default: ` () ` ) (type: list)  
+A list of pairs representing any extra environment variable that should
+be set inside the container. Refer to the
+[https://git.asonix.dog/asonix/pict-rs](upstream) documentation for more
+details.
+
+------------------------------------------------------------------------
+
 <span id="Prometheus"></span> <span id="Prometheus-1"></span>
 
-## 2.6 Prometheus
+## 2.7 Prometheus
 
 <span id="index-oci_002dprometheus_002dconfiguration"></span> Data Type: **oci-prometheus-configuration**  
 Available ` oci-prometheus-configuration ` fields are:
@@ -394,7 +425,7 @@ The configuration file to use for the OCI backed Shepherd service.
 The configuration record to use for the OCI backed Shepherd service. If
 the ` file ` field is set, this field will be ignored.
 
-` image ` (default: ` "prom/prometheus:v2.45.0" ` ) (type: string)  
+` image ` (default: ` "docker.io/prom/prometheus:v2.45.0" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` network ` (type: maybe-string)  
@@ -470,7 +501,7 @@ Everything you want to manually append to this ` static_config ` field.
 <span id="Prometheus-Blackbox-Exporter"></span> <span
 id="Prometheus-Blackbox-Exporter-1"></span>
 
-## 2.7 Prometheus Blackbox Exporter
+## 2.8 Prometheus Blackbox Exporter
 
 <span id="index-oci_002dblackbox_002dexporter_002dconfiguration"></span> Data Type: **oci-blackbox-exporter-configuration**  
 Available ` oci-blackbox-exporter-configuration ` fields are:
@@ -507,14 +538,15 @@ If ` network ` is set this field will be ignored.
   - <a href="#Forgejo" id="toc-Forgejo-1">2.3 Forgejo</a>
   - <a href="#Grafana" id="toc-Grafana-1">2.4 Grafana</a>
   - <a href="#Meilisearch" id="toc-Meilisearch-1">2.5 Meilisearch</a>
-  - <a href="#Prometheus" id="toc-Prometheus-1">2.6 Prometheus</a>
+  - <a href="#pict_002drs" id="toc-pict_002drs-1">2.6 pict-rs</a>
+  - <a href="#Prometheus" id="toc-Prometheus-1">2.7 Prometheus</a>
   - <a href="#Prometheus-Blackbox-Exporter"
-    id="toc-Prometheus-Blackbox-Exporter-1">2.7 Prometheus Blackbox
+    id="toc-Prometheus-Blackbox-Exporter-1">2.8 Prometheus Blackbox
     Exporter</a>
 
 </div>
 
 ------------------------------------------------------------------------
 
-This document was generated on *August 28, 2024* using [*texi2html
+This document was generated on *September 8, 2024* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

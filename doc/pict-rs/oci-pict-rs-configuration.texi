@@ -1,0 +1,34 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-pict-rs-configuration
+Available @code{oci-pict-rs-configuration} fields are:
+
+@table @asis
+@item @code{image} (default: @code{"docker.io/asonix/pictrs:v1.6.0"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{port} (default: @code{"8080"}) (type: string)
+The port where pict-rs will be exposed.
+
+@item @code{datadir} (default: @code{"/var/lib/pict-rs"}) (type: string)
+The directory where pict-rs writes state.
+
+@item @code{network} (type: maybe-string)
+The docker network where the pict-rs container will be attached.  When
+equal to "host" the @code{port} field will not be mapped into the
+container's one.
+
+@item @code{extra-variables} (default: @code{()}) (type: list)
+A list of pairs representing any extra environment variable that should
+be set inside the container.  Refer to the
+@uref{upstream,https://git.asonix.dog/asonix/pict-rs} documentation for
+more details.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+
