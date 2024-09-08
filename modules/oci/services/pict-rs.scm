@@ -9,8 +9,10 @@
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
-  #:use-module (guix i18n)
+  #:use-module (sops secrets)
+  #:use-module (sops services sops)
   #:use-module (ice-9 match)
+  #:use-module (srfi srfi-1)
   #:export (oci-pict-rs-configuration
             oci-pict-rs-configuration?
             oci-pict-rs-configuration-fields
@@ -18,6 +20,7 @@
             oci-pict-rs-configuration-port
             oci-pict-rs-configuration-datadir
             oci-pict-rs-configuration-log-file
+            oci-pict-rs-configuration-secrets-directory
             oci-pict-rs-configuration-network
             oci-pict-rs-configuration-config-file
             oci-pict-rs-configuration->oci-container-configuration
@@ -126,6 +129,7 @@ path = \"/mnt/files\"
   (string-append "docker.io/asonix/pictrs:" pict-rs-tag))
 
 (define-maybe string)
+(define-maybe sops-secret)
 
 (define-configuration/no-serialization oci-pict-rs-configuration
   (image
@@ -140,6 +144,12 @@ path = \"/mnt/files\"
   (log-file
    (string "/var/log/pict-rs.log")
    "The path where pict-rs writes logs.")
+  (secrets-directory
+   (string "/run/secrets")
+   "The directory where secrets are looked for.")
+  (server-api-key
+   (maybe-sops-secret)
+   "@code{PICTRS__SERVER__API_KEY} pict-rs secret.")
   (network
    (maybe-string)
    "The docker network where the pict-rs container will be attached. When equal
@@ -148,10 +158,45 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
    (file-like %pict-rs-default.toml)
    "A list of pairs representing any extra environment variable that should be set inside the container. Refer to the @uref{upstream, https://git.asonix.dog/asonix/pict-rs} documentation for more details."))
 
+(define (%pict-rs-secrets config)
+  (let ((api-key (oci-pict-rs-configuration-server-api-key config)))
+    (if (maybe-value-set? api-key)
+        (list api-key)
+        '())))
+
+(define %pict-rs-secrets-variables
+  '("PICTRS__SERVER__API_KEY"))
+
+(define (%pict-rs-secrets-files config)
+  (map (lambda (s)
+         (string-append (oci-pict-rs-configuration-secrets-directory config)
+                        "/" (sops-secret->file-name s)))
+       (%pict-rs-secrets config)))
+
+(define (%pict-rs-secrets-specs config)
+  (zip %pict-rs-secrets-variables
+       (%pict-rs-secrets-files config)))
+
+(define* (oci-pict-rs-sh-command secrets-specs command)
+  "Exports each one of the SECRETS-SPECS as an environment variable
+and returns pict-rs's sh command."
+  (if (> (length secrets-specs) 0)
+      (string-join
+       `("set -e"
+         ,@(map (match-lambda
+                  ((variable secret)
+                   (string-append
+                    "export " variable "=\"$(cat " secret ")\"")))
+                secrets-specs)
+         ,(string-append "exec " command))
+       "; ")
+      (string-append "exec " command)))
+
 (define (%pict-rs-activation config)
   "Return an activation gexp for pict-rs."
   (when config
-    (let* ((datadir (oci-pict-rs-configuration-datadir config)))
+    (let ((datadir (oci-pict-rs-configuration-datadir config))
+          (log-file (oci-pict-rs-configuration-log-file config)))
       #~(begin
           (use-modules (guix build utils))
           (let* ((user (getpwnam "pict-rs"))
@@ -160,7 +205,12 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                  (datadir #$datadir))
             ;; Setup datadir
             (mkdir-p datadir)
-            (chown datadir uid gid))))))
+            (chown datadir uid gid)
+
+            ;; Setup log-dir
+            (let ((logs-directory (dirname #$log-file)))
+              (unless (file-exists? logs-directory)
+                (mkdir-p logs-directory))))))))
 
 (define %pict-rs-accounts
   (list (user-group
@@ -192,6 +242,13 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
               (oci-pict-rs-configuration-image config))
              (port
               (oci-pict-rs-configuration-port config))
+             (secrets-directories
+              (delete-duplicates
+               (map (lambda (secret-file)
+                      (define secret-directory (dirname secret-file))
+                      (string-append secret-directory ":"
+                                     secret-directory ":ro"))
+                    (%pict-rs-secrets-files config))))
              (container-config
               (oci-container-configuration
                (image image)
@@ -199,13 +256,16 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                (entrypoint
                 "/sbin/tini")
                (command
-                '("/usr/local/bin/pict-rs" "--config-file" "/pict-rs.toml" "run"))
+                `("/bin/sh" "-c"
+                  ,(oci-pict-rs-sh-command (%pict-rs-secrets-specs config)
+                                           "/usr/local/bin/pict-rs --config-file /pict-rs.toml run")))
                (ports
                 `((,port . ,port)))
                (volumes
                 `((,config-file . "/pict-rs.toml:ro")
                   ("/gnu/store" . "/gnu/store")
-                  (,datadir . "/mnt"))))))
+                  (,datadir . "/mnt")
+                  ,@secrets-directories)))))
         (list
          (if (maybe-value-set? network)
              (oci-container-configuration
@@ -220,6 +280,9 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                                                      oci-pict-rs-configuration->oci-container-configuration)
                                   (service-extension account-service-type
                                                      (const %pict-rs-accounts))
+                                  (service-extension sops-secrets-service-type
+                                                     (lambda (config)
+                                                       (%pict-rs-secrets config)))
                                   (service-extension activation-service-type
                                                      %pict-rs-activation)))
                 (default-value (oci-pict-rs-configuration))
