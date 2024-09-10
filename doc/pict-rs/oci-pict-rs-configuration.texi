@@ -16,7 +16,7 @@ The directory where pict-rs writes state.
 
 @item @code{requirement} (default: @code{()}) (type: list)
 A list of Shepherd services that will be waited for before starting
-pict-rs.
+@code{pict-rs}.
 
 @item @code{log-file} (default: @code{"/var/log/pict-rs.log"}) (type: string)
 The path where pict-rs writes logs.
@@ -33,9 +33,8 @@ equal to "host" the @code{port} field will not be mapped into the
 container's one.
 
 @item @code{config-file} (type: file-like)
-A list of pairs representing any extra environment variable that should
-be set inside the container.  Refer to the
-@uref{upstream,https://git.asonix.dog/asonix/pict-rs} documentation for
+The configuration file for @code{pict-rs}.  Refer to the
+@uref{https://git.asonix.dog/asonix/pict-rs,upstream} documentation for
 more details.
 
 @end table

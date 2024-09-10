@@ -1,0 +1,56 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-lemmy-configuration
+Available @code{oci-lemmy-configuration} fields are:
+
+@table @asis
+@item @code{image} (default: @code{"docker.io/dessalines/lemmy:0.19.5"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{configuration} (type: lemmy-configuration)
+A lemmy-configuration record used to configure the Lemmy instance.
+
+@item @code{enable-lemmy-ui?} (default: @code{#t}) (type: boolean)
+Whether to automatically install and enable Lemmy UI.  If set to
+@code{#f}, it can allow third party UIs to be used instead of Lemmy UI.
+
+@item @code{extra-themes-directory} (default: @code{"/var/lib/lemmy/ui/extra-themes"}) (type: string)
+The path where Lemmy UI will look for extra themes.  If
+@code{enable-lemmy-ui?} is false this field's value is ignored.
+
+@item @code{lemmy-ui-port} (default: @code{1234}) (type: number)
+Host port where lemmy-ui's port will be mapped.  If
+@code{enable-lemmy-ui?} is false this field's value is ignored.
+
+@item @code{requirement} (default: @code{(docker-pictrs)}) (type: list)
+A list of Shepherd services that will be waited for before starting
+Lemmy's backend.
+
+@item @code{rust-log} (default: @code{"warn"}) (type: string)
+The value of @code{RUST_LOG} environment variable inside Lemmy's backend
+container.
+
+@item @code{log-file} (type: maybe-string)
+When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is
+created if it does not exist, otherwise it is appended to.
+
+@item @code{network} (type: maybe-string)
+The docker network where the grafana container will be attached.  When
+equal to "host" the @code{port} field will be ignored.
+
+@item @code{auto-start?} (default: @code{#t}) (type: boolean)
+Whether Lemmy should be started automatically by the Shepherd.  If it is
+@code{#f} Lemmy has to be started manually with @command{herd start}.
+
+@item @code{secrets-directory} (default: @code{"/run/secrets"}) (type: string)
+The directory where secrets are looked for.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

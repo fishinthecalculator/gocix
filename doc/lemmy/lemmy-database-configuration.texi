@@ -1,0 +1,36 @@
+
+@c %start of fragment
+
+@deftp {Data Type} lemmy-database-configuration
+Available @code{lemmy-database-configuration} fields are:
+
+@table @asis
+@item @code{user} (type: string)
+Username to connect to postgres.
+
+@item @code{password} (type: sops-secret)
+Password to connect to postgres.
+
+@item @code{host} (type: string)
+Host where postgres is running.
+
+@item @code{port} (type: number)
+Port where postgres can be accessed.
+
+@item @code{database} (type: string)
+Name of the postgres database for Lemmy.
+
+@item @code{pool-size} (default: @code{5}) (type: number)
+Maximum number of active sql connections.
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Any extra content you may want to add in the
+@uref{https://hjson.github.io,hjson} format.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

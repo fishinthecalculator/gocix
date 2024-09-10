@@ -1,0 +1,24 @@
+
+@c %start of fragment
+
+@deftp {Data Type} lemmy-prometheus-configuration
+Available @code{lemmy-prometheus-configuration} fields are:
+
+@table @asis
+@item @code{bind} (default: @code{"127.0.0.1"}) (type: string)
+The IP address or hostname of Prometheus.
+
+@item @code{port} (default: @code{10002}) (type: number)
+The port where Prometheus is listening for connections.
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Any extra content you may want to add in the
+@uref{https://hjson.github.io,hjson} format.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

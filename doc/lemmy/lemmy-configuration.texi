@@ -1,0 +1,51 @@
+
+@c %start of fragment
+
+@deftp {Data Type} lemmy-configuration
+Available @code{lemmy-configuration} fields are:
+
+@table @asis
+@item @code{hostname} (type: string)
+The domain name of your instance.
+
+@item @code{bind} (default: @code{"0.0.0.0"}) (type: string)
+Address where Lemmy should listen for incoming requests.
+
+@item @code{port} (default: @code{8536}) (type: number)
+Port where lemmy should listen for incoming requests.
+
+@item @code{tls-enabled?} (default: @code{#t}) (type: boolean)
+Whether the site is available over TLS.  Needs to be true for federation
+to work.
+
+@item @code{worker-count} (default: @code{0}) (type: number)
+The number of activitypub federation workers that can be in-flight
+concurrently worker_count: 0.
+
+@item @code{retry-count} (default: @code{0}) (type: number)
+The number of activitypub federation retry workers that can be in-flight
+concurrently.
+
+@item @code{database} (type: lemmy-database-configuration)
+Settings related to the postgresql database.
+
+@item @code{pictrs} (type: lemmy-pictrs-configuration)
+Pictrs image server configuration.
+
+@item @code{email} (type: lemmy-email-configuration)
+Email sending configuration.
+
+@item @code{prometheus} (type: lemmy-prometheus-configuration)
+Settings related to Prometheus.
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Any extra content you may want to add in the
+@uref{https://hjson.github.io,hjson} format.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

@@ -1,0 +1,24 @@
+
+@c %start of fragment
+
+@deftp {Data Type} lemmy-pictrs-configuration
+Available @code{lemmy-pictrs-configuration} fields are:
+
+@table @asis
+@item @code{url} (default: @code{"http://localhost:8080/"}) (type: string)
+Address where pictrs is available (for image hosting)
+
+@item @code{api-key} (type: sops-secret)
+Set a custom pictrs API key (required for deleting images).
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Any extra content you may want to add in the
+@uref{https://hjson.github.io,hjson} format.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

@@ -1,0 +1,34 @@
+
+@c %start of fragment
+
+@deftp {Data Type} lemmy-email-configuration
+Available @code{lemmy-email-configuration} fields are:
+
+@table @asis
+@item @code{tls-type} (default: @code{none}) (type: symbol)
+Whether or not smtp connections should use tls.  Can be @code{none},
+@code{tls}, or @code{starttls}.
+
+@item @code{smtp-from-address} (default: @code{"noreply@@example.com"}) (type: string)
+Address to send emails from, eg "noreply@@your-instance.com".
+
+@item @code{smtp-server} (default: @code{"localhost:25"}) (type: string)
+Hostname and port of the smtp server.
+
+@item @code{smtp-login} (default: @code{"localhost:25"}) (type: string)
+Hostname and port of the smtp server.
+
+@item @code{smtp-password} (type: sops-secret)
+The Lemmy secret used to login to the SMTP server.
+
+@item @code{extra-content} (default: @code{""}) (type: string)
+Any extra content you may want to add in the
+@uref{https://hjson.github.io,hjson} format.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

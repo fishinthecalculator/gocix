@@ -397,7 +397,7 @@ The directory where pict-rs writes state.
 
 ` requirement ` (default: ` () ` ) (type: list)  
 A list of Shepherd services that will be waited for before starting
-pict-rs.
+` pict-rs ` .
 
 ` log-file ` (default: ` "/var/log/pict-rs.log" ` ) (type: string)  
 The path where pict-rs writes logs.
@@ -414,9 +414,8 @@ equal to "host" the ` port ` field will not be mapped into the
 container’s one.
 
 ` config-file ` (type: file-like)  
-A list of pairs representing any extra environment variable that should
-be set inside the container. Refer to the
-[https://git.asonix.dog/asonix/pict-rs](upstream) documentation for more
+The configuration file for ` pict-rs ` . Refer to the
+[upstream](https://git.asonix.dog/asonix/pict-rs) documentation for more
 details.
 
 ------------------------------------------------------------------------
@@ -561,5 +560,5 @@ If ` network ` is set this field will be ignored.
 
 ------------------------------------------------------------------------
 
-This document was generated on *September 8, 2024* using [*texi2html
+This document was generated on *September 11, 2024* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

@@ -8,6 +8,7 @@
   #:use-module (guix i18n)
   #:use-module (ice-9 match)
   #:use-module (ice-9 string-fun)
+  #:use-module (srfi srfi-1)
   #:export (field-name->environment-variable
             serialize-environment-variable
             serialize-boolean-environment-variable
@@ -21,7 +22,10 @@
             configuration->yaml-block
 
             format-yaml-list
-            format-json-list))
+            format-json-list
+
+            serialize-hjson-string
+            configuration->hjson-block))
 
 ;; Common
 
@@ -33,18 +37,22 @@
                 delimiter)
                "]"))
 
+(define (uglify-snake-case field-name)
+  (define str (symbol->string field-name))
+  (string-downcase
+   (string-replace-substring
+    (if (string-suffix? "?" str)
+        (string-drop-right str 1)
+        str)
+    "-" "_")))
+
 ;; Environment variables
 
 (define* (field-name->environment-variable field-name #:key (prefix #f))
-  (let* ((str (symbol->string field-name))
-         (variable
-           ;; a-field? -> ${PREFIX}A_FIELD
-           (string-upcase
-            (string-replace-substring
-             (if (string-suffix? "?" str)
-                 (string-drop-right str 1)
-                 str)
-             "-" "_"))))
+  (let ((variable
+         ;; a-field? -> ${PREFIX}A_FIELD
+         (string-upcase
+          (uglify-snake-case field-name))))
     (if (and prefix (string? prefix) (not (string-null? prefix)))
         (string-append prefix variable)
         variable)))
@@ -62,13 +70,8 @@
 
 ;; INI
 
-(define (ini-uglify-field-name field-name)
-  (string-replace-substring
-   (string-replace-substring
-    (symbol->string field-name) "?" "") "-" "_"))
-
 (define (serialize-ini-string field-name value)
-  #~(string-append #$(ini-uglify-field-name field-name) " = " #$value "\n"))
+  #~(string-append #$(uglify-snake-case field-name) " = " #$value "\n"))
 
 (define (serialize-ini-integer field-name value)
   (serialize-ini-string field-name (number->string value)))
@@ -79,13 +82,8 @@
 
 ;; Yaml
 
-(define (yaml-uglify-field-name field-name)
-  (string-replace-substring
-   (string-replace-substring
-    (symbol->string field-name) "?" "") "-" "_"))
-
 (define* (serialize-yaml-string field-name value #:key (indentation "") (first? #f))
-  #~(string-append #$indentation (if #$first? "- " "") #$(ini-uglify-field-name field-name) ": " #$value "\n"))
+  #~(string-append #$indentation (if #$first? "- " "") #$(uglify-snake-case field-name) ": " #$value "\n"))
 
 (define* (serialize-yaml-maybe-string field-name value #:key (indentation "") (first? #f))
   (if (maybe-value-set? value)
@@ -128,8 +126,76 @@
                                       (_
                                        (raise
                                         (formatted-message
-                                         (G_ "Unknown field type: ~a")
-                                         type))))
+                                         (G_ "Unknown yaml field type: ~a ~a")
+                                         field-name type))))
+                                    '())))
+                            (let loop ((counter 0)
+                                       (acc '())
+                                       (lst fields))
+                              (if (null? lst)
+                                  acc
+                                  (loop (1+ counter)
+                                        (append acc (list (cons (car lst)
+                                                                counter)))
+                                        (cdr lst)))))))))
+
+
+;; hjson
+(define* (serialize-hjson-field field-name value #:key (indentation ""))
+  #~(string-append #$indentation #$(uglify-snake-case field-name) ": " #$value "\n"))
+
+(define* (serialize-hjson-string field-name value #:key (indentation ""))
+  (serialize-hjson-field field-name (string-append "\"" value "\"")
+                         #:indentation indentation))
+
+(define* (serialize-hjson-number field-name value #:key (indentation ""))
+  (serialize-hjson-field field-name (number->string value)
+                         #:indentation indentation))
+
+(define* (serialize-hjson-boolean field-name value #:key (indentation ""))
+  (serialize-hjson-field field-name (if value "true" "false")
+                         #:indentation indentation))
+
+(define* (serialize-hjson-maybe-string field-name value #:key (indentation ""))
+  (if (maybe-value-set? value)
+      (serialize-hjson-string field-name value #:indentation indentation)
+      ""))
+
+(define* (configuration->hjson-block config fields #:key (indentation "") (excluded '()) (excluded-types '()))
+  #~(apply string-append
+           (list
+            #$@(filter (compose not null?)
+                       (map (lambda (pair)
+                              (let* ((f (car pair))
+                                     (i (cdr pair))
+                                     (field-name (configuration-field-name f))
+                                     (type (configuration-field-type f))
+                                     (value ((configuration-field-getter f) config)))
+                                (if (not (or (member field-name excluded)
+                                             (any (lambda (predicate) (predicate field-name))
+                                                  excluded-types)))
+                                    (match type
+                                      ('string
+                                       (serialize-hjson-string field-name value
+                                                               #:indentation indentation))
+                                      ('maybe-string
+                                       (serialize-hjson-maybe-string field-name value
+                                                                     #:indentation indentation))
+                                      ('number
+                                       (serialize-hjson-number field-name value
+                                                               #:indentation indentation))
+                                      ('boolean
+                                       (serialize-hjson-boolean field-name value
+                                                               #:indentation indentation))
+                                      ('symbol
+                                       (serialize-hjson-string field-name
+                                                               (symbol->string value)
+                                                               #:indentation indentation))
+                                      (_
+                                       (raise
+                                        (formatted-message
+                                         (G_ "Unknown hjson field type: ~a ~a")
+                                         field-name type))))
                                     '())))
                             (let loop ((counter 0)
                                        (acc '())
