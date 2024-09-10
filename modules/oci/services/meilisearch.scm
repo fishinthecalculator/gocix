@@ -73,57 +73,55 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
 
 (define (%meilisearch-activation config)
   "Return an activation gexp for Meilisearch."
-  (when config
-    (let* ((datadir (oci-meilisearch-configuration-datadir config))
-           (database-path
-            (oci-meilisearch-configuration-database-path config)))
-      #~(begin
-          (use-modules (guix build utils))
-          (let* ((database-path #$database-path)
-                 (datadir #$datadir))
-            ;; Setup datadirs
-            (mkdir-p datadir)
-            (mkdir-p database-path))))))
+  (let* ((datadir (oci-meilisearch-configuration-datadir config))
+         (database-path
+          (oci-meilisearch-configuration-database-path config)))
+    #~(begin
+        (use-modules (guix build utils))
+        (let* ((database-path #$database-path)
+               (datadir #$datadir))
+          ;; Setup datadirs
+          (mkdir-p datadir)
+          (mkdir-p database-path)))))
 
 (define oci-meilisearch-configuration->oci-container-configuration
   (lambda (config)
-    (when config
-      (let* ((datadir
-              (oci-meilisearch-configuration-datadir config))
-             (database-path
-              (oci-meilisearch-configuration-database-path config))
-             (extra-variables
-              (oci-meilisearch-configuration-extra-variables config))
-             (network
-              (oci-meilisearch-configuration-network config))
-             (image
-              (oci-meilisearch-configuration-image config))
-             (port
-              (oci-meilisearch-configuration-port config))
-             (container-config
-              (oci-container-configuration
-               (image image)
-               (requirement '(sops-secrets))
-               (entrypoint "/sbin/tini")
-               (command
-                `("--" "sh" "-c" "export MEILI_MASTER_KEY=$(cat /run/secrets/meilisearch/master) && exec /bin/meilisearch"))
-               (environment
-                (append
-                 '(("MEILI_NO_ANALYTICS" . "true"))
-                 extra-variables))
-               (ports
-                `((,port . ,port)))
-               (volumes
-                `((,datadir . "/meili_data")
-                  (,database-path . "/data.ms")
-                  ("/run/secrets/meilisearch" . "/run/secrets/meilisearch:ro"))))))
-        (list
-         (if (maybe-value-set? network)
-             (oci-container-configuration
-              (inherit container-config)
-              (ports '())
-              (network network))
-             container-config))))))
+    (let* ((datadir
+            (oci-meilisearch-configuration-datadir config))
+           (database-path
+            (oci-meilisearch-configuration-database-path config))
+           (extra-variables
+            (oci-meilisearch-configuration-extra-variables config))
+           (network
+            (oci-meilisearch-configuration-network config))
+           (image
+            (oci-meilisearch-configuration-image config))
+           (port
+            (oci-meilisearch-configuration-port config))
+           (container-config
+            (oci-container-configuration
+             (image image)
+             (requirement '(sops-secrets))
+             (entrypoint "/sbin/tini")
+             (command
+              `("--" "sh" "-c" "export MEILI_MASTER_KEY=$(cat /run/secrets/meilisearch/master) && exec /bin/meilisearch"))
+             (environment
+              (append
+               '(("MEILI_NO_ANALYTICS" . "true"))
+               extra-variables))
+             (ports
+              `((,port . ,port)))
+             (volumes
+              `((,datadir . "/meili_data")
+                (,database-path . "/data.ms")
+                ("/run/secrets/meilisearch" . "/run/secrets/meilisearch:ro"))))))
+      (list
+       (if (maybe-value-set? network)
+           (oci-container-configuration
+            (inherit container-config)
+            (ports '())
+            (network network))
+           container-config)))))
 
 (define oci-meilisearch-service-type
   (service-type (name 'meilisearch)
@@ -134,6 +132,5 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                                                        (list (oci-meilisearch-configuration-master-key config))))
                                   (service-extension activation-service-type
                                                      %meilisearch-activation)))
-                (default-value #f)
                 (description
                  "This service install a OCI backed Meilisearch Shepherd Service.")))

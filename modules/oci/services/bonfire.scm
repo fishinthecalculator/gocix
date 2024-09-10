@@ -227,21 +227,20 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
 
 (define (%bonfire-activation config)
   "Return an activation gexp for Bonfire."
-  (when config
-    (let* ((log-file
-            (oci-bonfire-configuration-log-file config))
-           (upload-data-directory
-            (oci-bonfire-configuration-upload-data-directory config)))
-      #~(begin
-          (use-modules (guix build utils))
-          (let* ((upload-data-directory #$upload-data-directory))
-            ;; Setup datadirs
-            (mkdir-p upload-data-directory)
+  (let* ((log-file
+          (oci-bonfire-configuration-log-file config))
+         (upload-data-directory
+          (oci-bonfire-configuration-upload-data-directory config)))
+    #~(begin
+        (use-modules (guix build utils))
+        (let* ((upload-data-directory #$upload-data-directory))
+          ;; Setup datadirs
+          (mkdir-p upload-data-directory)
 
-            (when #$(maybe-value-set? log-file)
-              (let ((logs-directory (dirname #$log-file)))
-                (unless (file-exists? logs-directory)
-                  (mkdir-p logs-directory)))))))))
+          (when #$(maybe-value-set? log-file)
+                (let ((logs-directory (dirname #$log-file)))
+                  (unless (file-exists? logs-directory)
+                    (mkdir-p logs-directory))))))))
 
 (define* (oci-bonfire-sh-command secrets-specs command)
   "Exports each one of the SECRETS-SPECS as an environment variable
@@ -258,67 +257,66 @@ and returns Bonfire's sh command."
 
 (define oci-bonfire-configuration->oci-container-configuration
   (lambda (config)
-    (when config
-      (let* ((auto-start?
-              (oci-bonfire-configuration-auto-start? config))
-             (bonfire-config
-              (oci-bonfire-configuration-configuration config))
-             (upload-data-directory
-              (oci-bonfire-configuration-upload-data-directory config))
+    (let* ((auto-start?
+            (oci-bonfire-configuration-auto-start? config))
+           (bonfire-config
+            (oci-bonfire-configuration-configuration config))
+           (upload-data-directory
+            (oci-bonfire-configuration-upload-data-directory config))
+           (environment
+            (bonfire-configuration->oci-container-environment
+             bonfire-config))
+           (extra-variables
+            (oci-bonfire-configuration-extra-variables config))
+           (log-file
+            (oci-bonfire-configuration-log-file config))
+           (network
+            (oci-bonfire-configuration-network config))
+           (port
+            (bonfire-configuration-port bonfire-config))
+           (image
+            (oci-bonfire-configuration-image config))
+           (requirement
+            (oci-bonfire-configuration-requirement config))
+           (secrets-directories
+            (delete-duplicates
+             (map (lambda (secret-file)
+                    (define secret-directory (dirname secret-file))
+                    (string-append secret-directory ":"
+                                   secret-directory ":ro"))
+                  (%bonfire-secrets-files config))))
+           (container-config
+            (oci-container-configuration
+             (image image)
+             (auto-start? auto-start?)
+             (requirement `(,@requirement sops-secrets))
+             (entrypoint "/bin/sh")
+             (command
+              `("-c" ,(oci-bonfire-sh-command (%bonfire-secrets-specs config)
+                                              "./bin/bonfire start")))
              (environment
-              (bonfire-configuration->oci-container-environment
-               bonfire-config))
-             (extra-variables
-              (oci-bonfire-configuration-extra-variables config))
-             (log-file
-              (oci-bonfire-configuration-log-file config))
-             (network
-              (oci-bonfire-configuration-network config))
-             (port
-              (bonfire-configuration-port bonfire-config))
-             (image
-              (oci-bonfire-configuration-image config))
-             (requirement
-              (oci-bonfire-configuration-requirement config))
-             (secrets-directories
-              (delete-duplicates
-               (map (lambda (secret-file)
-                      (define secret-directory (dirname secret-file))
-                      (string-append secret-directory ":"
-                                     secret-directory ":ro"))
-                    (%bonfire-secrets-files config))))
-             (container-config
-              (oci-container-configuration
-               (image image)
-               (auto-start? auto-start?)
-               (requirement `(,@requirement sops-secrets))
-               (entrypoint "/bin/sh")
-               (command
-                `("-c" ,(oci-bonfire-sh-command (%bonfire-secrets-specs config)
-                                                "./bin/bonfire start")))
-               (environment
-                (append
-                 environment
-                 '("LANG"
-                   ("SEEDS_USER" . "root")
-                   ("ERLANG_COOKIE" . "bonfire_cookie")
-                   ("MIX_ENV" . "prod")
-                   ("PLUG_BACKEND" . "bandit")
-                   ("APP_NAME" . "Bonfire"))
-                 extra-variables))
-               (ports
-                `((,port . ,port)))
-               (volumes
-                `((,upload-data-directory . "/opt/app/data/uploads")
-                  ,@secrets-directories))
-               (log-file log-file))))
-        (list
-         (if (maybe-value-set? network)
-             (oci-container-configuration
-              (inherit container-config)
-              (ports '())
-              (network network))
-             container-config))))))
+              (append
+               environment
+               '("LANG"
+                 ("SEEDS_USER" . "root")
+                 ("ERLANG_COOKIE" . "bonfire_cookie")
+                 ("MIX_ENV" . "prod")
+                 ("PLUG_BACKEND" . "bandit")
+                 ("APP_NAME" . "Bonfire"))
+               extra-variables))
+             (ports
+              `((,port . ,port)))
+             (volumes
+              `((,upload-data-directory . "/opt/app/data/uploads")
+                ,@secrets-directories))
+             (log-file log-file))))
+      (list
+       (if (maybe-value-set? network)
+           (oci-container-configuration
+            (inherit container-config)
+            (ports '())
+            (network network))
+           container-config)))))
 
 (define (bonfire-iex bonfire-config secrets-specs)
   (let* ((bash (file-append bash "/bin/bash"))
@@ -371,6 +369,5 @@ for example by starting an interactive shell attached to the Elixir process.")
                                                        (%bonfire-secrets config)))
                                   (service-extension activation-service-type
                                                      %bonfire-activation)))
-                (default-value #f)
                 (description
                  "This service install a OCI backed Bonfire Shepherd Service.")))

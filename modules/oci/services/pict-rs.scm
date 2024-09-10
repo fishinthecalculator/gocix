@@ -145,7 +145,7 @@ path = \"/mnt/files\"
    "The directory where pict-rs writes state.")
   (requirement
    (list '())
-   "A list of Shepherd services that will be waited for before starting pict-rs.")
+   "A list of Shepherd services that will be waited for before starting @code{pict-rs}.")
   (log-file
    (string "/var/log/pict-rs.log")
    "The path where pict-rs writes logs.")
@@ -161,7 +161,7 @@ path = \"/mnt/files\"
 to \"host\" the @code{port} field will not be mapped into the container's one.")
   (config-file
    (file-like %pict-rs-default.toml)
-   "A list of pairs representing any extra environment variable that should be set inside the container. Refer to the @uref{upstream, https://git.asonix.dog/asonix/pict-rs} documentation for more details."))
+   "The configuration file for @code{pict-rs}.  Refer to the @uref{https://git.asonix.dog/asonix/pict-rs, upstream} documentation for more details."))
 
 (define (%pict-rs-secrets config)
   (let ((api-key (oci-pict-rs-configuration-server-api-key config)))
@@ -199,23 +199,22 @@ and returns pict-rs's sh command."
 
 (define (%pict-rs-activation config)
   "Return an activation gexp for pict-rs."
-  (when config
-    (let ((datadir (oci-pict-rs-configuration-datadir config))
-          (log-file (oci-pict-rs-configuration-log-file config)))
-      #~(begin
-          (use-modules (guix build utils))
-          (let* ((user (getpwnam "pict-rs"))
-                 (uid (passwd:uid user))
-                 (gid (passwd:gid user))
-                 (datadir #$datadir))
-            ;; Setup datadir
-            (mkdir-p datadir)
-            (chown datadir uid gid)
+  (let ((datadir (oci-pict-rs-configuration-datadir config))
+        (log-file (oci-pict-rs-configuration-log-file config)))
+    #~(begin
+        (use-modules (guix build utils))
+        (let* ((user (getpwnam "pict-rs"))
+               (uid (passwd:uid user))
+               (gid (passwd:gid user))
+               (datadir #$datadir))
+          ;; Setup datadir
+          (mkdir-p datadir)
+          (chown datadir uid gid)
 
-            ;; Setup log-dir
-            (let ((logs-directory (dirname #$log-file)))
-              (unless (file-exists? logs-directory)
-                (mkdir-p logs-directory))))))))
+          ;; Setup log-dir
+          (let ((logs-directory (dirname #$log-file)))
+            (unless (file-exists? logs-directory)
+              (mkdir-p logs-directory)))))))
 
 (define %pict-rs-accounts
   (list (user-group
@@ -234,57 +233,56 @@ and returns pict-rs's sh command."
 
 (define oci-pict-rs-configuration->oci-container-configuration
   (lambda (config)
-    (when config
-      (let* ((datadir
-              (oci-pict-rs-configuration-datadir config))
-             (config-file
-              (oci-pict-rs-configuration-config-file config))
+    (let* ((datadir
+            (oci-pict-rs-configuration-datadir config))
+           (config-file
+            (oci-pict-rs-configuration-config-file config))
+           (requirement
+            (oci-pict-rs-configuration-requirement config))
+           (network
+            (oci-pict-rs-configuration-network config))
+           (log-file
+            (oci-pict-rs-configuration-log-file config))
+           (image
+            (oci-pict-rs-configuration-image config))
+           (port
+            (oci-pict-rs-configuration-port config))
+           (secrets-directories
+            (delete-duplicates
+             (map (lambda (secret-file)
+                    (define secret-directory (dirname secret-file))
+                    (string-append secret-directory ":"
+                                   secret-directory ":ro"))
+                  (%pict-rs-secrets-files config))))
+           (container-config
+            (oci-container-configuration
+             (image image)
+             (log-file log-file)
              (requirement
-              (oci-pict-rs-configuration-requirement config))
-             (network
-              (oci-pict-rs-configuration-network config))
-             (log-file
-              (oci-pict-rs-configuration-log-file config))
-             (image
-              (oci-pict-rs-configuration-image config))
-             (port
-              (oci-pict-rs-configuration-port config))
-             (secrets-directories
-              (delete-duplicates
-               (map (lambda (secret-file)
-                      (define secret-directory (dirname secret-file))
-                      (string-append secret-directory ":"
-                                     secret-directory ":ro"))
-                    (%pict-rs-secrets-files config))))
-             (container-config
-              (oci-container-configuration
-               (image image)
-               (log-file log-file)
-               (requirement
-                (append requirement
-                        (if (> (length secrets-directories) 0)
-                            '(sops-secrets)
-                            '())))
-               (entrypoint
-                "/sbin/tini")
-               (command
-                `("/bin/sh" "-c"
-                  ,(oci-pict-rs-sh-command (%pict-rs-secrets-specs config)
-                                           "/usr/local/bin/pict-rs --config-file /pict-rs.toml run")))
-               (ports
-                `((,port . ,port)))
-               (volumes
-                `((,config-file . "/pict-rs.toml:ro")
-                  ("/gnu/store" . "/gnu/store")
-                  (,datadir . "/mnt")
-                  ,@secrets-directories)))))
-        (list
-         (if (maybe-value-set? network)
-             (oci-container-configuration
-              (inherit container-config)
-              (ports '())
-              (network network))
-             container-config))))))
+              (append requirement
+                      (if (> (length secrets-directories) 0)
+                          '(sops-secrets)
+                          '())))
+             (entrypoint
+              "/sbin/tini")
+             (command
+              `("/bin/sh" "-c"
+                ,(oci-pict-rs-sh-command (%pict-rs-secrets-specs config)
+                                         "/usr/local/bin/pict-rs --config-file /pict-rs.toml run")))
+             (ports
+              `((,port . ,port)))
+             (volumes
+              `((,config-file . "/pict-rs.toml:ro")
+                ("/gnu/store" . "/gnu/store")
+                (,datadir . "/mnt")
+                ,@secrets-directories)))))
+      (list
+       (if (maybe-value-set? network)
+           (oci-container-configuration
+            (inherit container-config)
+            (ports '())
+            (network network))
+           container-config)))))
 
 (define oci-pict-rs-service-type
   (service-type (name 'pict-rs)
