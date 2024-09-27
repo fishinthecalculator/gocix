@@ -1,0 +1,43 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-configuration
+Available @code{oci-configuration} fields are:
+
+@table @asis
+@item @code{runtime} (default: @code{docker}) (type: symbol)
+The OCI runtime to use to run commands.
+
+@item @code{runtime-cli} (type: maybe-package)
+The OCI runtime command line to be installed in the system profile and
+used to provision OCI resources.  When unset it will default to
+@code{docker-cli} package for the @code{'docker} runtime or to
+@code{podman} package for the @code{'podman} runtime.
+
+@item @code{user} (default: @code{"oci-container"}) (type: string)
+The user under whose authority OCI runtime commands will be run.
+
+@item @code{group} (type: maybe-string)
+The group under whose authority OCI commands will be run.  Its default
+value is either @code{docker} or @code{cgroups} based on the selected
+OCI runtime.
+
+@item @code{containers} (default: @code{()}) (type: list-of-oci-containers)
+The list of @code{oci-container-configuration} records representing the
+containers to provision.
+
+@item @code{networks} (default: @code{()}) (type: list-of-oci-networks)
+The list of @code{oci-network-configuration} records representing the
+networks to provision.
+
+@item @code{volumes} (default: @code{()}) (type: list-of-oci-volumes)
+The list of @code{oci-volume-configuration} records representing the
+volumes to provision.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

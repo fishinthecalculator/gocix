@@ -1,0 +1,45 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-network-configuration
+Available @code{oci-network-configuration} fields are:
+
+@table @asis
+@item @code{name} (type: string)
+The name of the OCI network to provision.
+
+@item @code{driver} (default: @code{"bridge"}) (type: string)
+The driver to manage the network.
+
+@item @code{gateway} (type: maybe-string)
+IPv4 or IPv6 gateway for the subnet.
+
+@item @code{internal?} (default: @code{#f}) (type: boolean)
+Restrict external access to the network
+
+@item @code{ip-range} (type: maybe-string)
+Allocate container ip from a sub-range in CIDR format.
+
+@item @code{ipam-driver} (default: @code{"default"}) (type: string)
+IP Address Management Driver.
+
+@item @code{ipv6?} (default: @code{#f}) (type: boolean)
+Enable IPv6 networking.
+
+@item @code{subnet} (type: maybe-string)
+Subnet in CIDR format that represents a network segment.
+
+@item @code{labels} (default: @code{()}) (type: list)
+The list of labels that will be used to tag the current volume.
+
+@item @code{extra-arguments} (default: @code{()}) (type: list)
+A list of strings, gexps or file-like objects that will be directly
+passed to the runtime invokation.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

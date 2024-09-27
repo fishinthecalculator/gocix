@@ -1,0 +1,26 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-extension
+Available @code{oci-extension} fields are:
+
+@table @asis
+@item @code{containers} (default: @code{()}) (type: list-of-oci-containers)
+The list of @code{oci-container-configuration} records representing the
+containers to add.
+
+@item @code{networks} (default: @code{()}) (type: list-of-oci-networks)
+The list of @code{oci-network-configuration} records representing the
+networks to add.
+
+@item @code{volumes} (default: @code{()}) (type: list-of-oci-volumes)
+The list of @code{oci-volume-configuration} records representing the
+volumes to add.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

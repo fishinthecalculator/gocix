@@ -57,6 +57,7 @@ This document describes gocix version @value{VERSION}.
 This channel exposes at @code{(oci services)} a set of Guix System services for many useful applications, such as:
 
 @itemize
+@item OCI Service
 @item Bonfire
 @item Forgejo
 @item Grafana
@@ -81,6 +82,7 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 @chapter Services
 
 @menu
+* OCI Service::
 * Bonfire::
 * Conduit::
 * Forgejo::
@@ -90,6 +92,17 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 * Prometheus::
 * Prometheus Blackbox Exporter::
 @end menu
+
+@node OCI Service
+@section OCI Service
+
+@include containers/oci-network-configuration.texi
+
+@include containers/oci-volume-configuration.texi
+
+@include containers/oci-configuration.texi
+
+@include containers/oci-extension.texi
 
 @node Bonfire
 @section Bonfire

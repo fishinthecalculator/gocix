@@ -34,6 +34,7 @@ This document describes gocix version 0.1.
 This channel exposes at ` (oci services) ` a set of Guix System services
 for many useful applications, such as:
 
+- OCI Service
 - Bonfire
 - Forgejo
 - Grafana
@@ -68,20 +69,127 @@ into Guix proper. To achieve this vision gocix services strive to:
 
 |                                                                   |     |     |
 |:------------------------------------------------------------------|-----|:----|
-| [2.1 Bonfire](#Bonfire)                                           |     |     |
-| [2.2 Conduit](#Conduit)                                           |     |     |
-| [2.3 Forgejo](#Forgejo)                                           |     |     |
-| [2.4 Grafana](#Grafana)                                           |     |     |
-| [2.5 Meilisearch](#Meilisearch)                                   |     |     |
-| [2.6 pict-rs](#pict_002drs)                                       |     |     |
-| [2.7 Prometheus](#Prometheus)                                     |     |     |
-| [2.8 Prometheus Blackbox Exporter](#Prometheus-Blackbox-Exporter) |     |     |
+| [2.1 OCI Service](#OCI-Service)                                   |     |     |
+| [2.2 Bonfire](#Bonfire)                                           |     |     |
+| [2.3 Conduit](#Conduit)                                           |     |     |
+| [2.4 Forgejo](#Forgejo)                                           |     |     |
+| [2.5 Grafana](#Grafana)                                           |     |     |
+| [2.6 Meilisearch](#Meilisearch)                                   |     |     |
+| [2.7 pict-rs](#pict_002drs)                                       |     |     |
+| [2.8 Prometheus](#Prometheus)                                     |     |     |
+| [2.9 Prometheus Blackbox Exporter](#Prometheus-Blackbox-Exporter) |     |     |
+
+------------------------------------------------------------------------
+
+<span id="OCI-Service"></span> <span id="OCI-Service-1"></span>
+
+## 2.1 OCI Service
+
+<span id="index-oci_002dnetwork_002dconfiguration"></span> Data Type: **oci-network-configuration**  
+Available ` oci-network-configuration ` fields are:
+
+` name ` (type: string)  
+The name of the OCI network to provision.
+
+` driver ` (default: ` "bridge" ` ) (type: string)  
+The driver to manage the network.
+
+` gateway ` (type: maybe-string)  
+IPv4 or IPv6 gateway for the subnet.
+
+` internal? ` (default: ` #f ` ) (type: boolean)  
+Restrict external access to the network
+
+` ip-range ` (type: maybe-string)  
+Allocate container ip from a sub-range in CIDR format.
+
+` ipam-driver ` (default: ` "default" ` ) (type: string)  
+IP Address Management Driver.
+
+` ipv6? ` (default: ` #f ` ) (type: boolean)  
+Enable IPv6 networking.
+
+` subnet ` (type: maybe-string)  
+Subnet in CIDR format that represents a network segment.
+
+` labels ` (default: ` () ` ) (type: list)  
+The list of labels that will be used to tag the current volume.
+
+` extra-arguments ` (default: ` () ` ) (type: list)  
+A list of strings, gexps or file-like objects that will be directly
+passed to the runtime invokation.
+
+<!-- -->
+
+<span id="index-oci_002dvolume_002dconfiguration"></span> Data Type: **oci-volume-configuration**  
+Available ` oci-volume-configuration ` fields are:
+
+` name ` (type: string)  
+The name of the OCI volume to provision.
+
+` labels ` (default: ` () ` ) (type: list)  
+The list of labels that will be used to tag the current volume.
+
+` extra-arguments ` (default: ` () ` ) (type: list)  
+A list of strings, gexps or file-like objects that will be directly
+passed to the runtime invokation.
+
+<!-- -->
+
+<span id="index-oci_002dconfiguration"></span> Data Type: **oci-configuration**  
+Available ` oci-configuration ` fields are:
+
+` runtime ` (default: ` docker ` ) (type: symbol)  
+The OCI runtime to use to run commands.
+
+` runtime-cli ` (type: maybe-package)  
+The OCI runtime command line to be installed in the system profile and
+used to provision OCI resources. When unset it will default to
+` docker-cli ` package for the ` 'docker ` runtime or to ` podman `
+package for the ` 'podman ` runtime.
+
+` user ` (default: ` "oci-container" ` ) (type: string)  
+The user under whose authority OCI runtime commands will be run.
+
+` group ` (type: maybe-string)  
+The group under whose authority OCI commands will be run. Its default
+value is either ` docker ` or ` cgroups ` based on the selected OCI
+runtime.
+
+` containers ` (default: ` () ` ) (type: list-of-oci-containers)  
+The list of ` oci-container-configuration ` records representing the
+containers to provision.
+
+` networks ` (default: ` () ` ) (type: list-of-oci-networks)  
+The list of ` oci-network-configuration ` records representing the
+networks to provision.
+
+` volumes ` (default: ` () ` ) (type: list-of-oci-volumes)  
+The list of ` oci-volume-configuration ` records representing the
+volumes to provision.
+
+<!-- -->
+
+<span id="index-oci_002dextension"></span> Data Type: **oci-extension**  
+Available ` oci-extension ` fields are:
+
+` containers ` (default: ` () ` ) (type: list-of-oci-containers)  
+The list of ` oci-container-configuration ` records representing the
+containers to add.
+
+` networks ` (default: ` () ` ) (type: list-of-oci-networks)  
+The list of ` oci-network-configuration ` records representing the
+networks to add.
+
+` volumes ` (default: ` () ` ) (type: list-of-oci-volumes)  
+The list of ` oci-volume-configuration ` records representing the
+volumes to add.
 
 ------------------------------------------------------------------------
 
 <span id="Bonfire"></span> <span id="Bonfire-1"></span>
 
-## 2.1 Bonfire
+## 2.2 Bonfire
 
 <span id="index-bonfire_002dconfiguration"></span> Data Type: **bonfire-configuration**  
 Available ` bonfire-configuration ` fields are:
@@ -190,7 +298,7 @@ more details.
 
 <span id="Conduit"></span> <span id="Conduit-1"></span>
 
-## 2.2 Conduit
+## 2.3 Conduit
 
 <span id="index-conduit_002dconfiguration"></span> Data Type: **conduit-configuration**  
 Available ` conduit-configuration ` fields are:
@@ -240,7 +348,7 @@ The logging configuration for conduit.
 
 <span id="Forgejo"></span> <span id="Forgejo-1"></span>
 
-## 2.3 Forgejo
+## 2.4 Forgejo
 
 <span id="index-forgejo_002dconfiguration"></span> Data Type: **forgejo-configuration**  
 Available ` forgejo-configuration ` fields are:
@@ -270,7 +378,7 @@ The ` app.ini ` configuration passed to Forgejo.
 
 <span id="Grafana"></span> <span id="Grafana-1"></span>
 
-## 2.4 Grafana
+## 2.5 Grafana
 
 <span id="index-grafana_002dconfiguration"></span> Data Type: **grafana-configuration**  
 Available ` grafana-configuration ` fields are:
@@ -344,7 +452,7 @@ equal to "host" the ` port ` field will be ignored.
 
 <span id="Meilisearch"></span> <span id="Meilisearch-1"></span>
 
-## 2.5 Meilisearch
+## 2.6 Meilisearch
 
 <span id="index-oci_002dmeilisearch_002dconfiguration"></span> Data Type: **oci-meilisearch-configuration**  
 Available ` oci-meilisearch-configuration ` fields are:
@@ -381,7 +489,7 @@ documentation for more details.
 
 <span id="pict_002drs"></span> <span id="pict_002drs-1"></span>
 
-## 2.6 pict-rs
+## 2.7 pict-rs
 
 <span id="index-oci_002dpict_002drs_002dconfiguration"></span> Data Type: **oci-pict-rs-configuration**  
 Available ` oci-pict-rs-configuration ` fields are:
@@ -422,7 +530,7 @@ details.
 
 <span id="Prometheus"></span> <span id="Prometheus-1"></span>
 
-## 2.7 Prometheus
+## 2.8 Prometheus
 
 <span id="index-oci_002dprometheus_002dconfiguration"></span> Data Type: **oci-prometheus-configuration**  
 Available ` oci-prometheus-configuration ` fields are:
@@ -513,7 +621,7 @@ Everything you want to manually append to this ` static_config ` field.
 <span id="Prometheus-Blackbox-Exporter"></span> <span
 id="Prometheus-Blackbox-Exporter-1"></span>
 
-## 2.8 Prometheus Blackbox Exporter
+## 2.9 Prometheus Blackbox Exporter
 
 <span id="index-oci_002dblackbox_002dexporter_002dconfiguration"></span> Data Type: **oci-blackbox-exporter-configuration**  
 Available ` oci-blackbox-exporter-configuration ` fields are:
@@ -545,20 +653,21 @@ If ` network ` is set this field will be ignored.
 
 - <a href="#Introduction" id="toc-Introduction-1">1 Introduction</a>
 - <a href="#Services" id="toc-Services-1">2 Services</a>
-  - <a href="#Bonfire" id="toc-Bonfire-1">2.1 Bonfire</a>
-  - <a href="#Conduit" id="toc-Conduit-1">2.2 Conduit</a>
-  - <a href="#Forgejo" id="toc-Forgejo-1">2.3 Forgejo</a>
-  - <a href="#Grafana" id="toc-Grafana-1">2.4 Grafana</a>
-  - <a href="#Meilisearch" id="toc-Meilisearch-1">2.5 Meilisearch</a>
-  - <a href="#pict_002drs" id="toc-pict_002drs-1">2.6 pict-rs</a>
-  - <a href="#Prometheus" id="toc-Prometheus-1">2.7 Prometheus</a>
+  - <a href="#OCI-Service" id="toc-OCI-Service-1">2.1 OCI Service</a>
+  - <a href="#Bonfire" id="toc-Bonfire-1">2.2 Bonfire</a>
+  - <a href="#Conduit" id="toc-Conduit-1">2.3 Conduit</a>
+  - <a href="#Forgejo" id="toc-Forgejo-1">2.4 Forgejo</a>
+  - <a href="#Grafana" id="toc-Grafana-1">2.5 Grafana</a>
+  - <a href="#Meilisearch" id="toc-Meilisearch-1">2.6 Meilisearch</a>
+  - <a href="#pict_002drs" id="toc-pict_002drs-1">2.7 pict-rs</a>
+  - <a href="#Prometheus" id="toc-Prometheus-1">2.8 Prometheus</a>
   - <a href="#Prometheus-Blackbox-Exporter"
-    id="toc-Prometheus-Blackbox-Exporter-1">2.8 Prometheus Blackbox
+    id="toc-Prometheus-Blackbox-Exporter-1">2.9 Prometheus Blackbox
     Exporter</a>
 
 </div>
 
 ------------------------------------------------------------------------
 
-This document was generated on *September 11, 2024* using [*texi2html
+This document was generated on *September 27, 2024* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  
