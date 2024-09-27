@@ -5,6 +5,7 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module ((gnu services docker) #:prefix mainline:)
   #:use-module (gnu system shadow)
   #:use-module (guix gexp)
   #:use-module (srfi srfi-1)
@@ -188,7 +189,7 @@ to \"host\" the @code{port} field will be ignored.")
            (port
             (oci-grafana-configuration-port config))
            (container-config
-            (oci-container-configuration
+            (mainline:oci-container-configuration
              (image image)
              (ports
               `((,port . "3000")))
@@ -199,7 +200,7 @@ to \"host\" the @code{port} field will be ignored.")
                 ("/etc/grafana/grafana.ini" . "/opt/bitnami/grafana/conf/grafana.ini"))))))
       (list
        (if (maybe-value-set? network)
-           (oci-container-configuration
+           (mainline:oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))

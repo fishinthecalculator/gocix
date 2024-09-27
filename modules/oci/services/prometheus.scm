@@ -5,6 +5,7 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module ((gnu services docker) #:prefix mainline:)
   #:use-module (gnu system shadow)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
@@ -285,7 +286,7 @@ port inside the container.")
                    (raise
                     (G_ "oci-prometheus-configuration: You must set either the file or the record field but both are unset!"))))))
            (container-config
-            (oci-container-configuration
+            (mainline:oci-container-configuration
              (command
               '("--web.enable-lifecycle"
                 "--config.file=/etc/prometheus/prometheus.yml"
@@ -300,7 +301,7 @@ port inside the container.")
 
       (list
        (if (maybe-value-set? network)
-           (oci-container-configuration
+           (mainline:oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))
@@ -399,7 +400,7 @@ inside the container.  If @code{network} is set this field will be ignored.")
            (blackbox-exporter.yml
             (oci-blackbox-exporter-configuration-file config))
            (container-config
-            (oci-container-configuration
+            (mainline:oci-container-configuration
              (image image)
              (ports
               `((,port . "9115")))
@@ -409,7 +410,7 @@ inside the container.  If @code{network} is set this field will be ignored.")
 
       (list
        (if (maybe-value-set? network)
-           (oci-container-configuration
+           (mainline:oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))
