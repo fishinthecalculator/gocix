@@ -276,7 +276,7 @@ volumes to add."))
 
   (if (maybe-value-set? name)
       name
-      (string-append (pk 'string (symbol->string (pk 'symbol runtime))) "-"
+      (string-append (symbol->string runtime) "-"
                      (oci-image->container-name image))))
 
 (define (oci-network-shepherd-name runtime)
