@@ -434,16 +434,23 @@ volumes to add."))
                         (oci-runtime-name runtime) " backed Shepherd service for "
                         (if (mainline:oci-image? image) name image) "."))
                       (start
-                       #~(lambda ()
-                           #$@(if (mainline:oci-image? image)
-                                  #~((invoke #$(oci-image-loader runtime-cli
-                                                name image image-reference)))
-                                  #~())
+                       #~(lambda _
                            (fork+exec-command
-                            ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
-                            (list #$runtime-cli "run" "--rm" "--name" #$name
-                                  #$@options #$@extra-arguments
-                                  #$image-reference #$@command)
+                            (list
+                             #$(program-file
+                                (string-append "oci-entrypoint-" name)
+                                #~(begin
+                                    #$@(if (oci-image? image)
+                                           #~((system*
+                                               #$(oci-image-loader
+                                                  runtime-cli name image
+                                                  image-reference)))
+                                           #~())
+                                    ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
+                                    (execlp #$runtime-cli #$runtime-cli "run"
+                                            "--rm" "--name" #$name
+                                            #$@options #$@extra-arguments
+                                            #$image-reference #$@command))))
                             #:user #$user
                             #:group #$group
                             #$@(if (maybe-value-set? log-file)
@@ -593,8 +600,11 @@ volumes to add."))
          (name user)
          (comment "OCI services account")
          (group (oci-runtime-group runtime maybe-group))
-         (system? #t)
-         (home-directory "/var/empty")
+         (system? (eq? 'docker runtime))
+         (home-directory (if (eq? 'podman runtime)
+                             (string-append "/home/" user)
+                             "/var/empty"))
+         (create-home-directory? (eq? 'podman runtime))
          (shell (file-append shadow "/sbin/nologin")))))
 
 (define (oci-configuration->shepherd-services config)
