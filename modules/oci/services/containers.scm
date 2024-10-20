@@ -440,7 +440,7 @@ volumes to add."))
                              #$(program-file
                                 (string-append "oci-entrypoint-" name)
                                 #~(begin
-                                    #$@(if (oci-image? image)
+                                    #$@(if (mainline:oci-image? image)
                                            #~((system*
                                                #$(oci-image-loader
                                                   runtime-cli name image
