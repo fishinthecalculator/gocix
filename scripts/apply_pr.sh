@@ -27,4 +27,4 @@ git branch -r -D "forked/${branch}"
 git remote remove forked
 
 # Run guix git authenticate
-guix shell make -- make authenticate
+guix git authenticate --cache-key=channels/gocix cdb78996334c4f63304ecce224e95bb96bfd4c7d '8D10 60B9 6BB8 292E 829B  7249 AED4 1CC1 93B7 01E2'
