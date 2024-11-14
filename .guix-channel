@@ -8,7 +8,7 @@
   ;; For rootless-podman and subids
   (channel
    (name small-guix)
-   (url "https://gitlab.com/orang3/small-guix")
+   (url "https://codeberg.org/fishinthecalculator/small-guix.git")
    (branch "master")
    ;; Enable signature verification:
    (introduction
