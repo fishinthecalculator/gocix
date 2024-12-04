@@ -57,6 +57,7 @@
             oci-configuration-containers
             oci-configuration-networks
             oci-configuration-volumes
+            oci-configuration-verbose?
 
             oci-extension
             oci-extension?
@@ -248,7 +249,11 @@ networks to provision.")
   (volumes
    (list-of-oci-volumes '())
    "The list of @code{oci-volume-configuration} records representing the
-volumes to provision."))
+volumes to provision.")
+  (verbose?
+   (boolean #f)
+   "When true, additional output will be printed, allowing to better follow the
+flow of execution."))
 
 (define-configuration/no-serialization oci-extension
   (containers
@@ -285,7 +290,7 @@ volumes to add."))
 (define (oci-volume-shepherd-name runtime)
   (string-append (symbol->string runtime) "-volumes"))
 
-(define mainline:oci-container-configuration->options
+(define oci-container-configuration->options
   (lambda (config)
     (let ((entrypoint
            (mainline:oci-container-configuration-entrypoint config))
@@ -368,7 +373,7 @@ volumes to add."))
 (define lower-oci-image
   (@@ (gnu services docker) lower-oci-image))
 
-(define (oci-image-loader runtime-cli name image tag)
+(define* (oci-image-loader runtime-cli name image tag #:key (verbose? #f))
   (let ((tarball (lower-oci-image name image)))
     (with-imported-modules '((guix build utils))
       (program-file (format #f "~a-image-loader" name)
@@ -378,28 +383,37 @@ volumes to add."))
                         (ice-9 rdelim))
 
            (format #t "Loading image for ~a from ~a...~%" #$name #$tarball)
+           (define load-command
+             (string-append #$runtime-cli
+                            " load -i " #$tarball))
+           (when verbose?
+             (format #t "Running ~a~%" load-command))
            (define line
              (read-line
-              (open-input-pipe
-               (string-append #$runtime-cli
-                              " load -i " #$tarball))))
+              (open-input-pipe load-command)))
 
            (unless (or (eof-object? line)
                        (string-null? line))
              (format #t "~a~%" line)
-             (let ((repository&tag
-                    (string-drop line
-                                 (string-length
-                                   "Loaded image: "))))
+             (let* ((repository&tag
+                     (string-drop line
+                                  (string-length
+                                   "Loaded image: ")))
+                    (tag-command
+                     (list #$runtime-cli "tag" repository&tag #$tag)))
 
-               (invoke #$runtime-cli "tag" repository&tag #$tag)
+               (when verbose?
+                 (format #t "Running~{ ~a~}~%" tag-command))
+
+               (apply invoke tag-command)
                (format #t "Tagged ~a with ~a...~%" #$tarball #$tag))))))))
 
 (define* (oci-container-shepherd-service runtime runtime-cli config
                                          #:key
                                          (oci-requirement '())
                                          (user #f)
-                                         (group #f))
+                                         (group #f)
+                                         (verbose? #f))
   (let* ((actions (mainline:oci-container-configuration-shepherd-actions config))
          (auto-start?
           (mainline:oci-container-configuration-auto-start? config))
@@ -416,7 +430,7 @@ volumes to add."))
           (mainline:oci-container-configuration-respawn? config))
          (image (mainline:oci-container-configuration-image config))
          (image-reference (oci-image-reference image))
-         (options (mainline:oci-container-configuration->options config))
+         (options (oci-container-configuration->options config))
          (name
           (oci-container-shepherd-name runtime config))
          (extra-arguments
@@ -444,13 +458,20 @@ volumes to add."))
                                            #~((system*
                                                #$(oci-image-loader
                                                   runtime-cli name image
-                                                  image-reference)))
+                                                  image-reference
+                                                  #:verbose? verbose?)))
                                            #~())
-                                    ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
-                                    (execlp #$runtime-cli #$runtime-cli "run"
-                                            "--rm" "--name" #$name
-                                            #$@options #$@extra-arguments
-                                            #$image-reference #$@command))))
+                                    (let ((invokation
+                                           ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
+                                           (list #$runtime-cli "run"
+                                                 "--rm" "--name" #$name
+                                                 #$@options #$@extra-arguments
+                                                 #$image-reference #$@command)))
+                                      (when #$verbose?
+                                        (display "Running ")
+                                        (display (string-join invokation " "))
+                                        (newline))
+                                      (apply execlp `(#$runtime-cli ,@invokation))))))
                             #:user #$user
                             #:group #$group
                             #$@(if (maybe-value-set? log-file)
@@ -476,13 +497,15 @@ volumes to add."))
                                    (invoke #$runtime-cli "pull" #$image)))))
                             actions))))))
 
-(define (oci-object-create-script object runtime runtime-cli objects-sexps)
+(define* (oci-object-create-script object runtime runtime-cli objects-sexps
+                                   #:key (verbose? #f))
   (define runtime-string (symbol->string runtime))
   (program-file
    (string-append runtime-string "-" object "-"
                   (oci-runtime-name runtime) "-create.scm")
    #~(begin
-       (use-modules (ice-9 match)
+       (use-modules (ice-9 format)
+                    (ice-9 match)
                     (ice-9 popen)
                     (ice-9 rdelim))
 
@@ -502,15 +525,20 @@ volumes to add."))
 
        (define (network-exists? name)
          (if (string=? #$runtime-string "podman")
-             (equal? EXIT_SUCCESS
-                     (system* #$runtime-cli
-                              #$object "exists" name))
-             (member name
-                     (read-lines
-                      (open-input-pipe
-                       (string-append #$runtime-cli
-                                      " " object " ls --format "
-                                      "\"{{.Name}}\""))))))
+             (let ((command
+                    (list #$runtime-cli
+                          #$object "exists" name)))
+               (when #$verbose?
+                 (format #t "Running~{ ~a~}~%" command))
+               (equal? EXIT_SUCCESS
+                       (apply system* command)))
+             (let ((command
+                    (string-append #$runtime-cli
+                                   " " object " ls --format "
+                                   "\"{{.Name}}\"")))
+               (when #$verbose?
+                 (format #t "Running ~a~%" command))
+               (member name (read-lines (open-input-pipe command))))))
 
        (for-each
         (match-lambda
