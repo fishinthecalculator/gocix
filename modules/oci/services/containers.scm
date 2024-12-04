@@ -471,7 +471,7 @@ volumes to add."))
                                         (display "Running ")
                                         (display (string-join invokation " "))
                                         (newline))
-                                      (apply execlp `(#$runtime-cli ,@invokation))))))
+                                      (apply execlp (list #$runtime-cli ,@invokation))))))
                             #:user #$user
                             #:group #$group
                             #$@(if (maybe-value-set? log-file)
@@ -548,8 +548,8 @@ volumes to add."))
                                        " " name " " object " already exists,"
                                        " skipping creation."))
                ;; network|volume create [options] [NAME]
-               (apply system `(#$runtime-cli object "create"
-                               ,@options ,@extra-arguments ,name)))))
+               (apply system (list #$runtime-cli object "create"
+                                   ,@options ,@extra-arguments ,name)))))
         '#$objects-sexps))))
 
 (define (oci-network-create-script runtime runtime-cli networks)
