@@ -43,6 +43,7 @@ for many useful applications, such as:
 - pict-rs
 - Prometheus
 - Prometheus Blackbox Exporter
+- Traefik whoami
 
 These services are supposed to feel like services backed by native Guix
 packages, please report any inconsistency you may find.
@@ -78,6 +79,7 @@ into Guix proper. To achieve this vision gocix services strive to:
 | [2.7 pict-rs](#pict_002drs)                                       |     |     |
 | [2.8 Prometheus](#Prometheus)                                     |     |     |
 | [2.9 Prometheus Blackbox Exporter](#Prometheus-Blackbox-Exporter) |     |     |
+| [2.10 Traefik whoami](#Traefik-whoami)                            |     |     |
 
 ------------------------------------------------------------------------
 
@@ -167,6 +169,10 @@ networks to provision.
 ` volumes ` (default: ` () ` ) (type: list-of-oci-volumes)  
 The list of ` oci-volume-configuration ` records representing the
 volumes to provision.
+
+` verbose? ` (default: ` #f ` ) (type: boolean)  
+When true, additional output will be printed, allowing to better follow
+the flow of execution.
 
 <!-- -->
 
@@ -645,6 +651,42 @@ If ` network ` is set this field will be ignored.
 
 ------------------------------------------------------------------------
 
+<span id="Traefik-whoami"></span> <span id="Traefik-whoami-1"></span>
+
+## 2.10 Traefik whoami
+
+<span id="index-oci_002dwhoami_002dconfiguration"></span> Data Type: **oci-whoami-configuration**  
+Available ` oci-whoami-configuration ` fields are:
+
+` image ` (default: ` "docker.io/traefik/whoami:v1.10.3" ` ) (type: string)  
+The image to use for the OCI backed Shepherd service.
+
+` port ` (default: ` "8080" ` ) (type: string)  
+The port where whoami will be exposed.
+
+` requirement ` (default: ` () ` ) (type: list)  
+A list of Shepherd services that will be waited for before starting
+` whoami ` .
+
+` log-file ` (default: ` "/var/log/whoami.log" ` ) (type: string)  
+The path where whoami writes logs.
+
+` cert ` (type: maybe-string)  
+The path to a SSL certificate.
+
+` key ` (type: maybe-string)  
+The path to a SSL key.
+
+` network ` (type: maybe-string)  
+The docker network where the whoami container will be attached. When
+equal to "host" the ` port ` field will not be mapped into the
+container’s one.
+
+` name ` (type: maybe-string)  
+The name for the ` whoami ` process.
+
+------------------------------------------------------------------------
+
 <span id="SEC_Contents"></span>
 
 # Table of Contents
@@ -664,10 +706,12 @@ If ` network ` is set this field will be ignored.
   - <a href="#Prometheus-Blackbox-Exporter"
     id="toc-Prometheus-Blackbox-Exporter-1">2.9 Prometheus Blackbox
     Exporter</a>
+  - <a href="#Traefik-whoami" id="toc-Traefik-whoami-1">2.10 Traefik
+    whoami</a>
 
 </div>
 
 ------------------------------------------------------------------------
 
-This document was generated on *September 27, 2024* using [*texi2html
+This document was generated on *December 5, 2024* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

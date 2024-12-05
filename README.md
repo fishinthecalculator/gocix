@@ -20,6 +20,7 @@ This channel exposes at `(oci services)` a set of Guix System services for many 
 - meilisearch
 - Prometheus
 - Prometheus Blackbox Exporter
+- Traefik whoami
 
 These services are supposed to feel like services backed by native Guix packages, please report any inconsistency you may find.
 

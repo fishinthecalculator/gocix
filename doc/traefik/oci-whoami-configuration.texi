@@ -1,0 +1,41 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-whoami-configuration
+Available @code{oci-whoami-configuration} fields are:
+
+@table @asis
+@item @code{image} (default: @code{"docker.io/traefik/whoami:v1.10.3"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{port} (default: @code{"8080"}) (type: string)
+The port where whoami will be exposed.
+
+@item @code{requirement} (default: @code{()}) (type: list)
+A list of Shepherd services that will be waited for before starting
+@code{whoami}.
+
+@item @code{log-file} (default: @code{"/var/log/whoami.log"}) (type: string)
+The path where whoami writes logs.
+
+@item @code{cert} (type: maybe-string)
+The path to a SSL certificate.
+
+@item @code{key} (type: maybe-string)
+The path to a SSL key.
+
+@item @code{network} (type: maybe-string)
+The docker network where the whoami container will be attached.  When
+equal to "host" the @code{port} field will not be mapped into the
+container's one.
+
+@item @code{name} (type: maybe-string)
+The name for the @code{whoami} process.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

@@ -34,6 +34,10 @@ networks to provision.
 The list of @code{oci-volume-configuration} records representing the
 volumes to provision.
 
+@item @code{verbose?} (default: @code{#f}) (type: boolean)
+When true, additional output will be printed, allowing to better follow
+the flow of execution.
+
 @end table
 
 @end deftp

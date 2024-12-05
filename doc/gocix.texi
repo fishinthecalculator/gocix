@@ -66,6 +66,7 @@ This channel exposes at @code{(oci services)} a set of Guix System services for 
 @item pict-rs
 @item Prometheus
 @item Prometheus Blackbox Exporter
+@item Traefik whoami
 @end itemize
 
 These services are supposed to feel like services backed by native Guix packages, please report any inconsistency you may find.
@@ -91,6 +92,7 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 * pict-rs::
 * Prometheus::
 * Prometheus Blackbox Exporter::
+* Traefik whoami::
 @end menu
 
 @node OCI Service
@@ -152,5 +154,10 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 @section Prometheus Blackbox Exporter
 
 @include prometheus/oci-blackbox-exporter-configuration.texi
+
+@node Traefik whoami
+@section Traefik whoami
+
+@include traefik/oci-whoami-configuration.texi
 
 @bye
