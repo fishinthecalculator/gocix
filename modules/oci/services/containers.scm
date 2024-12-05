@@ -93,19 +93,6 @@
         rootless-podman-shared-root-fs)
       '(dockerd)))
 
-(define (oci-runtime-cli config)
-  (let ((runtime-cli
-         (oci-configuration-runtime-cli config))
-        (runtime
-         (oci-configuration-runtime config)))
-    #~(string-append
-       (if #$(maybe-value-set? runtime-cli)
-           #$runtime-cli
-           "/run/current-system/profile")
-       (if #$(eq? 'podman runtime)
-           "/bin/podman"
-           "/bin/docker"))))
-
 (define (oci-runtime-name runtime)
   (if (eq? 'podman runtime)
       "Podman" "Docker"))
@@ -254,6 +241,19 @@ volumes to provision.")
    (boolean #f)
    "When true, additional output will be printed, allowing to better follow the
 flow of execution."))
+
+(define (oci-runtime-cli config)
+  (let ((runtime-cli
+         (oci-configuration-runtime-cli config))
+        (runtime
+         (oci-configuration-runtime config)))
+    #~(string-append
+       (if #$(maybe-value-set? runtime-cli)
+           #$runtime-cli
+           "/run/current-system/profile")
+       (if #$(eq? 'podman runtime)
+           "/bin/podman"
+           "/bin/docker"))))
 
 (define-configuration/no-serialization oci-extension
   (containers
