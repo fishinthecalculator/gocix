@@ -685,6 +685,11 @@ container’s one.
 ` name ` (type: maybe-string)  
 The name for the ` whoami ` process.
 
+` oci-extra-arguments ` (default: ` () ` ) (type: list)  
+A list of strings, gexps or file-like objects that will be directly
+passed to the OCI runtime invokation. You can use this field to set
+labels for example.
+
 ------------------------------------------------------------------------
 
 <span id="SEC_Contents"></span>
@@ -713,5 +718,5 @@ The name for the ` whoami ` process.
 
 ------------------------------------------------------------------------
 
-This document was generated on *December 5, 2024* using [*texi2html
+This document was generated on *December 7, 2024* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

@@ -32,6 +32,11 @@ container's one.
 @item @code{name} (type: maybe-string)
 The name for the @code{whoami} process.
 
+@item @code{oci-extra-arguments} (default: @code{()}) (type: list)
+A list of strings, gexps or file-like objects that will be directly
+passed to the OCI runtime invokation.  You can use this field to set
+labels for example.
+
 @end table
 
 @end deftp
