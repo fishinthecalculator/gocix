@@ -98,7 +98,9 @@ to the OCI runtime invokation.  You can use this field to set labels for example
                      ,(if (maybe-value-set? name)
                           `("--name" ,name)
                           '())
-                     ,(if (string=? network "host")
+                     ,(if (and
+                           (maybe-value-set? network)
+                           (string=? network "host"))
                           `("--port" ,port)
                           '()))))))
 
