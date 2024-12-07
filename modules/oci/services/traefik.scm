@@ -25,6 +25,7 @@
             oci-whoami-configuration-key
             oci-whoami-configuration-network
             oci-whoami-configuration-name
+            oci-whoami-configuration-oci-extra-arguments
             oci-whoami-configuration->oci-container-configuration
             oci-whoami-service-type))
 
@@ -61,7 +62,11 @@
 to \"host\" the @code{port} field will not be mapped into the container's one.")
   (name
    (maybe-string)
-   "The name for the @code{whoami} process."))
+   "The name for the @code{whoami} process.")
+  (oci-extra-arguments
+   (list '())
+   "A list of strings, gexps or file-like objects that will be directly passed
+to the OCI runtime invokation.  You can use this field to set labels for example."))
 
 (define (%whoami-activation config)
   "Return an activation gexp for whoami."
@@ -102,6 +107,8 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
     (let* ((requirement
             (oci-whoami-configuration-requirement config))
            (cert (oci-whoami-configuration-cert config))
+           (extra-arguments
+            (oci-whoami-configuration-oci-extra-arguments config))
            (key
             (oci-whoami-configuration-key config))
            (network
@@ -128,7 +135,8 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                       '())
                 ,@(if (maybe-value-set? key)
                       `((,key . ,(string-append key ":ro")))
-                      '()))))))
+                      '())))
+             (extra-arguments extra-arguments))))
 
       (list
        (if (maybe-value-set? network)
