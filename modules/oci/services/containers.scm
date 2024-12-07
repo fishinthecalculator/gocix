@@ -408,6 +408,21 @@ volumes to add."))
                (apply invoke tag-command)
                (format #t "Tagged ~a with ~a...~%" #$tarball #$tag))))))))
 
+(define* (oci-container-entrypoint runtime-cli name image image-reference
+                                   invokation #:key (verbose? #f))
+  (program-file
+   (string-append "oci-entrypoint-" name)
+   #~(begin
+       (use-modules (ice-9 format))
+       (define invokation (list #$@invokation))
+       #$@(if (mainline:oci-image? image)
+              #~((system*
+                  #$(oci-image-loader
+                     runtime-cli name image
+                     image-reference)))
+              #~())
+       (apply execlp invokation))))
+
 (define* (oci-container-shepherd-service runtime runtime-cli config
                                          #:key
                                          (oci-requirement '())
@@ -434,7 +449,13 @@ volumes to add."))
          (name
           (oci-container-shepherd-name runtime config))
          (extra-arguments
-          (mainline:oci-container-configuration-extra-arguments config)))
+          (mainline:oci-container-configuration-extra-arguments config))
+         (invokation
+          ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
+          `(,runtime-cli ,runtime-cli "run"
+            "--rm" "--name" ,name
+            ,@options ,@extra-arguments
+            ,image-reference ,@command)))
 
     (shepherd-service (provision `(,(string->symbol name)))
                       (requirement `(,@(oci-runtime-requirement runtime)
@@ -451,28 +472,9 @@ volumes to add."))
                        #~(lambda _
                            (fork+exec-command
                             (list
-                             #$(program-file
-                                (string-append "oci-entrypoint-" name)
-                                #~(begin
-                                    #$@(if (mainline:oci-image? image)
-                                           #~((system*
-                                               #$(oci-image-loader
-                                                  runtime-cli name image
-                                                  image-reference
-                                                  #:verbose? verbose?)))
-                                           #~())
-                                    (let ((invokation
-                                           ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
-                                           (list #$runtime-cli "run"
-                                                 "--rm" "--name" #$name
-                                                 #$@options #$@extra-arguments
-                                                 #$image-reference #$@command)))
-                                      (when #$verbose?
-                                        (display "Running ")
-                                        (display (string-join invokation " "))
-                                        (newline))
-                                      (apply execlp `(,#$runtime-cli
-                                                      ,@invokation))))))
+                             #$(oci-container-entrypoint
+                                runtime-cli name image image-reference
+                                invokation))
                             #:user #$user
                             #:group #$group
                             #$@(if (maybe-value-set? log-file)
@@ -484,9 +486,18 @@ volumes to add."))
                        #~(lambda _
                            (invoke #$runtime-cli "rm" "-f" #$name)))
                       (actions
-                       (if (mainline:oci-image? image)
-                           '()
-                           (append
+                       (append
+                        (list
+                         (shepherd-action
+                          (name 'command-line)
+                          (documentation
+                           (format #f "Prints ~a's OCI runtime command line invokation."
+                                   name))
+                          (procedure
+                           #~(lambda _
+                               (format #t "~a~%" (string-join (cdr (list #$@invokation)) " "))))))
+                        (if (mainline:oci-image? image)
+                            '()
                             (list
                              (shepherd-action
                               (name 'pull)
@@ -495,8 +506,8 @@ volumes to add."))
                                        name image))
                               (procedure
                                #~(lambda _
-                                   (invoke #$runtime-cli "pull" #$image)))))
-                            actions))))))
+                                   (invoke #$runtime-cli "pull" #$image))))))
+                        actions)))))
 
 (define* (oci-object-create-script object runtime runtime-cli objects-sexps
                                    #:key (verbose? #f))
@@ -547,13 +558,14 @@ volumes to add."))
            (if (network-exists? name)
                (display (string-append #$(oci-runtime-name runtime)
                                        " " name " " object " already exists,"
-                                       " skipping creation."))
+                                       " skipping creation.\n"))
                ;; network|volume create [options] [NAME]
                (apply system `(,#$runtime-cli object "create"
                                ,@options ,@extra-arguments ,name)))))
         '#$objects-sexps))))
 
-(define (oci-network-create-script runtime runtime-cli networks)
+(define* (oci-network-create-script runtime runtime-cli networks
+                                    #:key (verbose? #f))
   (oci-object-create-script
    "network" runtime runtime-cli
    (map (lambda (n) (list (oci-network-configuration-name n)
@@ -561,7 +573,8 @@ volumes to add."))
                           (oci-network-configuration-extra-arguments n)))
         networks)))
 
-(define (oci-volume-create-script runtime runtime-cli volumes)
+(define* (oci-volume-create-script runtime runtime-cli volumes
+                                   #:key (verbose? #f))
   (oci-object-create-script
    "volume" runtime runtime-cli
    (map (lambda (n) (list (oci-volume-configuration-name n)
@@ -571,7 +584,8 @@ volumes to add."))
 
 (define* (oci-network-shepherd-service config
                                        #:key (user #f)
-                                             (group #f))
+                                             (group #f)
+                                             (verbose? #f))
   (let* ((runtime (oci-configuration-runtime config))
          (runtime-cli
           (oci-runtime-cli config))
@@ -592,11 +606,12 @@ volumes to add."))
                        #~((fork+exec-command
                            (list
                             #$(oci-network-create-script runtime runtime-cli
-                                                         networks))
+                                                         networks
+                                                         #:verbose? verbose?))
                            #:user #$user
                            #:group #$group))))))
 
-(define* (oci-volume-shepherd-service config #:key (user #f) (group #f))
+(define* (oci-volume-shepherd-service config #:key (user #f) (group #f) (verbose? #f))
   (let* ((runtime (oci-configuration-runtime config))
          (runtime-cli
           (oci-runtime-cli config))
@@ -617,7 +632,7 @@ volumes to add."))
                        #~((fork+exec-command
                            (list
                             #$(oci-volume-create-script runtime runtime-cli
-                                                        volumes))
+                                                        volumes #:verbose? verbose?))
                            #:user #$user
                            #:group #$group))))))
 
@@ -654,7 +669,8 @@ volumes to add."))
               '()))
          (user (oci-configuration-user config))
          (maybe-group (oci-configuration-group config))
-         (group (oci-runtime-group runtime maybe-group)))
+         (group (oci-runtime-group runtime maybe-group))
+         (verbose? (oci-configuration-verbose? config)))
     (append
      (map
       (lambda (c)
@@ -663,15 +679,18 @@ volumes to add."))
          #:user user
          #:group group
          #:oci-requirement
-         (append networks-requirement volumes-requirement)))
+         (append networks-requirement volumes-requirement)
+         #:verbose? verbose?))
       (oci-configuration-containers config))
      (if networks?
          (list
-          (oci-network-shepherd-service config #:user user #:group group))
+          (oci-network-shepherd-service config #:user user #:group group
+                                        #:verbose? verbose?))
          '())
      (if volumes?
          (list
-          (oci-volume-shepherd-service config #:user user #:group group))
+          (oci-volume-shepherd-service config #:user user #:group group
+                                       #:verbose? verbose?))
          '()))))
 
 (define (oci-service-subids c)
