@@ -149,10 +149,6 @@ but ~a was found") el))))
 
 (define (list-of-oci-containers? value)
   (list-of-oci-records? "containers" mainline:oci-container-configuration? value))
-(define (list-of-oci-networks? value)
-  (list-of-oci-records? "networks" oci-network-configuration? value))
-(define (list-of-oci-volumes? value)
-  (list-of-oci-records? "volumes" oci-volume-configuration? value))
 
 (define-maybe/no-serialization string)
 (define-maybe/no-serialization package)
@@ -170,6 +166,9 @@ but ~a was found") el))))
    "A list of strings, gexps or file-like objects that will be directly passed
 to the runtime invokation."
    (sanitizer oci-sanitize-extra-arguments)))
+
+(define (list-of-oci-volumes? value)
+  (list-of-oci-records? "volumes" oci-volume-configuration? value))
 
 (define-configuration/no-serialization oci-network-configuration
   (name
@@ -205,6 +204,9 @@ to the runtime invokation."
    "A list of strings, gexps or file-like objects that will be directly passed
 to the runtime invokation."
    (sanitizer oci-sanitize-extra-arguments)))
+
+(define (list-of-oci-networks? value)
+  (list-of-oci-records? "networks" oci-network-configuration? value))
 
 (define-configuration/no-serialization oci-configuration
   (runtime
@@ -351,7 +353,7 @@ volumes to add."))
                      ,(if (maybe-value-set? ip-range)
                           `("--ip-range" ,ip-range)
                           '())
-                     "--ipam-driver" ,ipam-driver
+                     ,(list "--ipam-driver" ipam-driver)
                      ,(if ipv6?
                           `("--ipv6")
                           '())
@@ -512,8 +514,7 @@ volumes to add."))
                                    #:key (verbose? #f))
   (define runtime-string (symbol->string runtime))
   (program-file
-   (string-append runtime-string "-" object "-"
-                  (oci-runtime-name runtime) "-create.scm")
+   (string-append runtime-string "-" object "s-create.scm")
    #~(begin
        (use-modules (ice-9 format)
                     (ice-9 match)
@@ -534,7 +535,7 @@ volumes to add."))
              (call-with-input-file file-or-port
                loop-lines)))
 
-       (define (network-exists? name)
+       (define (object-exists? name)
          (if (string=? #$runtime-string "podman")
              (let ((command
                     (list #$runtime-cli
@@ -554,7 +555,7 @@ volumes to add."))
        (for-each
         (match-lambda
           ((name options extra-arguments)
-           (if (network-exists? name)
+           (if (object-exists? name)
                (display (string-append #$(oci-runtime-name runtime)
                                        " " name " " object " already exists,"
                                        " skipping creation.\n"))
@@ -658,13 +659,17 @@ volumes to add."))
           (> (length (oci-configuration-networks config)) 0))
          (networks-requirement
           (if networks?
-              (list (oci-network-shepherd-name runtime))
+              (list
+               (string->symbol
+                (oci-network-shepherd-name runtime)))
               '()))
          (volumes?
           (> (length (oci-configuration-volumes config)) 0))
          (volumes-requirement
           (if volumes?
-              (list (oci-volume-shepherd-name runtime))
+              (list
+               (string->symbol
+                (oci-volume-shepherd-name runtime)))
               '()))
          (user (oci-configuration-user config))
          (maybe-group (oci-configuration-group config))
