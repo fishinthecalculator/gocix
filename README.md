@@ -110,7 +110,7 @@ The `gocix` manual [lives in this repository](https://github.com/fishinthecalcul
 
 A [channel](https://guix.gnu.org/en/manual/devel/en/guix.html#Channels) is roughly the Guix equivalent of Ubuntu's PPAs or container registries. It's a software repository providing Guix package and service definitions.
 
-You can search for package and service definitions from this channel and many others at [toys.whereis.みんな](https://toys.whereis.xn--q9jyb4c).
+You can search for package and service definitions from this channel and many others at [toys.whereis.social](https://toys.whereis.social).
 
 ### Configure
 
