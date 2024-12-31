@@ -14,7 +14,7 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 This channel exposes at `(oci services)` a set of Guix System services for many useful applications, such as:
 
 - [Bonfire Classic](https://bonfirenetworks.org/app/classic/)
-- Forgejo
+- [Forgejo](https://forgejo.org/)
 - Grafana
 - Matrix Conduit
 - meilisearch
