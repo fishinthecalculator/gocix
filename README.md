@@ -18,7 +18,7 @@ This channel exposes at `(oci services)` a set of Guix System services for many 
 - [Grafana](https://grafana.com/)
 - [Matrix Conduit](https://conduit.rs/)
 - [meilisearch](https://www.meilisearch.com/)
-- Prometheus
+- [Prometheus](https://prometheus.io/)
 - Prometheus Blackbox Exporter
 - Traefik whoami
 
