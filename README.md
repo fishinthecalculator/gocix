@@ -19,7 +19,7 @@ This channel exposes at `(oci services)` a set of Guix System services for many 
 - [Matrix Conduit](https://conduit.rs/)
 - [meilisearch](https://www.meilisearch.com/)
 - [Prometheus](https://prometheus.io/)
-- Prometheus Blackbox Exporter
+- [Prometheus Blackbox Exporter](https://github.com/prometheus/blackbox_exporter)
 - [Traefik whoami](https://traefik.io/)
 
 These services are supposed to feel like services backed by native Guix packages, please report any inconsistency you may find.
