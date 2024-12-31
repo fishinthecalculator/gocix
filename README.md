@@ -15,7 +15,7 @@ This channel exposes at `(oci services)` a set of Guix System services for many 
 
 - [Bonfire Classic](https://bonfirenetworks.org/app/classic/)
 - [Forgejo](https://forgejo.org/)
-- Grafana
+- [Grafana](https://grafana.com/)
 - Matrix Conduit
 - meilisearch
 - Prometheus
