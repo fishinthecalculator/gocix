@@ -80,7 +80,7 @@
 ;;;
 
 ;;;
-;;; OCI container.
+;;; OCI provisioning service.
 ;;;
 
 (define %oci-supported-runtimes
@@ -387,7 +387,7 @@ volumes to add."))
            (define load-command
              (string-append #$runtime-cli
                             " load -i " #$tarball))
-           (when verbose?
+           (when #$verbose?
              (format #t "Running ~a~%" load-command))
            (define line
              (read-line
@@ -403,7 +403,7 @@ volumes to add."))
                     (tag-command
                      (list #$runtime-cli "tag" repository&tag #$tag)))
 
-               (when verbose?
+               (when #$verbose?
                  (format #t "Running~{ ~a~}~%" tag-command))
 
                (apply invoke tag-command)
@@ -420,7 +420,7 @@ volumes to add."))
               #~((system*
                   #$(oci-image-loader
                      runtime-cli name image
-                     image-reference)))
+                     image-reference #:verbose? verbose?)))
               #~())
        (apply execlp invokation))))
 
@@ -475,7 +475,7 @@ volumes to add."))
                             (list
                              #$(oci-container-entrypoint
                                 runtime-cli name image image-reference
-                                invokation))
+                                invokation #:verbose? verbose?))
                             #:user #$user
                             #:group #$group
                             #$@(if (maybe-value-set? log-file)
@@ -546,7 +546,7 @@ volumes to add."))
                        (apply system* command)))
              (let ((command
                     (string-append #$runtime-cli
-                                   " " object " ls --format "
+                                   " " #$object " ls --format "
                                    "\"{{.Name}}\"")))
                (when #$verbose?
                  (format #t "Running ~a~%" command))
@@ -557,11 +557,14 @@ volumes to add."))
           ((name options extra-arguments)
            (if (object-exists? name)
                (display (string-append #$(oci-runtime-name runtime)
-                                       " " name " " object " already exists,"
+                                       " " name " " #$object " already exists,"
                                        " skipping creation.\n"))
                ;; network|volume create [options] [NAME]
-               (apply system `(,#$runtime-cli object "create"
-                               ,@options ,@extra-arguments ,name)))))
+               (let ((command `(,#$runtime-cli #$object "create"
+                                ,@options ,@extra-arguments ,name)))
+                 (when #$verbose?
+                   (format #t "Running~{ ~a~}~%" command))
+                 (apply system* command)))))
         '#$objects-sexps))))
 
 (define* (oci-network-create-script runtime runtime-cli networks
@@ -571,7 +574,8 @@ volumes to add."))
    (map (lambda (n) (list (oci-network-configuration-name n)
                           (oci-network-configuration->options n)
                           (oci-network-configuration-extra-arguments n)))
-        networks)))
+        networks)
+   #:verbose? verbose?))
 
 (define* (oci-volume-create-script runtime runtime-cli volumes
                                    #:key (verbose? #f))
@@ -580,7 +584,8 @@ volumes to add."))
    (map (lambda (n) (list (oci-volume-configuration-name n)
                           (oci-volume-configuration->options n)
                           (oci-volume-configuration-extra-arguments n)))
-        volumes)))
+        volumes)
+   #:verbose? verbose?))
 
 (define* (oci-network-shepherd-service config
                                        #:key (user #f)
@@ -596,20 +601,21 @@ volumes to add."))
          (name (oci-network-shepherd-name runtime)))
 
     (shepherd-service (provision `(,(string->symbol name)))
-                      (requirement `(user-processes ,@requirement))
+                      (requirement `(user-processes networking ,@requirement))
                       (one-shot? #t)
                       (documentation
                        (string-append
                         (oci-runtime-name runtime)
                         " network provisioning service"))
                       (start
-                       #~((fork+exec-command
-                           (list
-                            #$(oci-network-create-script runtime runtime-cli
-                                                         networks
-                                                         #:verbose? verbose?))
-                           #:user #$user
-                           #:group #$group))))))
+                       #~(lambda _
+                           (fork+exec-command
+                            (list
+                             #$(oci-network-create-script runtime runtime-cli
+                                                          networks
+                                                          #:verbose? verbose?))
+                            #:user #$user
+                            #:group #$group))))))
 
 (define* (oci-volume-shepherd-service config #:key (user #f) (group #f) (verbose? #f))
   (let* ((runtime (oci-configuration-runtime config))
@@ -629,12 +635,14 @@ volumes to add."))
                         (oci-runtime-name runtime)
                         " volume provisioning service"))
                       (start
-                       #~((fork+exec-command
-                           (list
-                            #$(oci-volume-create-script runtime runtime-cli
-                                                        volumes #:verbose? verbose?))
-                           #:user #$user
-                           #:group #$group))))))
+                       #~(lambda _
+                           (fork+exec-command
+                            (list
+                             #$(oci-volume-create-script runtime runtime-cli
+                                                         volumes
+                                                         #:verbose? verbose?))
+                            #:user #$user
+                            #:group #$group))))))
 
 (define (oci-service-accounts config)
   (define user (oci-configuration-user config))
@@ -812,8 +820,8 @@ remove the duplicate.") object (get-name element) object)))
                               oci-volume-shepherd-name)))))
                 (default-value (oci-configuration))
                 (description
-                 "This service implements the proviosioning of OCI object such
-as containers networks and volumes.")))
+                 "This service implements the provisioning of OCI object such
+as containers, networks and volumes.")))
 
 (define oci-container-service-type
   (service-type (name 'oci-container)
@@ -821,6 +829,9 @@ as containers networks and volumes.")))
                  (list
                   (service-extension oci-service-type
                                      (lambda (containers)
+                                       (warning
+                                        (G_
+                                         "'oci-container-service-type' is deprecated, use 'oci-service-type' instead~%"))
                                        (oci-extension
                                         (containers containers))))))
                 (default-value '())
