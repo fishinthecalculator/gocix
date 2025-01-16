@@ -583,7 +583,7 @@ volumes to add."))
                 (when #$verbose?
                   (format #t "Running~{ ~a~}~%" invokation))
                 (apply system* invokation))))
-        '#$invokations))))
+        (list #$@invokations)))))
 
 (define* (oci-network-shepherd-service config
                                        #:key (user #f)
