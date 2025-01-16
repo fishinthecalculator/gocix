@@ -175,7 +175,7 @@ to the runtime invokation."
    (string)
    "The name of the OCI network to provision.")
   (driver
-   (string "bridge")
+   (maybe-string)
    "The driver to manage the network.")
   (gateway
    (maybe-string)
@@ -187,7 +187,7 @@ to the runtime invokation."
    (maybe-string)
    "Allocate container ip from a sub-range in CIDR format.")
   (ipam-driver
-   (string "default")
+   (maybe-string)
    "IP Address Management Driver.")
   (ipv6?
    (boolean #f)
@@ -276,6 +276,16 @@ volumes to add."))
        (first (string-split image #\:))
        (mainline:oci-image-repository image))))
 
+(define (oci-object-command-shepherd-action object-name invokation)
+  (shepherd-action
+   (name 'command-line)
+   (documentation
+    (format #f "Prints ~a's OCI runtime command line invokation."
+            object-name))
+   (procedure
+    #~(lambda _
+        (format #t "~a~%" #$invokation)))))
+
 (define (oci-container-shepherd-name runtime config)
   (define name (mainline:oci-container-configuration-provision config))
   (define image (mainline:oci-container-configuration-image config))
@@ -331,7 +341,7 @@ volumes to add."))
 (define (oci-network-configuration->options config)
   (let ((driver (oci-network-configuration-driver config))
         (gateway
-         (oci-network-configuration-driver config))
+         (oci-network-configuration-gateway config))
         (internal?
          (oci-network-configuration-internal? config))
         (ip-range
@@ -344,7 +354,10 @@ volumes to add."))
          (oci-network-configuration-subnet config)))
     (apply append
            (filter (compose not unspecified?)
-                   `(,(if (maybe-value-set? gateway)
+                   `(,(if (maybe-value-set? driver)
+                          `("--driver" ,driver)
+                          '())
+                     ,(if (maybe-value-set? gateway)
                           `("--gateway" ,gateway)
                           '())
                      ,(if internal?
@@ -353,7 +366,9 @@ volumes to add."))
                      ,(if (maybe-value-set? ip-range)
                           `("--ip-range" ,ip-range)
                           '())
-                     ,(list "--ipam-driver" ipam-driver)
+                     ,(if (maybe-value-set? ipam-driver)
+                          `("--ipam-driver" ,ipam-driver)
+                          '())
                      ,(if ipv6?
                           `("--ipv6")
                           '())
@@ -489,14 +504,8 @@ volumes to add."))
                       (actions
                        (append
                         (list
-                         (shepherd-action
-                          (name 'command-line)
-                          (documentation
-                           (format #f "Prints ~a's OCI runtime command line invokation."
-                                   name))
-                          (procedure
-                           #~(lambda _
-                               (format #t "~a~%" (string-join (cdr (list #$@invokation)) " "))))))
+                         (oci-object-command-shepherd-action
+                          name #~(string-join (cdr (list #$@invokation)) " ")))
                         (if (mainline:oci-image? image)
                             '()
                             (list
@@ -510,7 +519,18 @@ volumes to add."))
                                    (invoke #$runtime-cli "pull" #$image))))))
                         actions)))))
 
-(define* (oci-object-create-script object runtime runtime-cli objects-sexps
+(define (oci-object-create-invokation object runtime-cli name options
+                                      extra-arguments)
+  ;; network|volume create [options] [NAME]
+  #~(list #$runtime-cli #$object "create"
+          #$@options #$@extra-arguments #$name))
+
+(define (format-oci-invokations invokations)
+  #~(string-join (map (lambda (i) (string-join i " "))
+                      (list #$@invokations))
+                 "\n"))
+
+(define* (oci-object-create-script object runtime runtime-cli invokations
                                    #:key (verbose? #f))
   (define runtime-string (symbol->string runtime))
   (program-file
@@ -519,7 +539,8 @@ volumes to add."))
        (use-modules (ice-9 format)
                     (ice-9 match)
                     (ice-9 popen)
-                    (ice-9 rdelim))
+                    (ice-9 rdelim)
+                    (srfi srfi-1))
 
        (define (read-lines file-or-port)
          (define (loop-lines port)
@@ -553,39 +574,16 @@ volumes to add."))
                (member name (read-lines (open-input-pipe command))))))
 
        (for-each
-        (match-lambda
-          ((name options extra-arguments)
-           (if (object-exists? name)
-               (display (string-append #$(oci-runtime-name runtime)
-                                       " " name " " #$object " already exists,"
-                                       " skipping creation.\n"))
-               ;; network|volume create [options] [NAME]
-               (let ((command `(,#$runtime-cli #$object "create"
-                                ,@options ,@extra-arguments ,name)))
-                 (when #$verbose?
-                   (format #t "Running~{ ~a~}~%" command))
-                 (apply system* command)))))
-        '#$objects-sexps))))
-
-(define* (oci-network-create-script runtime runtime-cli networks
-                                    #:key (verbose? #f))
-  (oci-object-create-script
-   "network" runtime runtime-cli
-   (map (lambda (n) (list (oci-network-configuration-name n)
-                          (oci-network-configuration->options n)
-                          (oci-network-configuration-extra-arguments n)))
-        networks)
-   #:verbose? verbose?))
-
-(define* (oci-volume-create-script runtime runtime-cli volumes
-                                   #:key (verbose? #f))
-  (oci-object-create-script
-   "volume" runtime runtime-cli
-   (map (lambda (n) (list (oci-volume-configuration-name n)
-                          (oci-volume-configuration->options n)
-                          (oci-volume-configuration-extra-arguments n)))
-        volumes)
-   #:verbose? verbose?))
+        (lambda (invokation)
+          (define name (last invokation))
+          (if (object-exists? name)
+              (format #t "~a ~a ~a already exists, skipping creation.~%"
+                      #$(oci-runtime-name runtime) name #$object)
+              (begin
+                (when #$verbose?
+                  (format #t "Running~{ ~a~}~%" invokation))
+                (apply system* invokation))))
+        '#$invokations))))
 
 (define* (oci-network-shepherd-service config
                                        #:key (user #f)
@@ -598,7 +596,16 @@ volumes to add."))
           (oci-runtime-requirement runtime))
          (networks
           (oci-configuration-networks config))
-         (name (oci-network-shepherd-name runtime)))
+         (name (oci-network-shepherd-name runtime))
+         (invokations
+          (map
+           (lambda (network)
+             (oci-object-create-invokation
+              "network" runtime-cli
+              (oci-network-configuration-name network)
+              (oci-network-configuration->options network)
+              (oci-network-configuration-extra-arguments network)))
+           networks)))
 
     (shepherd-service (provision `(,(string->symbol name)))
                       (requirement `(user-processes networking ,@requirement))
@@ -611,11 +618,16 @@ volumes to add."))
                        #~(lambda _
                            (fork+exec-command
                             (list
-                             #$(oci-network-create-script runtime runtime-cli
-                                                          networks
-                                                          #:verbose? verbose?))
+                             #$(oci-object-create-script
+                                "network" runtime runtime-cli
+                                invokations
+                                #:verbose? verbose?))
                             #:user #$user
-                            #:group #$group))))))
+                            #:group #$group)))
+                      (actions
+                       (list
+                        (oci-object-command-shepherd-action
+                         name (format-oci-invokations invokations)))))))
 
 (define* (oci-volume-shepherd-service config #:key (user #f) (group #f) (verbose? #f))
   (let* ((runtime (oci-configuration-runtime config))
@@ -625,7 +637,16 @@ volumes to add."))
           (oci-runtime-requirement runtime))
          (volumes
           (oci-configuration-volumes config))
-         (name (oci-volume-shepherd-name runtime)))
+         (name (oci-volume-shepherd-name runtime))
+         (invokations
+          (map
+           (lambda (volume)
+             (oci-object-create-invokation
+              "volume" runtime-cli
+              (oci-volume-configuration-name volume)
+              (oci-volume-configuration->options volume)
+              (oci-volume-configuration-extra-arguments volume)))
+           volumes)))
 
     (shepherd-service (provision `(,(string->symbol name)))
                       (requirement `(user-processes ,@requirement))
@@ -638,11 +659,16 @@ volumes to add."))
                        #~(lambda _
                            (fork+exec-command
                             (list
-                             #$(oci-volume-create-script runtime runtime-cli
-                                                         volumes
-                                                         #:verbose? verbose?))
+                             #$(oci-object-create-script
+                                "volume" runtime runtime-cli
+                                invokations
+                                #:verbose? verbose?))
                             #:user #$user
-                            #:group #$group))))))
+                            #:group #$group)))
+                      (actions
+                       (list
+                        (oci-object-command-shepherd-action
+                         name (format-oci-invokations invokations)))))))
 
 (define (oci-service-accounts config)
   (define user (oci-configuration-user config))
