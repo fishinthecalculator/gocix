@@ -53,6 +53,8 @@
             oci-configuration-runtime-cli
             oci-configuration-user
             oci-configuration-group
+            oci-container-configuration-subuids-range
+            oci-container-configuration-subgids-range
             oci-configuration-containers
             oci-configuration-networks
             oci-configuration-volumes
@@ -152,6 +154,7 @@ but ~a was found") el))))
 
 (define-maybe/no-serialization string)
 (define-maybe/no-serialization package)
+(define-maybe/no-serialization subid-range)
 
 (define-configuration/no-serialization oci-volume-configuration
   (name
@@ -226,6 +229,16 @@ package for the @code{'docker} runtime or to @code{podman} package for the
    (maybe-string)
    "The group under whose authority OCI commands will be run.  Its default value
 is either @code{docker} or @code{cgroups} based on the selected OCI runtime.")
+  (subuids-range
+   (maybe-subid-range)
+   "An optional @code{subid-range} record allocating subuids for the user from
+the @code{user} field.  When unset, with the rootless Podman OCI runtime, it
+defaults to @code{(subid-range (name \"oci-container\"))}.")
+  (subgids-range
+   (maybe-subid-range)
+   "An optional @code{subid-range} record allocating subgids for the user from
+the @code{user} field.  When unset, with the rootless Podman OCI runtime, it
+defaults to @code{(subid-range (name \"oci-container\"))}.")
   (containers
    (list-of-oci-containers '())
    "The list of @code{oci-container-configuration} records representing the
@@ -731,23 +744,45 @@ volumes to add."))
                                        #:verbose? verbose?))
          '()))))
 
-(define (oci-service-subids c)
+(define (oci-service-subids config)
+  (define (delete-duplicate-ranges ranges)
+    (delete-duplicates ranges
+                       (lambda args
+                         (apply string=? (map subid-range-name ranges)))))
   (define runtime
-    (oci-configuration-runtime c))
+    (oci-configuration-runtime config))
   (define user
-    (oci-configuration-user c))
+    (oci-configuration-user config))
+  (define subgids (oci-configuration-subgids-range config))
+  (define subuids (oci-configuration-subuids-range config))
   (define container-users
-    (map (lambda (name) (subid-range (name name)))
-         (append (list user)
-                 (map (lambda (cc)
-                        (mainline:oci-container-configuration-user cc))
-                      (oci-configuration-containers c)))))
+    (filter (lambda (range) (not (string=? (subid-range-name range) user)))
+            (map (lambda (container)
+                   (subid-range
+                    (name
+                     (mainline:oci-container-configuration-user container))))
+                 (oci-configuration-containers config))))
+  (define subgid-ranges
+    (delete-duplicate-ranges
+     (cons
+      (if (maybe-value-set? subgids)
+          subgids
+          (subid-range (name user)))
+      container-users)))
+  (define subuid-ranges
+    (delete-duplicate-ranges
+     (cons
+      (if (maybe-value-set? subuids)
+          subuids
+          (subid-range (name user)))
+      container-users)))
+
   (if (eq? 'podman runtime)
       (subids-extension
        (subgids
-        container-users)
+        subgid-ranges)
        (subuids
-        container-users))
+        subuid-ranges))
       (subids-extension)))
 
 (define (oci-objects-merge-lst a b object get-name)
