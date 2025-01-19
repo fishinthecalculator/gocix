@@ -1,5 +1,5 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2023 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2023, 2025 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services grafana)
   #:use-module (gnu packages admin)
@@ -17,6 +17,7 @@
             oci-grafana-configuration
             oci-grafana-configuration?
             oci-grafana-configuration-fields
+            oci-grafana-configuration-runtime
             oci-grafana-configuration-datadir
             oci-grafana-configuration-image
             oci-grafana-configuration-port
@@ -24,8 +25,8 @@
             oci-grafana-configuration-network
             oci-grafana-configuration->oci-container-configuration
 
-            %grafana-accounts
-            %grafana-activation
+            grafana-accounts
+            grafana-activation
 
             grafana-configuration
             grafana-configuration?
@@ -126,6 +127,9 @@
   (prefix gf-))
 
 (define-configuration oci-grafana-configuration
+  (runtime
+   (symbol 'docker)
+   "The OCI runtime to be used for this service")
   (datadir
    (string "/var/lib/grafana")
    "The directory where grafana writes state.")
@@ -144,20 +148,22 @@
 to \"host\" the @code{port} field will be ignored.")
   (no-serialization))
 
-(define %grafana-accounts
-  (list (user-account
-         (name "grafana")
-         (comment "Grafana's Service Account")
-         (uid 1001)
-         (group "root")
-         (supplementary-groups '("tty"))
-         (system? #t)
-         (home-directory "/var/empty")
-         (shell (file-append shadow "/sbin/nologin")))))
+(define (grafana-accounts config)
+  (let ((runtime (oci-grafana-configuration-runtime config)))
+    (list (user-account
+           (name "grafana")
+           (comment "Grafana's Service Account")
+           (uid 1001)
+           (group (if (eq? 'podman runtime) "users" "root"))
+           (supplementary-groups '("tty"))
+           (system? (eq? 'docker runtime))
+           (home-directory "/var/empty")
+           (shell (file-append shadow "/sbin/nologin"))))))
 
-(define (%grafana-activation config)
+(define (grafana-activation config)
   "Return an activation gexp for Grafana."
-  (let* ((datadir (oci-grafana-configuration-datadir config))
+  (let* ((runtime (oci-grafana-configuration-runtime config))
+         (datadir (oci-grafana-configuration-datadir config))
          (grafana.ini
           (mixed-text-file
            "grafana.ini"
@@ -165,7 +171,8 @@ to \"host\" the @code{port} field will be ignored.")
                                     grafana-configuration-fields))))
     #~(begin
         (use-modules (guix build utils))
-        (let* ((user (getpwnam "grafana"))
+        (let* ((user (getpwnam (if #$(eq? 'podman runtime)
+                                   "oci-container" "grafana")))
                (uid (passwd:uid user))
                (gid (passwd:gid user))
                (datadir #$datadir))
@@ -211,9 +218,9 @@ to \"host\" the @code{port} field will be ignored.")
                 (extensions (list (service-extension oci-container-service-type
                                                      oci-grafana-configuration->oci-container-configuration)
                                   (service-extension account-service-type
-                                                     (const %grafana-accounts))
+                                                     grafana-accounts)
                                   (service-extension activation-service-type
-                                                     %grafana-activation)))
+                                                     grafana-activation)))
                 (default-value (oci-grafana-configuration))
                 (description
                  "This service install a OCI backed Grafana Shepherd Service.")))
