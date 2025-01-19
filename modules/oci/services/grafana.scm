@@ -220,8 +220,7 @@ to \"host\" the @code{port} field will be ignored.")
                                                      (lambda (config)
                                                        (oci-extension
                                                         (containers
-                                                         (list
-                                                          (oci-grafana-configuration->oci-container-configuration config))))))
+                                                         (oci-grafana-configuration->oci-container-configuration config)))))
                                   (service-extension account-service-type
                                                      grafana-accounts)
                                   (service-extension activation-service-type
