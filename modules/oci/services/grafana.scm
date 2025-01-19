@@ -154,7 +154,7 @@ to \"host\" the @code{port} field will be ignored.")
            (name "grafana")
            (comment "Grafana's Service Account")
            (uid 1001)
-           (group (if (eq? 'podman runtime) "users" "root"))
+           (group "users")
            (supplementary-groups '("tty"))
            (system? (eq? 'docker runtime))
            (home-directory "/var/empty")
@@ -162,8 +162,7 @@ to \"host\" the @code{port} field will be ignored.")
 
 (define (grafana-activation config)
   "Return an activation gexp for Grafana."
-  (let* ((runtime (oci-grafana-configuration-runtime config))
-         (datadir (oci-grafana-configuration-datadir config))
+  (let* ((datadir (oci-grafana-configuration-datadir config))
          (grafana.ini
           (mixed-text-file
            "grafana.ini"
@@ -179,6 +178,7 @@ to \"host\" the @code{port} field will be ignored.")
           ;; Setup datadir
           (mkdir-p datadir)
           (chown datadir uid gid)
+          (chmod datadir #o660)
           ;; Activate configuration
           (activate-special-files
            '(("/etc/grafana/grafana.ini"
