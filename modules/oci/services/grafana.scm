@@ -162,7 +162,8 @@ to \"host\" the @code{port} field will be ignored.")
 
 (define (grafana-activation config)
   "Return an activation gexp for Grafana."
-  (let* ((datadir (oci-grafana-configuration-datadir config))
+  (let* ((runtime (oci-grafana-configuration-runtime config))
+         (datadir (oci-grafana-configuration-datadir config))
          (grafana.ini
           (mixed-text-file
            "grafana.ini"
