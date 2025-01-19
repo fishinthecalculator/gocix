@@ -22,6 +22,16 @@ The group under whose authority OCI commands will be run.  Its default
 value is either @code{docker} or @code{cgroups} based on the selected
 OCI runtime.
 
+@item @code{subuids-range} (type: maybe-subid-range)
+An optional @code{subid-range} record allocating subuids for the user
+from the @code{user} field.  When unset, with the rootless Podman OCI
+runtime, it defaults to @code{(subid-range (name "oci-container"))}.
+
+@item @code{subgids-range} (type: maybe-subid-range)
+An optional @code{subid-range} record allocating subgids for the user
+from the @code{user} field.  When unset, with the rootless Podman OCI
+runtime, it defaults to @code{(subid-range (name "oci-container"))}.
+
 @item @code{containers} (default: @code{()}) (type: list-of-oci-containers)
 The list of @code{oci-container-configuration} records representing the
 containers to provision.

@@ -5,6 +5,9 @@
 Available @code{oci-grafana-configuration} fields are:
 
 @table @asis
+@item @code{runtime} (default: @code{docker}) (type: symbol)
+The OCI runtime to be used for this service
+
 @item @code{datadir} (default: @code{"/var/lib/grafana"}) (type: string)
 The directory where grafana writes state.
 

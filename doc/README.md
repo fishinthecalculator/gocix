@@ -93,7 +93,7 @@ Available ` oci-network-configuration ` fields are:
 ` name ` (type: string)  
 The name of the OCI network to provision.
 
-` driver ` (default: ` "bridge" ` ) (type: string)  
+` driver ` (type: maybe-string)  
 The driver to manage the network.
 
 ` gateway ` (type: maybe-string)  
@@ -105,7 +105,7 @@ Restrict external access to the network
 ` ip-range ` (type: maybe-string)  
 Allocate container ip from a sub-range in CIDR format.
 
-` ipam-driver ` (default: ` "default" ` ) (type: string)  
+` ipam-driver ` (type: maybe-string)  
 IP Address Management Driver.
 
 ` ipv6? ` (default: ` #f ` ) (type: boolean)  
@@ -157,6 +157,16 @@ The user under whose authority OCI runtime commands will be run.
 The group under whose authority OCI commands will be run. Its default
 value is either ` docker ` or ` cgroups ` based on the selected OCI
 runtime.
+
+` subuids-range ` (type: maybe-subid-range)  
+An optional ` subid-range ` record allocating subuids for the user from
+the ` user ` field. When unset, with the rootless Podman OCI runtime, it
+defaults to ` (subid-range (name "oci-container")) ` .
+
+` subgids-range ` (type: maybe-subid-range)  
+An optional ` subid-range ` record allocating subgids for the user from
+the ` user ` field. When unset, with the rootless Podman OCI runtime, it
+defaults to ` (subid-range (name "oci-container")) ` .
 
 ` containers ` (default: ` () ` ) (type: list-of-oci-containers)  
 The list of ` oci-container-configuration ` records representing the
@@ -436,6 +446,9 @@ The sender of the email alerts Grafana will send.
 
 <span id="index-oci_002dgrafana_002dconfiguration"></span> Data Type: **oci-grafana-configuration**  
 Available ` oci-grafana-configuration ` fields are:
+
+` runtime ` (default: ` 'docker ` ) (type: symbol)  
+The OCI runtime to be used for this service
 
 ` datadir ` (default: ` "/var/lib/grafana" ` ) (type: string)  
 The directory where grafana writes state.
@@ -718,5 +731,5 @@ labels for example.
 
 ------------------------------------------------------------------------
 
-This document was generated on *December 7, 2024* using [*texi2html
+This document was generated on *January 19, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

@@ -8,7 +8,7 @@ Available @code{oci-network-configuration} fields are:
 @item @code{name} (type: string)
 The name of the OCI network to provision.
 
-@item @code{driver} (default: @code{"bridge"}) (type: string)
+@item @code{driver} (type: maybe-string)
 The driver to manage the network.
 
 @item @code{gateway} (type: maybe-string)
@@ -20,7 +20,7 @@ Restrict external access to the network
 @item @code{ip-range} (type: maybe-string)
 Allocate container ip from a sub-range in CIDR format.
 
-@item @code{ipam-driver} (default: @code{"default"}) (type: string)
+@item @code{ipam-driver} (type: maybe-string)
 IP Address Management Driver.
 
 @item @code{ipv6?} (default: @code{#f}) (type: boolean)
