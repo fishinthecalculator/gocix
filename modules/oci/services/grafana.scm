@@ -216,8 +216,12 @@ to \"host\" the @code{port} field will be ignored.")
 
 (define oci-grafana-service-type
   (service-type (name 'grafana)
-                (extensions (list (service-extension oci-container-service-type
-                                                     oci-grafana-configuration->oci-container-configuration)
+                (extensions (list (service-extension oci-service-type
+                                                     (lambda (config)
+                                                       (oci-extension
+                                                        (containers
+                                                         (list
+                                                          (oci-grafana-configuration->oci-container-configuration config))))))
                                   (service-extension account-service-type
                                                      grafana-accounts)
                                   (service-extension activation-service-type
