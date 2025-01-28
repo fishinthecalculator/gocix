@@ -506,7 +506,7 @@ volumes to add."))
                                 invokation #:verbose? verbose?))
                             #:user #$user
                             #:group
-                            (if (eq? #$runtime 'podman)
+                            (if #$(eq? runtime 'podman)
                                 (group:name
                                  (getgrgid
                                   (passwd:gid (getpwnam #$user))))
@@ -517,7 +517,7 @@ volumes to add."))
                             #:environment-variables
                             (append
                              (list #$@host-environment)
-                             (if (eq? #$runtime 'podman)
+                             (if #$(eq? runtime 'podman)
                                  (list
                                   (string-append
                                    "HOME=" (passwd:dir (getpwnam #$user))))
@@ -652,7 +652,7 @@ volumes to add."))
                                 #:verbose? verbose?))
                             #:user #$user
                             #:group
-                            (if (eq? #$runtime 'podman)
+                            (if #$(eq? runtime 'podman)
                                 (group:name
                                  (getgrgid
                                   (passwd:gid (getpwnam #$user))))
@@ -705,7 +705,7 @@ volumes to add."))
                                 #:verbose? verbose?))
                             #:user #$user
                             #:group
-                            (if (eq? #$runtime 'podman)
+                            (if #$(eq? runtime 'podman)
                                 (group:name
                                  (getgrgid
                                   (passwd:gid (getpwnam #$user))))
