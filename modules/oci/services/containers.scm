@@ -650,8 +650,9 @@ volumes to add."))
                             #$@(if (eq? runtime 'podman)
                                    (list
                                     #:environment-variables
-                                    #~(string-append
-                                       "HOME=" (passwd:dir (getpwnam #$user))))
+                                    #~(list
+                                       (string-append
+                                        "HOME=" (passwd:dir (getpwnam #$user)))))
                                    '()))))
                       (actions
                        (list
@@ -697,8 +698,9 @@ volumes to add."))
                             #$@(if (eq? runtime 'podman)
                                    (list
                                     #:environment-variables
-                                    #~(string-append
-                                       "HOME=" (passwd:dir (getpwnam #$user))))
+                                    #~(list
+                                       (string-append
+                                        "HOME=" (passwd:dir (getpwnam #$user)))))
                                    '()))))
                       (actions
                        (list
