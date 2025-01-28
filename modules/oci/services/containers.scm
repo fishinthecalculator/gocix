@@ -597,9 +597,9 @@ volumes to add."))
               (begin
                 (when #$verbose?
                   (format #t "Running~{ ~a~}~%" invokation))
-                (define exit-code (status:exit-val (apply system* invokation)))
-                (when #$verbose?
-                 (format #t "Exit code: ~a~%" exit-code)))))
+                (let ((exit-code (status:exit-val (apply system* invokation))))
+                  (when #$verbose?
+                    (format #t "Exit code: ~a~%" exit-code))))))
         (list #$@invokations)))))
 
 (define* (oci-network-shepherd-service config
