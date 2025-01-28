@@ -510,7 +510,13 @@ volumes to add."))
                                    (list #:log-file log-file)
                                    '())
                             #:environment-variables
-                            (list #$@host-environment))))
+                            (append
+                             (list #$@host-environment)
+                             (if (eq? #$runtime 'podman)
+                                 (list
+                                  (string-append
+                                   "HOME=" (passwd:dir (getpwnam #$user))))
+                                 '())))))
                       (stop
                        #~(lambda _
                            (invoke #$runtime-cli "rm" "-f" #$name)))
@@ -640,7 +646,13 @@ volumes to add."))
                                 invokations
                                 #:verbose? verbose?))
                             #:user #$user
-                            #:group #$group)))
+                            #:group #$group
+                            #$@(if (eq? runtime 'podman)
+                                   (list
+                                    #:environment-variables
+                                    #~(string-append
+                                       "HOME=" (passwd:dir (getpwnam #$user))))
+                                   '()))))
                       (actions
                        (list
                         (oci-object-command-shepherd-action
@@ -681,7 +693,13 @@ volumes to add."))
                                 invokations
                                 #:verbose? verbose?))
                             #:user #$user
-                            #:group #$group)))
+                            #:group #$group
+                            #$@(if (eq? runtime 'podman)
+                                   (list
+                                    #:environment-variables
+                                    #~(string-append
+                                       "HOME=" (passwd:dir (getpwnam #$user))))
+                                   '()))))
                       (actions
                        (list
                         (oci-object-command-shepherd-action
