@@ -505,12 +505,7 @@ volumes to add."))
                                 runtime-cli name image image-reference
                                 invokation #:verbose? verbose?))
                             #:user #$user
-                            #:group
-                            (if #$(eq? runtime 'podman)
-                                (group:name
-                                 (getgrgid
-                                  (passwd:gid (getpwnam #$user))))
-                                #$group)
+                            #:group #$group
                             #$@(if (maybe-value-set? log-file)
                                    (list #:log-file log-file)
                                    '())
@@ -651,12 +646,7 @@ volumes to add."))
                                 invokations
                                 #:verbose? verbose?))
                             #:user #$user
-                            #:group
-                            (if #$(eq? runtime 'podman)
-                                (group:name
-                                 (getgrgid
-                                  (passwd:gid (getpwnam #$user))))
-                                #$group)
+                            #:group #$group
                             #$@(if (eq? runtime 'podman)
                                    (list
                                     #:environment-variables
@@ -704,12 +694,7 @@ volumes to add."))
                                 invokations
                                 #:verbose? verbose?))
                             #:user #$user
-                            #:group
-                            (if #$(eq? runtime 'podman)
-                                (group:name
-                                 (getgrgid
-                                  (passwd:gid (getpwnam #$user))))
-                                #$group)
+                            #:group #$group
                             #$@(if (eq? runtime 'podman)
                                    (list
                                     #:environment-variables
