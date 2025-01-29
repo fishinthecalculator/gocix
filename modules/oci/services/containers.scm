@@ -505,7 +505,12 @@ volumes to add."))
                                 runtime-cli name image image-reference
                                 invokation #:verbose? verbose?))
                             #:user #$user
-                            #:group #$group
+                            #:group
+                            (if #$(eq? runtime 'podman)
+                                (group:name
+                                 (getgrgid
+                                  (passwd:gid (getpwnam #$user))))
+                                #$group)
                             #$@(if (maybe-value-set? log-file)
                                    (list #:log-file log-file)
                                    '())
@@ -608,6 +613,45 @@ volumes to add."))
                     (format #t "Exit code: ~a~%" exit-code))))))
         (list #$@invokations)))))
 
+(define* (oci-object-shepherd-service object runtime runtime-cli name requirement invokations
+                                      #:key
+                                      (user #f)
+                                      (group #f)
+                                      (verbose? #f))
+  (shepherd-service (provision `(,(string->symbol name)))
+                    (requirement `(user-processes ,@requirement))
+                    (one-shot? #t)
+                    (documentation
+                     (string-append
+                      (oci-runtime-name runtime) " " object
+                      " provisioning service"))
+                    (start
+                     #~(lambda _
+                         (fork+exec-command
+                          (list
+                           #$(oci-object-create-script
+                              object runtime runtime-cli
+                              invokations
+                              #:verbose? verbose?))
+                          #:user #$user
+                          #:group
+                          (if #$(eq? runtime 'podman)
+                              (group:name
+                               (getgrgid
+                                (passwd:gid (getpwnam #$user))))
+                              #$group)
+                          #$@(if (eq? runtime 'podman)
+                                 (list
+                                  #:environment-variables
+                                  #~(list
+                                     (string-append
+                                      "HOME=" (passwd:dir (getpwnam #$user)))))
+                                 '()))))
+                    (actions
+                     (list
+                      (oci-object-command-shepherd-action
+                       name (format-oci-invokations invokations))))))
+
 (define* (oci-network-shepherd-service config
                                        #:key (user #f)
                                              (group #f)
@@ -630,34 +674,10 @@ volumes to add."))
               (oci-network-configuration-extra-arguments network)))
            networks)))
 
-    (shepherd-service (provision `(,(string->symbol name)))
-                      (requirement `(user-processes networking ,@requirement))
-                      (one-shot? #t)
-                      (documentation
-                       (string-append
-                        (oci-runtime-name runtime)
-                        " network provisioning service"))
-                      (start
-                       #~(lambda _
-                           (fork+exec-command
-                            (list
-                             #$(oci-object-create-script
-                                "network" runtime runtime-cli
-                                invokations
-                                #:verbose? verbose?))
-                            #:user #$user
-                            #:group #$group
-                            #$@(if (eq? runtime 'podman)
-                                   (list
-                                    #:environment-variables
-                                    #~(list
-                                       (string-append
-                                        "HOME=" (passwd:dir (getpwnam #$user)))))
-                                   '()))))
-                      (actions
-                       (list
-                        (oci-object-command-shepherd-action
-                         name (format-oci-invokations invokations)))))))
+    (oci-object-shepherd-service
+     "network" runtime runtime-cli name
+     (append '(networking) requirement) invokations
+     #:user user #:group group #:verbose? verbose?)))
 
 (define* (oci-volume-shepherd-service config #:key (user #f) (group #f) (verbose? #f))
   (let* ((runtime (oci-configuration-runtime config))
@@ -678,34 +698,9 @@ volumes to add."))
               (oci-volume-configuration-extra-arguments volume)))
            volumes)))
 
-    (shepherd-service (provision `(,(string->symbol name)))
-                      (requirement `(user-processes ,@requirement))
-                      (one-shot? #t)
-                      (documentation
-                       (string-append
-                        (oci-runtime-name runtime)
-                        " volume provisioning service"))
-                      (start
-                       #~(lambda _
-                           (fork+exec-command
-                            (list
-                             #$(oci-object-create-script
-                                "volume" runtime runtime-cli
-                                invokations
-                                #:verbose? verbose?))
-                            #:user #$user
-                            #:group #$group
-                            #$@(if (eq? runtime 'podman)
-                                   (list
-                                    #:environment-variables
-                                    #~(list
-                                       (string-append
-                                        "HOME=" (passwd:dir (getpwnam #$user)))))
-                                   '()))))
-                      (actions
-                       (list
-                        (oci-object-command-shepherd-action
-                         name (format-oci-invokations invokations)))))))
+    (oci-object-shepherd-service
+     "volume" runtime runtime-cli name requirement invokations
+     #:user user #:group group #:verbose? verbose?)))
 
 (define (oci-service-accounts config)
   (define user (oci-configuration-user config))
