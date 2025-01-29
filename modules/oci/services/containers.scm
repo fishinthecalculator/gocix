@@ -214,7 +214,8 @@ to the runtime invokation."
 (define-configuration/no-serialization oci-configuration
   (runtime
    (symbol 'docker)
-   "The OCI runtime to use to run commands."
+   "The OCI runtime to use to run commands.  It can be either @code{'docker} or
+@code{'podman}."
    (sanitizer oci-sanitize-runtime))
   (runtime-cli
    (maybe-package)
@@ -224,11 +225,12 @@ package for the @code{'docker} runtime or to @code{podman} package for the
 @code{'podman} runtime.")
   (user
    (string "oci-container")
-   "The user under whose authority OCI runtime commands will be run.")
+   "The user name under whose authority OCI runtime commands will be run.")
   (group
    (maybe-string)
-   "The group under whose authority OCI commands will be run.  Its default value
-is either @code{docker} or @code{cgroups} based on the selected OCI runtime.")
+   "The group name under whose authority OCI commands will be run.  When
+using the @code{'podman} OCI runtime, this field will be ignored and the
+default group of the user configured in the @code{user} field will be used.")
   (subuids-range
    (maybe-subid-range)
    "An optional @code{subid-range} record allocating subuids for the user from
@@ -242,15 +244,18 @@ defaults to @code{(subid-range (name \"oci-container\"))}.")
   (containers
    (list-of-oci-containers '())
    "The list of @code{oci-container-configuration} records representing the
-containers to provision.")
+containers to provision.  Most users are supposed not to use this field and use
+the @code{oci-extension} record instead.")
   (networks
    (list-of-oci-networks '())
    "The list of @code{oci-network-configuration} records representing the
-networks to provision.")
+networks to provision.  Most users are supposed not to use this field and use
+the @code{oci-extension} record instead.")
   (volumes
    (list-of-oci-volumes '())
    "The list of @code{oci-volume-configuration} records representing the
-volumes to provision.")
+volumes to provision.  Most users are supposed not to use this field and use
+the @code{oci-extension} record instead.")
   (verbose?
    (boolean #f)
    "When true, additional output will be printed, allowing to better follow the

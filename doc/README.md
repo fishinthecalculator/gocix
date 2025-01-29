@@ -142,7 +142,8 @@ passed to the runtime invokation.
 Available ` oci-configuration ` fields are:
 
 ` runtime ` (default: ` docker ` ) (type: symbol)  
-The OCI runtime to use to run commands.
+The OCI runtime to use to run commands. It can be either ` 'docker ` or
+` 'podman ` .
 
 ` runtime-cli ` (type: maybe-package)  
 The OCI runtime command line to be installed in the system profile and
@@ -151,12 +152,12 @@ used to provision OCI resources. When unset it will default to
 package for the ` 'podman ` runtime.
 
 ` user ` (default: ` "oci-container" ` ) (type: string)  
-The user under whose authority OCI runtime commands will be run.
+The user name under whose authority OCI runtime commands will be run.
 
 ` group ` (type: maybe-string)  
-The group under whose authority OCI commands will be run. Its default
-value is either ` docker ` or ` cgroups ` based on the selected OCI
-runtime.
+The group name under whose authority OCI commands will be run. When
+using the ` 'podman ` OCI runtime, this field will be ignored and the
+default group of the user configured in the ` user ` field will be used.
 
 ` subuids-range ` (type: maybe-subid-range)  
 An optional ` subid-range ` record allocating subuids for the user from
@@ -170,15 +171,18 @@ defaults to ` (subid-range (name "oci-container")) ` .
 
 ` containers ` (default: ` () ` ) (type: list-of-oci-containers)  
 The list of ` oci-container-configuration ` records representing the
-containers to provision.
+containers to provision. Most users are supposed not to use this field
+and use the ` oci-extension ` record instead.
 
 ` networks ` (default: ` () ` ) (type: list-of-oci-networks)  
 The list of ` oci-network-configuration ` records representing the
-networks to provision.
+networks to provision. Most users are supposed not to use this field and
+use the ` oci-extension ` record instead.
 
 ` volumes ` (default: ` () ` ) (type: list-of-oci-volumes)  
 The list of ` oci-volume-configuration ` records representing the
-volumes to provision.
+volumes to provision. Most users are supposed not to use this field and
+use the ` oci-extension ` record instead.
 
 ` verbose? ` (default: ` #f ` ) (type: boolean)  
 When true, additional output will be printed, allowing to better follow
@@ -447,7 +451,7 @@ The sender of the email alerts Grafana will send.
 <span id="index-oci_002dgrafana_002dconfiguration"></span> Data Type: **oci-grafana-configuration**  
 Available ` oci-grafana-configuration ` fields are:
 
-` runtime ` (default: ` 'docker ` ) (type: symbol)  
+` runtime ` (default: ` docker ` ) (type: symbol)  
 The OCI runtime to be used for this service
 
 ` datadir ` (default: ` "/var/lib/grafana" ` ) (type: string)  
@@ -731,5 +735,5 @@ labels for example.
 
 ------------------------------------------------------------------------
 
-This document was generated on *January 19, 2025* using [*texi2html
+This document was generated on *January 29, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

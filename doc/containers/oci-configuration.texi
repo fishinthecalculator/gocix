@@ -6,7 +6,8 @@ Available @code{oci-configuration} fields are:
 
 @table @asis
 @item @code{runtime} (default: @code{docker}) (type: symbol)
-The OCI runtime to use to run commands.
+The OCI runtime to use to run commands.  It can be either @code{'docker}
+or @code{'podman}.
 
 @item @code{runtime-cli} (type: maybe-package)
 The OCI runtime command line to be installed in the system profile and
@@ -15,12 +16,13 @@ used to provision OCI resources.  When unset it will default to
 @code{podman} package for the @code{'podman} runtime.
 
 @item @code{user} (default: @code{"oci-container"}) (type: string)
-The user under whose authority OCI runtime commands will be run.
+The user name under whose authority OCI runtime commands will be run.
 
 @item @code{group} (type: maybe-string)
-The group under whose authority OCI commands will be run.  Its default
-value is either @code{docker} or @code{cgroups} based on the selected
-OCI runtime.
+The group name under whose authority OCI commands will be run.  When
+using the @code{'podman} OCI runtime, this field will be ignored and the
+default group of the user configured in the @code{user} field will be
+used.
 
 @item @code{subuids-range} (type: maybe-subid-range)
 An optional @code{subid-range} record allocating subuids for the user
@@ -34,15 +36,18 @@ runtime, it defaults to @code{(subid-range (name "oci-container"))}.
 
 @item @code{containers} (default: @code{()}) (type: list-of-oci-containers)
 The list of @code{oci-container-configuration} records representing the
-containers to provision.
+containers to provision.  Most users are supposed not to use this field
+and use the @code{oci-extension} record instead.
 
 @item @code{networks} (default: @code{()}) (type: list-of-oci-networks)
 The list of @code{oci-network-configuration} records representing the
-networks to provision.
+networks to provision.  Most users are supposed not to use this field
+and use the @code{oci-extension} record instead.
 
 @item @code{volumes} (default: @code{()}) (type: list-of-oci-volumes)
 The list of @code{oci-volume-configuration} records representing the
-volumes to provision.
+volumes to provision.  Most users are supposed not to use this field and
+use the @code{oci-extension} record instead.
 
 @item @code{verbose?} (default: @code{#f}) (type: boolean)
 When true, additional output will be printed, allowing to better follow
