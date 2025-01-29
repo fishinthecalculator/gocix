@@ -1,4 +1,4 @@
-;;; Copyright © 2024 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2024, 2025 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services containers)
   #:use-module (gnu packages admin)
@@ -89,16 +89,21 @@
   '(docker podman))
 
 (define (oci-runtime-requirement runtime)
+  "Return a list of Shepherd service names required by a given OCI runtime,
+before it is able to run containers."
   (if (eq? 'podman runtime)
       '(cgroups2-fs-owner cgroups2-limits
         rootless-podman-shared-root-fs)
       '(dockerd)))
 
 (define (oci-runtime-name runtime)
+  "Return a human readable name for a given OCI runtime."
   (if (eq? 'podman runtime)
       "Podman" "Docker"))
 
 (define (oci-runtime-group runtime maybe-group)
+  "Implement the logic behind selection of the group that is to be used by
+Shepherd to execute OCI commands."
   (if (maybe-value-set? maybe-group)
       maybe-group
       (if (eq? 'podman runtime)
@@ -261,7 +266,9 @@ the @code{oci-extension} record instead.")
    "When true, additional output will be printed, allowing to better follow the
 flow of execution."))
 
-(define (oci-runtime-cli config)
+(define* (oci-runtime-cli config #:key (path "/run/current-system/profile"))
+  "Return a gexp that, when lowered, evaluates to the file system path of the OCI
+runtime command requested by the user."
   (let ((runtime-cli
          (oci-configuration-runtime-cli config))
         (runtime
@@ -269,7 +276,7 @@ flow of execution."))
     #~(string-append
        (if #$(maybe-value-set? runtime-cli)
            #$runtime-cli
-           "/run/current-system/profile")
+           #$path)
        (if #$(eq? 'podman runtime)
            "/bin/podman"
            "/bin/docker"))))
@@ -289,12 +296,15 @@ networks to add.")
 volumes to add."))
 
 (define (oci-image->container-name image)
+  "Infer the name of an OCI backed Shepherd service from its OCI image."
   (basename
    (if (string? image)
        (first (string-split image #\:))
        (mainline:oci-image-repository image))))
 
 (define (oci-object-command-shepherd-action object-name invokation)
+  "Return a Shepherd action printing a given INVOKATION of an OCI command for the
+given OBJECT-NAME."
   (shepherd-action
    (name 'command-line)
    (documentation
@@ -305,6 +315,10 @@ volumes to add."))
         (format #t "~a~%" #$invokation)))))
 
 (define (oci-container-shepherd-name runtime config)
+  "Return the name of an OCI backed Shepherd service based on CONFIG.
+The name configured in the configuration record is returned when
+CONFIG's name field has a value, otherwise a name is inferred from CONFIG's
+image field."
   (define name (mainline:oci-container-configuration-provision config))
   (define image (mainline:oci-container-configuration-image config))
 
@@ -314,12 +328,19 @@ volumes to add."))
                      (oci-image->container-name image))))
 
 (define (oci-network-shepherd-name runtime)
+  "Return the name of the OCI networks provisioning Shepherd service based on
+RUNTIME."
   (string-append (symbol->string runtime) "-networks"))
 
 (define (oci-volume-shepherd-name runtime)
+  "Return the name of the OCI volumes provisioning Shepherd service based on
+RUNTIME."
   (string-append (symbol->string runtime) "-volumes"))
 
 (define oci-container-configuration->options
+  "Map CONFIG, an oci-container-configuration record, to a gexp that, upon
+lowering, will be evaluated to a list of strings containing command line options
+for the OCI runtime run command."
   (lambda (config)
     (let ((entrypoint
            (mainline:oci-container-configuration-entrypoint config))
@@ -357,6 +378,9 @@ volumes to add."))
                          (mainline:oci-container-configuration-volumes config))))))))
 
 (define (oci-network-configuration->options config)
+  "Map CONFIG, an oci-network-configuration record, to a gexp that, upon
+lowering, will be evaluated to a list of strings containing command line options
+for the OCI runtime network create command."
   (let ((driver (oci-network-configuration-driver config))
         (gateway
          (oci-network-configuration-gateway config))
@@ -399,6 +423,9 @@ volumes to add."))
                        (oci-network-configuration-labels config)))))))
 
 (define (oci-volume-configuration->options config)
+  "Map CONFIG, an oci-volume-configuration record, to a gexp that, upon
+lowering, will be evaluated to a list of strings containing command line options
+for the OCI runtime volume create command."
   (append-map
    (lambda (spec)
      (list "--label" spec))
@@ -408,6 +435,8 @@ volumes to add."))
   (@@ (gnu services docker) lower-oci-image))
 
 (define* (oci-image-loader runtime-cli name image tag #:key (verbose? #f))
+  "Return a file-like object that, once lowered, will evaluate to a program able
+to load IMAGE through RUNTIME-CLI and to tag it with TAG afterwards."
   (let ((tarball (lower-oci-image name image)))
     (with-imported-modules '((guix build utils))
       (program-file (format #f "~a-image-loader" name)
@@ -444,6 +473,8 @@ volumes to add."))
 
 (define* (oci-container-entrypoint runtime-cli name image image-reference
                                    invokation #:key (verbose? #f))
+  "Return a file-like object that, once lowered, will evaluate to the entrypoint
+for the Shepherd service that will run IMAGE through RUNTIME-CLI."
   (program-file
    (string-append "oci-entrypoint-" name)
    #~(begin
@@ -463,6 +494,8 @@ volumes to add."))
                                          (user #f)
                                          (group #f)
                                          (verbose? #f))
+  "Return a Shepherd service object that will run the OCI container represented
+by CONFIG through RUNTIME-CLI."
   (let* ((actions (mainline:oci-container-configuration-shepherd-actions config))
          (auto-start?
           (mainline:oci-container-configuration-auto-start? config))
@@ -550,11 +583,16 @@ volumes to add."))
 
 (define (oci-object-create-invokation object runtime-cli name options
                                       extra-arguments)
+  "Return a gexp that, upon lowering, will evaluate to the OCI runtime
+invokation for creating networks and volumes."
   ;; network|volume create [options] [NAME]
   #~(list #$runtime-cli #$object "create"
           #$@options #$@extra-arguments #$name))
 
 (define (format-oci-invokations invokations)
+  "Return a gexp that, upon lowering, will evaluate to a formatted message
+containing the INVOKATIONS that the OCI runtime will execute to provision
+networks or volumes."
   #~(string-join (map (lambda (i) (string-join i " "))
                       (list #$@invokations))
                  "\n"))
