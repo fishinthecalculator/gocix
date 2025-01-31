@@ -337,45 +337,44 @@ RUNTIME."
 RUNTIME."
   (string-append (symbol->string runtime) "-volumes"))
 
-(define oci-container-configuration->options
+(define (oci-container-configuration->options config)
   "Map CONFIG, an oci-container-configuration record, to a gexp that, upon
 lowering, will be evaluated to a list of strings containing command line options
 for the OCI runtime run command."
-  (lambda (config)
-    (let ((entrypoint
-           (mainline:oci-container-configuration-entrypoint config))
-          (network
-           (mainline:oci-container-configuration-network config))
-          (user
-           (mainline:oci-container-configuration-container-user config))
-          (workdir
-           (mainline:oci-container-configuration-workdir config)))
-      (apply append
-             (filter (compose not unspecified?)
-                     `(,(if (maybe-value-set? entrypoint)
-                            `("--entrypoint" ,entrypoint)
-                            '())
-                       ,(append-map
-                         (lambda (spec)
-                           (list "--env" spec))
-                         (mainline:oci-container-configuration-environment config))
-                       ,(if (maybe-value-set? network)
-                            `("--network" ,network)
-                            '())
-                       ,(if (maybe-value-set? user)
-                            `("--user" ,user)
-                            '())
-                       ,(if (maybe-value-set? workdir)
-                            `("--workdir" ,workdir)
-                            '())
-                       ,(append-map
-                         (lambda (spec)
-                           (list "-p" spec))
-                         (mainline:oci-container-configuration-ports config))
-                       ,(append-map
-                         (lambda (spec)
-                           (list "-v" spec))
-                         (mainline:oci-container-configuration-volumes config))))))))
+  (let ((entrypoint
+         (mainline:oci-container-configuration-entrypoint config))
+        (network
+         (mainline:oci-container-configuration-network config))
+        (user
+         (mainline:oci-container-configuration-container-user config))
+        (workdir
+         (mainline:oci-container-configuration-workdir config)))
+    (apply append
+           (filter (compose not unspecified?)
+                   `(,(if (maybe-value-set? entrypoint)
+                          `("--entrypoint" ,entrypoint)
+                          '())
+                     ,(append-map
+                       (lambda (spec)
+                         (list "--env" spec))
+                       (mainline:oci-container-configuration-environment config))
+                     ,(if (maybe-value-set? network)
+                          `("--network" ,network)
+                          '())
+                     ,(if (maybe-value-set? user)
+                          `("--user" ,user)
+                          '())
+                     ,(if (maybe-value-set? workdir)
+                          `("--workdir" ,workdir)
+                          '())
+                     ,(append-map
+                       (lambda (spec)
+                         (list "-p" spec))
+                       (mainline:oci-container-configuration-ports config))
+                     ,(append-map
+                       (lambda (spec)
+                         (list "-v" spec))
+                       (mainline:oci-container-configuration-volumes config)))))))
 
 (define (oci-network-configuration->options config)
   "Map CONFIG, an oci-network-configuration record, to a gexp that, upon
@@ -599,6 +598,8 @@ networks or volumes."
 
 (define* (oci-object-create-script object runtime runtime-cli invokations
                                    #:key (verbose? #f))
+  "Return a file-like object that, once lowered, will evaluate to a program able
+to create OCI networks and volumes through RUNTIME-CLI."
   (define runtime-string (symbol->string runtime))
   (program-file
    (string-append runtime-string "-" object "s-create.scm")
@@ -661,6 +662,8 @@ networks or volumes."
                                       (user #f)
                                       (group #f)
                                       (verbose? #f))
+  "Return a Shepherd service object that will create the OBJECTs represented
+by INVOKATIONS through RUNTIME-CLI."
   (shepherd-service (provision `(,(string->symbol name)))
                     (requirement `(user-processes ,@requirement))
                     (one-shot? #t)
