@@ -171,18 +171,20 @@ to \"host\" the @code{port} field will be ignored."))
   "Return an activation gexp for Grafana."
   (let ((runtime (oci-grafana-configuration-runtime config))
         (datadir (oci-grafana-configuration-datadir config)))
-    #~(begin
-        (use-modules (guix build utils))
-        (when (string? #$datadir)
-          (let* ((user (getpwnam (if #$(eq? 'podman runtime)
-                                     "oci-container" "grafana")))
-                 (uid (passwd:uid user))
-                 (gid (passwd:gid user))
-                 (datadir #$datadir))
-            ;; Setup datadir
-            (mkdir-p datadir)
-            (chown datadir uid gid)
-            (chmod datadir #o660))))))
+    (if (string? datadir)
+        #~(begin
+            (use-modules (guix build utils))
+            (let* ((user (getpwnam
+                          (if #$(eq? 'podman runtime
+                                     "oci-container" "grafana"))))
+                   (uid (passwd:uid user))
+                   (gid (passwd:gid user))
+                   (datadir #$datadir))
+              ;; Setup datadir
+              (mkdir-p datadir)
+              (chown datadir uid gid)
+              (chmod datadir #o660)))
+        #~(begin))))
 
 (define oci-grafana-configuration->oci-container-configuration
   (lambda (config)
