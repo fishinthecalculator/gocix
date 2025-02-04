@@ -20,7 +20,9 @@
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
 
-  #:export (list-of-oci-containers?
+  #:export (oci-container-service-type
+
+            list-of-oci-containers?
             list-of-oci-networks?
             list-of-oci-volumes?
 

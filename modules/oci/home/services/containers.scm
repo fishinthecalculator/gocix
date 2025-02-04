@@ -26,8 +26,6 @@
             home-oci-extension-networks
             home-oci-extension-volumes
 
-
-            home-oci-container-service-type
             home-oci-service-type
             home-oci-configuration->shepherd-services))
 
