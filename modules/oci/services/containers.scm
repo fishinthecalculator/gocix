@@ -1,3 +1,4 @@
+;;; SPDX-License-Identifier: GPL-3.0-or-later
 ;;; Copyright © 2024, 2025 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services containers)
@@ -19,9 +20,15 @@
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
 
-  #:export (%oci-supported-runtimes
-            oci-runtime-requirement
+  #:export (list-of-oci-containers?
+            list-of-oci-networks?
+            list-of-oci-volumes?
+
+            %oci-supported-runtimes
+            oci-runtime-system-requirement
             oci-runtime-cli
+            oci-sanitize-runtime
+            oci-runtime-system-cli
             oci-runtime-name
             oci-runtime-group
 
@@ -53,8 +60,6 @@
             oci-configuration-runtime-cli
             oci-configuration-user
             oci-configuration-group
-            oci-container-configuration-subuids-range
-            oci-container-configuration-subgids-range
             oci-configuration-containers
             oci-configuration-networks
             oci-configuration-volumes
@@ -67,11 +72,15 @@
             oci-extension-networks
             oci-extension-volumes
 
-            oci-container-service-type
+            oci-networks-shepherd-name
+            oci-volumes-shepherd-name
+
+            oci-container-shepherd-service
             oci-service-type
             oci-service-accounts
             oci-service-profile
             oci-service-subids
+            oci-state->shepherd-services
             oci-configuration->shepherd-services))
 
 ;;;
@@ -81,6 +90,7 @@
 ;;; https://git.savannah.gnu.org/cgit/guix.git/tree/gnu/services/docker.scm
 ;;;
 
+
 ;;;
 ;;; OCI provisioning service.
 ;;;
@@ -88,7 +98,7 @@
 (define %oci-supported-runtimes
   '(docker podman))
 
-(define (oci-runtime-requirement runtime)
+(define (oci-runtime-system-requirement runtime)
   "Return a list of Shepherd service names required by a given OCI runtime,
 before it is able to run containers."
   (if (eq? 'podman runtime)
@@ -266,20 +276,26 @@ the @code{oci-extension} record instead.")
    "When true, additional output will be printed, allowing to better follow the
 flow of execution."))
 
-(define* (oci-runtime-cli config #:key (path "/run/current-system/profile"))
+(define (oci-runtime-cli runtime runtime-cli path)
   "Return a gexp that, when lowered, evaluates to the file system path of the OCI
 runtime command requested by the user."
+  (if (string? runtime-cli)
+      ;; It is a user defined absolute path
+      runtime-cli
+      #~(string-append
+         (if #$(maybe-value-set? runtime-cli)
+             #$runtime-cli
+             #$path)
+         (if #$(eq? 'podman runtime)
+             "/bin/podman"
+             "/bin/docker"))))
+
+(define* (oci-runtime-system-cli config #:key (path "/run/current-system/profile"))
   (let ((runtime-cli
          (oci-configuration-runtime-cli config))
         (runtime
          (oci-configuration-runtime config)))
-    #~(string-append
-       (if #$(maybe-value-set? runtime-cli)
-           #$runtime-cli
-           #$path)
-       (if #$(eq? 'podman runtime)
-           "/bin/podman"
-           "/bin/docker"))))
+    (oci-runtime-cli runtime runtime-cli path)))
 
 (define-configuration/no-serialization oci-extension
   (containers
@@ -327,12 +343,12 @@ image field."
       (string-append (symbol->string runtime) "-"
                      (oci-image->container-name image))))
 
-(define (oci-network-shepherd-name runtime)
+(define (oci-networks-shepherd-name runtime)
   "Return the name of the OCI networks provisioning Shepherd service based on
 RUNTIME."
   (string-append (symbol->string runtime) "-networks"))
 
-(define (oci-volume-shepherd-name runtime)
+(define (oci-volumes-shepherd-name runtime)
   "Return the name of the OCI volumes provisioning Shepherd service based on
 RUNTIME."
   (string-append (symbol->string runtime) "-volumes"))
@@ -524,7 +540,7 @@ by CONFIG through RUNTIME-CLI."
             ,image-reference ,@command)))
 
     (shepherd-service (provision `(,(string->symbol name)))
-                      (requirement `(,@(oci-runtime-requirement runtime)
+                      (requirement `(,@(oci-runtime-system-requirement runtime)
                                      user-processes
                                      ,@oci-requirement
                                      ,@requirement))
@@ -698,54 +714,47 @@ by INVOKATIONS through RUNTIME-CLI."
                       (oci-object-command-shepherd-action
                        name (format-oci-invokations invokations))))))
 
-(define* (oci-network-shepherd-service config
-                                       #:key (user #f)
-                                             (group #f)
-                                             (verbose? #f))
-  (let* ((runtime (oci-configuration-runtime config))
-         (runtime-cli
-          (oci-runtime-cli config))
-         (requirement
-          (oci-runtime-requirement runtime))
-         (networks
-          (oci-configuration-networks config))
-         (name (oci-network-shepherd-name runtime))
-         (invokations
-          (map
-           (lambda (network)
-             (oci-object-create-invokation
-              "network" runtime-cli
-              (oci-network-configuration-name network)
-              (oci-network-configuration->options network)
-              (oci-network-configuration-extra-arguments network)))
-           networks)))
+(define* (oci-networks-shepherd-service runtime runtime-cli name networks
+                                        #:key
+                                        (user #f)
+                                        (group #f)
+                                        (runtime-requirement '())
+                                        (default-requirement '(networking))
+                                        (verbose? #f))
+  "Return a Shepherd service object that will create the networks represented
+in CONFIG."
+  (let ((invokations
+         (map
+          (lambda (network)
+            (oci-object-create-invokation
+             "network" runtime-cli
+             (oci-network-configuration-name network)
+             (oci-network-configuration->options network)
+             (oci-network-configuration-extra-arguments network)))
+          networks)))
 
     (oci-object-shepherd-service
      "network" runtime runtime-cli name
-     (append '(networking) requirement) invokations
+     (append default-requirement runtime-requirement) invokations
      #:user user #:group group #:verbose? verbose?)))
 
-(define* (oci-volume-shepherd-service config #:key (user #f) (group #f) (verbose? #f))
-  (let* ((runtime (oci-configuration-runtime config))
-         (runtime-cli
-          (oci-runtime-cli config))
-         (requirement
-          (oci-runtime-requirement runtime))
-         (volumes
-          (oci-configuration-volumes config))
-         (name (oci-volume-shepherd-name runtime))
-         (invokations
-          (map
-           (lambda (volume)
-             (oci-object-create-invokation
-              "volume" runtime-cli
-              (oci-volume-configuration-name volume)
-              (oci-volume-configuration->options volume)
-              (oci-volume-configuration-extra-arguments volume)))
-           volumes)))
+(define* (oci-volumes-shepherd-service runtime runtime-cli name volumes
+                                       #:key (user #f) (group #f) (verbose? #f)
+                                       (runtime-requirement '()))
+  "Return a Shepherd service object that will create the volumes represented
+in CONFIG."
+  (let ((invokations
+         (map
+          (lambda (volume)
+            (oci-object-create-invokation
+             "volume" runtime-cli
+             (oci-volume-configuration-name volume)
+             (oci-volume-configuration->options volume)
+             (oci-volume-configuration-extra-arguments volume)))
+          volumes)))
 
     (oci-object-shepherd-service
-     "volume" runtime runtime-cli name requirement invokations
+     "volume" runtime runtime-cli name runtime-requirement invokations
      #:user user #:group group #:verbose? verbose?)))
 
 (define (oci-service-accounts config)
@@ -765,30 +774,27 @@ by INVOKATIONS through RUNTIME-CLI."
          (create-home-directory? (eq? 'podman runtime))
          (shell (file-append shadow "/sbin/nologin")))))
 
-(define (oci-configuration->shepherd-services config)
-  (let* ((runtime (oci-configuration-runtime config))
-         (runtime-cli
-          (oci-runtime-cli config))
-         (networks?
-          (> (length (oci-configuration-networks config)) 0))
+(define* (oci-state->shepherd-services runtime runtime-cli containers networks volumes
+                                       #:key (user #f) (group #f) (verbose? #f)
+                                       (networks-name #f) (volumes-name #f)
+                                       (runtime-requirement '())
+                                       (networks-default-requirement '()))
+  (let* ((networks?
+          (> (length networks) 0))
          (networks-requirement
           (if networks?
               (list
                (string->symbol
-                (oci-network-shepherd-name runtime)))
+                (oci-networks-shepherd-name runtime)))
               '()))
          (volumes?
-          (> (length (oci-configuration-volumes config)) 0))
+          (> (length volumes) 0))
          (volumes-requirement
           (if volumes?
               (list
                (string->symbol
-                (oci-volume-shepherd-name runtime)))
-              '()))
-         (user (oci-configuration-user config))
-         (maybe-group (oci-configuration-group config))
-         (group (oci-runtime-group runtime maybe-group))
-         (verbose? (oci-configuration-verbose? config)))
+                (oci-volumes-shepherd-name runtime)))
+              '())))
     (append
      (map
       (lambda (c)
@@ -799,19 +805,51 @@ by INVOKATIONS through RUNTIME-CLI."
          #:oci-requirement
          (append networks-requirement volumes-requirement)
          #:verbose? verbose?))
-      (oci-configuration-containers config))
+      containers)
      (if networks?
          (list
-          (oci-network-shepherd-service config #:user user #:group group
-                                        #:verbose? verbose?))
+          (oci-networks-shepherd-service
+           runtime runtime-cli
+           (if (string? networks-name)
+               networks-name
+               (oci-networks-shepherd-name runtime))
+           networks
+           #:user user #:group group
+           #:default-requirement networks-default-requirement
+           #:runtime-requirement runtime-requirement
+           #:verbose? verbose?))
          '())
      (if volumes?
          (list
-          (oci-volume-shepherd-service config #:user user #:group group
-                                       #:verbose? verbose?))
+          (oci-volumes-shepherd-service runtime runtime-cli
+                                        (if (string? volumes-name)
+                                            volumes-name
+                                            (oci-volumes-shepherd-name runtime))
+                                        volumes
+                                        #:user user #:group group
+                                        #:runtime-requirement runtime-requirement
+                                        #:verbose? verbose?))
          '()))))
 
+(define (oci-configuration->shepherd-services config)
+  (let* ((runtime (oci-configuration-runtime config))
+         (runtime-cli
+          (oci-runtime-system-cli config))
+         (containers (oci-configuration-containers config))
+         (networks (oci-configuration-networks config))
+         (volumes (oci-configuration-volumes config))
+         (user (oci-configuration-user config))
+         (group (oci-runtime-group
+                 runtime (oci-configuration-group config)))
+         (verbose? (oci-configuration-verbose? config)))
+    (oci-state->shepherd-services runtime runtime-cli containers networks volumes
+                                  #:user user #:group group #:verbose? verbose?
+                                  #:runtime-requirement
+                                  (oci-runtime-system-requirement runtime))))
+
 (define (oci-service-subids config)
+  "Return a subids-extension record representing subuids and subgids required by
+the rootless Podman backend."
   (define (delete-duplicate-ranges ranges)
     (delete-duplicates ranges
                        (lambda args
@@ -885,33 +923,34 @@ remove the duplicate.") object (get-name element) object)))
               (oci-extension-networks a)
               (oci-extension-networks b)
               "network"
-              oci-network-shepherd-name))
+              oci-networks-shepherd-name))
    (volumes (oci-objects-merge-lst
              (oci-extension-volumes a)
              (oci-extension-volumes b)
              "volume"
-             oci-volume-shepherd-name))))
+             oci-volumes-shepherd-name))))
 
-(define (oci-service-profile config)
-  (let ((runtime-cli
-         (oci-configuration-runtime-cli config))
-        (runtime
-         (oci-configuration-runtime config)))
-    (list bash-minimal
-          (cond
-           ((maybe-value-set? runtime-cli)
-            runtime-cli)
-           ((eq? 'podman runtime)
-            podman)
-           (else
-            docker-cli)))))
+(define (oci-service-profile runtime runtime-cli)
+  (list bash-minimal
+        (cond
+         ((maybe-value-set? runtime-cli)
+          runtime-cli)
+         ((eq? 'podman runtime)
+          podman)
+         (else
+          docker-cli))))
 
 (define oci-service-type
   (service-type (name 'oci)
                 (extensions
                  (list
                   (service-extension profile-service-type
-                                     oci-service-profile)
+                                     (lambda (config)
+                                       (let ((runtime-cli
+                                              (oci-configuration-runtime-cli config))
+                                             (runtime
+                                              (oci-configuration-runtime config)))
+                                         (oci-service-profile runtime runtime-cli))))
                   (service-extension subids-service-type
                                      oci-service-subids)
                   (service-extension account-service-type
@@ -940,12 +979,12 @@ remove the duplicate.") object (get-name element) object)))
                                (oci-configuration-networks config)
                                (oci-extension-networks extension)
                                "network"
-                               oci-network-shepherd-name))
+                               oci-networks-shepherd-name))
                     (volumes (oci-objects-merge-lst
                               (oci-configuration-volumes config)
                               (oci-extension-volumes extension)
                               "volume"
-                              oci-volume-shepherd-name)))))
+                              oci-volumes-shepherd-name)))))
                 (default-value (oci-configuration))
                 (description
                  "This service implements the provisioning of OCI object such
