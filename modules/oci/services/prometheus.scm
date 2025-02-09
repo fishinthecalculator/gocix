@@ -337,8 +337,14 @@ port inside the container.")
 
 (define oci-prometheus-service-type
   (service-type (name 'prometheus)
-                (extensions (list (service-extension oci-container-service-type
-                                                     oci-prometheus-configuration->oci-container-configuration)
+                (extensions (list (service-extension oci-service-type
+                                                     (lambda (config)
+                                                       (oci-extension
+                                                        (volumes
+                                                         (let ((datadir (oci-prometheus-configuration-datadir config)))
+                                                           (if (oci-volume-configuration? datadir) (list datadir) '())))
+                                                        (containers
+                                                         (oci-prometheus-configuration->oci-container-configuration config)))))
                                   (service-extension account-service-type
                                                      (const %prometheus-accounts))
                                   (service-extension activation-service-type
