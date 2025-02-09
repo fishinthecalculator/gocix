@@ -92,6 +92,11 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090','localhost:9100']\n"))
 
+(define (string-or-volume? value)
+  (or (string? value)
+      (oci-volume-configuration? value)))
+(define-maybe/no-serialization string-or-volume)
+
 (define (serialize-string field-name value)
   (serialize-yaml-string field-name value #:indentation "  "))
 
@@ -211,8 +216,11 @@ scrape_configs:
 
 (define-configuration oci-prometheus-configuration
   (datadir
-   (string "/var/lib/prometheus")
-   "The directory where prometheus writes state.")
+   (maybe-string-or-volume)
+   "The directory where prometheus writes state.  It can be either an
+@code{oci-volume-configuration} representing the OCI volume where Prometheus will
+write state, or a string representing a file system path in the host system which
+will be mapped inside the container.  By default it is @code{\"/var/lib/prometheus\"}.")
   (file
    (maybe-file-like)
    "The configuration file to use for the OCI backed Shepherd service.")
@@ -255,19 +263,25 @@ port inside the container.")
 (define (%prometheus-activation config)
   "Return an activation gexp for Prometheus."
   (let ((datadir (oci-prometheus-configuration-datadir config)))
-    #~(begin
-        (use-modules (guix build utils))
-        (let* ((user (getpwnam "prometheus"))
-               (uid (passwd:uid user))
-               (gid (passwd:gid user))
-               (datadir #$datadir))
-          (mkdir-p datadir)
-          (chown datadir uid gid)))))
+    (if (string? datadir)
+        #~(begin
+            (use-modules (guix build utils))
+            (let* ((user (getpwnam "oci-container"))
+                   (uid (passwd:uid user))
+                   (gid (passwd:gid user))
+                   (datadir #$datadir))
+              (mkdir-p datadir)
+              (chown datadir uid gid)))
+        #~(begin))))
 
 (define oci-prometheus-configuration->oci-container-configuration
   (lambda (config)
-    (let* ((datadir
+    (let* ((maybe-datadir
             (oci-prometheus-configuration-datadir config))
+           (datadir
+            (if (maybe-value-set? maybe-datadir)
+                maybe-datadir
+                "/var/lib/prometheus"))
            (network
             (oci-prometheus-configuration-network config))
            (image
@@ -296,7 +310,10 @@ port inside the container.")
               `((,port . "9000")
                 (,metrics-port . "9090")))
              (volumes
-              `((,datadir . "/prometheus")
+              `((,(if (string? datadir)
+                      datadir
+                      (oci-volume-configuration-name datadir))
+                 . "/prometheus")
                 (,prometheus.yml . "/etc/prometheus/prometheus.yml:ro"))))))
 
       (list
@@ -405,7 +422,10 @@ inside the container.  If @code{network} is set this field will be ignored.")
              (ports
               `((,port . "9115")))
              (volumes
-              `((,datadir . "/blackbox-exporter")
+              `((,(if (string? datadir)
+                      datadir
+                      (oci-volume-configuration-name datadir))
+                 . "/blackbox-exporter")
                 (,blackbox-exporter.yml . "/opt/bitnami/blackbox-exporter/conf/config.yml:ro"))))))
 
       (list
@@ -418,8 +438,13 @@ inside the container.  If @code{network} is set this field will be ignored.")
 
 (define oci-blackbox-exporter-service-type
   (service-type (name 'blackbox-exporter)
-                (extensions (list (service-extension oci-container-service-type
-                                                     oci-blackbox-exporter-configuration->oci-container-configuration)
+                (extensions (list (service-extension oci-service-type
+                                                     (lambda (config)
+                                                      (oci-extension
+                                                       (containers
+                                                        (list
+                                                         (oci-blackbox-exporter-configuration->oci-container-configuration
+                                                          config))))))
                                   (service-extension activation-service-type
                                                      %blackbox-exporter-activation)))
                 (description

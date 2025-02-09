@@ -188,8 +188,12 @@ to \"host\" the @code{port} field will be ignored."))
 
 (define oci-grafana-configuration->oci-container-configuration
   (lambda (config)
-    (let* ((datadir
+    (let* ((maybe-datadir
             (oci-grafana-configuration-datadir config))
+           (datadir
+            (if (maybe-value-set? maybe-datadir)
+                maybe-datadir
+                "/var/lib/grafana"))
            (grafana.ini
             (mixed-text-file
              "grafana.ini"
