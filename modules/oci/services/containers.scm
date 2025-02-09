@@ -105,8 +105,8 @@
 before it is able to run containers."
   (if (eq? 'podman runtime)
       '(cgroups2-fs-owner cgroups2-limits
-        rootless-podman-shared-root-fs)
-      '(dockerd)))
+        rootless-podman-shared-root-fs user-processes)
+      '(dockerd user-processes)))
 
 (define (oci-runtime-name runtime)
   "Return a human readable name for a given OCI runtime."
@@ -278,6 +278,21 @@ the @code{oci-extension} record instead.")
    "When true, additional output will be printed, allowing to better follow the
 flow of execution."))
 
+(define (oci-runtime-system-environment runtime user)
+  (if (eq? runtime 'podman)
+      (list
+       #~(string-append
+          "HOME=" (passwd:dir (getpwnam #$user))))
+      #~()))
+
+(define (oci-runtime-system-group runtime user group)
+  (if (eq? runtime 'podman)
+      #~(group:name
+         (getgrgid
+          (passwd:gid
+           (getpwnam #$user))))
+      group))
+
 (define (oci-runtime-cli runtime runtime-cli path)
   "Return a gexp that, when lowered, evaluates to the file system path of the OCI
 runtime command requested by the user."
@@ -285,12 +300,12 @@ runtime command requested by the user."
       ;; It is a user defined absolute path
       runtime-cli
       #~(string-append
-         (if #$(maybe-value-set? runtime-cli)
-             #$runtime-cli
-             #$path)
-         (if #$(eq? 'podman runtime)
-             "/bin/podman"
-             "/bin/docker"))))
+         #$(if (maybe-value-set? runtime-cli)
+               runtime-cli
+               path)
+         #$(if (eq? 'podman runtime)
+               "/bin/podman"
+               "/bin/docker"))))
 
 (define* (oci-runtime-system-cli config #:key (path "/run/current-system/profile"))
   (let ((runtime-cli
@@ -495,7 +510,10 @@ for the Shepherd service that will run IMAGE through RUNTIME-CLI."
   (program-file
    (string-append "oci-entrypoint-" name)
    #~(begin
-       (use-modules (ice-9 format))
+       (use-modules (ice-9 format)
+                    (srfi srfi-1))
+       (when #$verbose?
+         (format #t "Running in verbose mode..."))
        (define invokation (list #$@invokation))
        #$@(if (mainline:oci-image? image)
               #~((system*
@@ -503,10 +521,13 @@ for the Shepherd service that will run IMAGE through RUNTIME-CLI."
                      runtime-cli name image
                      image-reference #:verbose? verbose?)))
               #~())
-       (apply execlp invokation))))
+       (when #$verbose?
+         (format #t "Running~{ ~a~}~%" invokation))
+       (apply execlp `(,(first invokation) ,@invokation)))))
 
 (define* (oci-container-shepherd-service runtime runtime-cli config
                                          #:key
+                                         (runtime-environment #~())
                                          (oci-requirement '())
                                          (user #f)
                                          (group #f)
@@ -536,15 +557,13 @@ by CONFIG through RUNTIME-CLI."
           (mainline:oci-container-configuration-extra-arguments config))
          (invokation
           ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
-          `(,runtime-cli ,runtime-cli "run"
+          `(,runtime-cli "run"
             "--rm" "--name" ,name
             ,@options ,@extra-arguments
             ,image-reference ,@command)))
 
     (shepherd-service (provision `(,(string->symbol name)))
-                      (requirement `(,@(oci-runtime-system-requirement runtime)
-                                     user-processes
-                                     ,@oci-requirement
+                      (requirement `(,@oci-requirement
                                      ,@requirement))
                       (respawn? respawn?)
                       (auto-start? auto-start?)
@@ -553,30 +572,21 @@ by CONFIG through RUNTIME-CLI."
                         (oci-runtime-name runtime) " backed Shepherd service for "
                         (if (mainline:oci-image? image) name image) "."))
                       (start
-                       #~(lambda _
+                       #~(lambda ()
                            (fork+exec-command
                             (list
                              #$(oci-container-entrypoint
                                 runtime-cli name image image-reference
                                 invokation #:verbose? verbose?))
-                            #:user #$user
-                            #:group
-                            (if #$(eq? runtime 'podman)
-                                (group:name
-                                 (getgrgid
-                                  (passwd:gid (getpwnam #$user))))
-                                #$group)
+                            #$@(if user (list #:user user) '())
+                            #$@(if group (list #:group group) '())
                             #$@(if (maybe-value-set? log-file)
                                    (list #:log-file log-file)
                                    '())
                             #:environment-variables
                             (append
                              (list #$@host-environment)
-                             (if #$(eq? runtime 'podman)
-                                 (list
-                                  (string-append
-                                   "HOME=" (passwd:dir (getpwnam #$user))))
-                                 '())))))
+                             (list #$@runtime-environment)))))
                       (stop
                        #~(lambda _
                            (invoke #$runtime-cli "rm" "-f" #$name)))
@@ -584,18 +594,19 @@ by CONFIG through RUNTIME-CLI."
                        (append
                         (list
                          (oci-object-command-shepherd-action
-                          name #~(string-join (cdr (list #$@invokation)) " ")))
+                          name #~(string-join (list #$@invokation) " ")))
                         (if (mainline:oci-image? image)
                             '()
                             (list
-                             (shepherd-action
-                              (name 'pull)
-                              (documentation
-                               (format #f "Pull ~a's image (~a)."
-                                       name image))
-                              (procedure
-                               #~(lambda _
-                                   (invoke #$runtime-cli "pull" #$image))))))
+                             (let ((service-name name))
+                               (shepherd-action
+                                (name 'pull)
+                                (documentation
+                                 (format #f "Pull ~a's image (~a)."
+                                         service-name image))
+                                (procedure
+                                 #~(lambda _
+                                     (invoke #$runtime-cli "pull" #$image)))))))
                         actions)))))
 
 (define (oci-object-create-invokation object runtime-cli name options
@@ -643,23 +654,23 @@ to create OCI networks and volumes through RUNTIME-CLI."
                loop-lines)))
 
        (define (object-exists? name)
-         (if (string=? #$runtime-string "podman")
-             (let ((command
-                    (list #$runtime-cli
-                          #$object "exists" name)))
-               (when #$verbose?
-                 (format #t "Running~{ ~a~}~%" command))
-               (define exit-code (status:exit-val (apply system* command)))
-               (when #$verbose?
-                 (format #t "Exit code: ~a~%" exit-code))
-               (equal? EXIT_SUCCESS exit-code))
-             (let ((command
-                    (string-append #$runtime-cli
-                                   " " #$object " ls --format "
-                                   "\"{{.Name}}\"")))
-               (when #$verbose?
-                 (format #t "Running ~a~%" command))
-               (member name (read-lines (open-input-pipe command))))))
+         #$(if (eq? runtime 'podman)
+               #~(let ((command
+                        (list #$runtime-cli
+                              #$object "exists" name)))
+                   (when #$verbose?
+                     (format #t "Running~{ ~a~}~%" command))
+                   (define exit-code (status:exit-val (apply system* command)))
+                   (when #$verbose?
+                     (format #t "Exit code: ~a~%" exit-code))
+                   (equal? EXIT_SUCCESS exit-code))
+               #~(let ((command
+                        (string-append #$runtime-cli
+                                       " " #$object " ls --format "
+                                       "\"{{.Name}}\"")))
+                   (when #$verbose?
+                     (format #t "Running ~a~%" command))
+                   (member name (read-lines (open-input-pipe command))))))
 
        (for-each
         (lambda (invokation)
@@ -677,13 +688,14 @@ to create OCI networks and volumes through RUNTIME-CLI."
 
 (define* (oci-object-shepherd-service object runtime runtime-cli name requirement invokations
                                       #:key
+                                      (runtime-environment #~())
                                       (user #f)
                                       (group #f)
                                       (verbose? #f))
   "Return a Shepherd service object that will create the OBJECTs represented
 by INVOKATIONS through RUNTIME-CLI."
   (shepherd-service (provision `(,(string->symbol name)))
-                    (requirement `(user-processes ,@requirement))
+                    (requirement requirement)
                     (one-shot? #t)
                     (documentation
                      (string-append
@@ -697,20 +709,10 @@ by INVOKATIONS through RUNTIME-CLI."
                               object runtime runtime-cli
                               invokations
                               #:verbose? verbose?))
-                          #:user #$user
-                          #:group
-                          (if #$(eq? runtime 'podman)
-                              (group:name
-                               (getgrgid
-                                (passwd:gid (getpwnam #$user))))
-                              #$group)
-                          #$@(if (eq? runtime 'podman)
-                                 (list
-                                  #:environment-variables
-                                  #~(list
-                                     (string-append
-                                      "HOME=" (passwd:dir (getpwnam #$user)))))
-                                 '()))))
+                          #$@(if user (list #:user user) '())
+                          #$@(if group (list #:group group) '())
+                          #:environment-variables
+                          (list #$@runtime-environment))))
                     (actions
                      (list
                       (oci-object-command-shepherd-action
@@ -720,8 +722,8 @@ by INVOKATIONS through RUNTIME-CLI."
                                         #:key
                                         (user #f)
                                         (group #f)
+                                        (runtime-environment #~())
                                         (runtime-requirement '())
-                                        (default-requirement '(networking))
                                         (verbose? #f))
   "Return a Shepherd service object that will create the networks represented
 in CONFIG."
@@ -737,11 +739,13 @@ in CONFIG."
 
     (oci-object-shepherd-service
      "network" runtime runtime-cli name
-     (append default-requirement runtime-requirement) invokations
-     #:user user #:group group #:verbose? verbose?)))
+     runtime-requirement invokations
+     #:user user #:group group #:runtime-environment runtime-environment
+     #:verbose? verbose?)))
 
 (define* (oci-volumes-shepherd-service runtime runtime-cli name volumes
                                        #:key (user #f) (group #f) (verbose? #f)
+                                       (runtime-environment #~())
                                        (runtime-requirement '()))
   "Return a Shepherd service object that will create the volumes represented
 in CONFIG."
@@ -757,7 +761,8 @@ in CONFIG."
 
     (oci-object-shepherd-service
      "volume" runtime runtime-cli name runtime-requirement invokations
-     #:user user #:group group #:verbose? verbose?)))
+     #:user user #:group group #:runtime-environment runtime-environment
+     #:verbose? verbose?)))
 
 (define (oci-service-accounts config)
   (define user (oci-configuration-user config))
@@ -779,11 +784,14 @@ in CONFIG."
 (define* (oci-state->shepherd-services runtime runtime-cli containers networks volumes
                                        #:key (user #f) (group #f) (verbose? #f)
                                        (networks-name #f) (volumes-name #f)
+                                       (runtime-environment #~())
                                        (runtime-requirement '())
-                                       (networks-default-requirement '()))
+                                       (containers-requirement '())
+                                       (networks-requirement '())
+                                       (volumes-requirement '()))
   (let* ((networks?
           (> (length networks) 0))
-         (networks-requirement
+         (networks-service
           (if networks?
               (list
                (string->symbol
@@ -791,7 +799,7 @@ in CONFIG."
               '()))
          (volumes?
           (> (length volumes) 0))
-         (volumes-requirement
+         (volumes-service
           (if volumes?
               (list
                (string->symbol
@@ -804,8 +812,12 @@ in CONFIG."
          runtime runtime-cli c
          #:user user
          #:group group
+         #:runtime-environment runtime-environment
          #:oci-requirement
-         (append networks-requirement volumes-requirement)
+         (append containers-requirement
+                 runtime-requirement
+                 networks-service
+                 volumes-service)
          #:verbose? verbose?))
       containers)
      (if networks?
@@ -817,20 +829,24 @@ in CONFIG."
                (oci-networks-shepherd-name runtime))
            networks
            #:user user #:group group
-           #:default-requirement networks-default-requirement
-           #:runtime-requirement runtime-requirement
+           #:runtime-environment runtime-environment
+           #:runtime-requirement (append networks-requirement
+                                         runtime-requirement)
            #:verbose? verbose?))
          '())
      (if volumes?
          (list
-          (oci-volumes-shepherd-service runtime runtime-cli
-                                        (if (string? volumes-name)
-                                            volumes-name
-                                            (oci-volumes-shepherd-name runtime))
-                                        volumes
-                                        #:user user #:group group
-                                        #:runtime-requirement runtime-requirement
-                                        #:verbose? verbose?))
+          (oci-volumes-shepherd-service
+           runtime runtime-cli
+           (if (string? volumes-name)
+               volumes-name
+               (oci-volumes-shepherd-name runtime))
+           volumes
+           #:user user #:group group
+           #:runtime-environment runtime-environment
+           #:runtime-requirement (append runtime-requirement
+                                         volumes-requirement)
+           #:verbose? verbose?))
          '()))))
 
 (define (oci-configuration->shepherd-services config)
@@ -845,9 +861,15 @@ in CONFIG."
                  runtime (oci-configuration-group config)))
          (verbose? (oci-configuration-verbose? config)))
     (oci-state->shepherd-services runtime runtime-cli containers networks volumes
-                                  #:user user #:group group #:verbose? verbose?
+                                  #:user user
+                                  #:group
+                                  (oci-runtime-system-group runtime user group)
+                                  #:verbose? verbose?
+                                  #:runtime-environment
+                                  (oci-runtime-system-environment runtime user)
                                   #:runtime-requirement
-                                  (oci-runtime-system-requirement runtime))))
+                                  (oci-runtime-system-requirement runtime)
+                                  #:networks-requirement '(networking))))
 
 (define (oci-service-subids config)
   "Return a subids-extension record representing subuids and subgids required by
