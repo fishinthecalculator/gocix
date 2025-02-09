@@ -27,6 +27,9 @@
             list-of-oci-volumes?
 
             %oci-supported-runtimes
+            oci-runtime-system-environment
+            oci-runtime-system-extra-arguments
+            oci-runtime-system-group
             oci-runtime-system-requirement
             oci-runtime-cli
             oci-sanitize-runtime
@@ -60,6 +63,7 @@
             oci-configuration-fields
             oci-configuration-runtime
             oci-configuration-runtime-cli
+            oci-configuration-runtime-extra-arguments
             oci-configuration-user
             oci-configuration-group
             oci-configuration-containers
@@ -240,6 +244,10 @@ to the runtime invokation."
 to provision OCI resources.  When unset it will default to @code{docker-cli}
 package for the @code{'docker} runtime or to @code{podman} package for the
 @code{'podman} runtime.")
+  (runtime-extra-arguments
+   (list '())
+   "A list of strings, gexps or file-like objects that will be placed
+after each @command{docker} or @command{podman} invokation.")
   (user
    (string "oci-container")
    "The user name under whose authority OCI runtime commands will be run.")
@@ -503,6 +511,16 @@ to load IMAGE through RUNTIME-CLI and to tag it with TAG afterwards."
                (apply invoke tag-command)
                (format #t "Tagged ~a with ~a...~%" #$tarball #$tag))))))))
 
+(define (oci-container-run-invokation runtime-cli name command image-reference
+                                      options runtime-extra-arguments run-extra-arguments)
+  "Return a list representing the OCI runtime
+invokation for running containers."
+  ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
+  `(,runtime-cli ,@runtime-extra-arguments "run"
+    "--rm" "--name" ,name
+    ,@options ,@run-extra-arguments
+    ,image-reference ,@command))
+
 (define* (oci-container-entrypoint runtime-cli name image image-reference
                                    invokation #:key (verbose? #f))
   "Return a file-like object that, once lowered, will evaluate to the entrypoint
@@ -513,7 +531,7 @@ for the Shepherd service that will run IMAGE through RUNTIME-CLI."
        (use-modules (ice-9 format)
                     (srfi srfi-1))
        (when #$verbose?
-         (format #t "Running in verbose mode..."))
+         (format #t "Running in verbose mode...~%"))
        (define invokation (list #$@invokation))
        #$@(if (mainline:oci-image? image)
               #~((system*
@@ -528,6 +546,7 @@ for the Shepherd service that will run IMAGE through RUNTIME-CLI."
 (define* (oci-container-shepherd-service runtime runtime-cli config
                                          #:key
                                          (runtime-environment #~())
+                                         (runtime-extra-arguments '())
                                          (oci-requirement '())
                                          (user #f)
                                          (group #f)
@@ -556,11 +575,9 @@ by CONFIG through RUNTIME-CLI."
          (extra-arguments
           (mainline:oci-container-configuration-extra-arguments config))
          (invokation
-          ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
-          `(,runtime-cli "run"
-            "--rm" "--name" ,name
-            ,@options ,@extra-arguments
-            ,image-reference ,@command)))
+          (oci-container-run-invokation
+           runtime-cli name command image-reference
+           options runtime-extra-arguments extra-arguments)))
 
     (shepherd-service (provision `(,(string->symbol name)))
                       (requirement `(,@oci-requirement
@@ -582,6 +599,10 @@ by CONFIG through RUNTIME-CLI."
                             #$@(if group (list #:group group) '())
                             #$@(if (maybe-value-set? log-file)
                                    (list #:log-file log-file)
+                                   '())
+                            #$@(if (eq? runtime 'podman)
+                                   (list #:directory
+                                         #~(passwd:dir (getpwnam #$user)))
                                    '())
                             #:environment-variables
                             (append
@@ -610,12 +631,13 @@ by CONFIG through RUNTIME-CLI."
                         actions)))))
 
 (define (oci-object-create-invokation object runtime-cli name options
-                                      extra-arguments)
+                                      runtime-extra-arguments
+                                      create-extra-arguments)
   "Return a gexp that, upon lowering, will evaluate to the OCI runtime
 invokation for creating networks and volumes."
   ;; network|volume create [options] [NAME]
-  #~(list #$runtime-cli #$object "create"
-          #$@options #$@extra-arguments #$name))
+  #~(list #$runtime-cli #$@runtime-extra-arguments #$object "create"
+          #$@options #$@create-extra-arguments #$name))
 
 (define (format-oci-invokations invokations)
   "Return a gexp that, upon lowering, will evaluate to a formatted message
@@ -719,12 +741,10 @@ by INVOKATIONS through RUNTIME-CLI."
                        name (format-oci-invokations invokations))))))
 
 (define* (oci-networks-shepherd-service runtime runtime-cli name networks
-                                        #:key
-                                        (user #f)
-                                        (group #f)
+                                        #:key (user #f) (group #f) (verbose? #f)
+                                        (runtime-extra-arguments '())
                                         (runtime-environment #~())
-                                        (runtime-requirement '())
-                                        (verbose? #f))
+                                        (runtime-requirement '()))
   "Return a Shepherd service object that will create the networks represented
 in CONFIG."
   (let ((invokations
@@ -734,6 +754,7 @@ in CONFIG."
              "network" runtime-cli
              (oci-network-configuration-name network)
              (oci-network-configuration->options network)
+             runtime-extra-arguments
              (oci-network-configuration-extra-arguments network)))
           networks)))
 
@@ -745,6 +766,7 @@ in CONFIG."
 
 (define* (oci-volumes-shepherd-service runtime runtime-cli name volumes
                                        #:key (user #f) (group #f) (verbose? #f)
+                                       (runtime-extra-arguments '())
                                        (runtime-environment #~())
                                        (runtime-requirement '()))
   "Return a Shepherd service object that will create the volumes represented
@@ -756,6 +778,7 @@ in CONFIG."
              "volume" runtime-cli
              (oci-volume-configuration-name volume)
              (oci-volume-configuration->options volume)
+             runtime-extra-arguments
              (oci-volume-configuration-extra-arguments volume)))
           volumes)))
 
@@ -784,6 +807,7 @@ in CONFIG."
 (define* (oci-state->shepherd-services runtime runtime-cli containers networks volumes
                                        #:key (user #f) (group #f) (verbose? #f)
                                        (networks-name #f) (volumes-name #f)
+                                       (runtime-extra-arguments '())
                                        (runtime-environment #~())
                                        (runtime-requirement '())
                                        (containers-requirement '())
@@ -813,6 +837,7 @@ in CONFIG."
          #:user user
          #:group group
          #:runtime-environment runtime-environment
+         #:runtime-extra-arguments runtime-extra-arguments
          #:oci-requirement
          (append containers-requirement
                  runtime-requirement
@@ -829,6 +854,7 @@ in CONFIG."
                (oci-networks-shepherd-name runtime))
            networks
            #:user user #:group group
+           #:runtime-extra-arguments runtime-extra-arguments
            #:runtime-environment runtime-environment
            #:runtime-requirement (append networks-requirement
                                          runtime-requirement)
@@ -843,6 +869,7 @@ in CONFIG."
                (oci-volumes-shepherd-name runtime))
            volumes
            #:user user #:group group
+           #:runtime-extra-arguments runtime-extra-arguments
            #:runtime-environment runtime-environment
            #:runtime-requirement (append runtime-requirement
                                          volumes-requirement)
@@ -853,6 +880,8 @@ in CONFIG."
   (let* ((runtime (oci-configuration-runtime config))
          (runtime-cli
           (oci-runtime-system-cli config))
+         (runtime-extra-arguments
+          (oci-configuration-runtime-extra-arguments config))
          (containers (oci-configuration-containers config))
          (networks (oci-configuration-networks config))
          (volumes (oci-configuration-volumes config))
@@ -865,6 +894,8 @@ in CONFIG."
                                   #:group
                                   (oci-runtime-system-group runtime user group)
                                   #:verbose? verbose?
+                                  #:runtime-extra-arguments
+                                  runtime-extra-arguments
                                   #:runtime-environment
                                   (oci-runtime-system-environment runtime user)
                                   #:runtime-requirement
