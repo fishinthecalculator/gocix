@@ -978,12 +978,12 @@ remove the duplicate.") object (get-name element) object)))
               (oci-extension-networks a)
               (oci-extension-networks b)
               "network"
-              oci-networks-shepherd-name))
+              oci-network-configuration-name))
    (volumes (oci-objects-merge-lst
              (oci-extension-volumes a)
              (oci-extension-volumes b)
              "volume"
-             oci-volumes-shepherd-name))))
+             oci-volume-configuration-name))))
 
 (define (oci-service-profile runtime runtime-cli)
   (list bash-minimal
@@ -1034,12 +1034,12 @@ remove the duplicate.") object (get-name element) object)))
                                (oci-configuration-networks config)
                                (oci-extension-networks extension)
                                "network"
-                               oci-networks-shepherd-name))
+                               oci-network-configuration-name))
                     (volumes (oci-objects-merge-lst
                               (oci-configuration-volumes config)
                               (oci-extension-volumes extension)
                               "volume"
-                              oci-volumes-shepherd-name)))))
+                              oci-volume-configuration-name)))))
                 (default-value (oci-configuration))
                 (description
                  "This service implements the provisioning of OCI object such
