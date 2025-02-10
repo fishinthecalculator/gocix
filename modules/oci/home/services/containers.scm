@@ -6,6 +6,7 @@
   #:use-module (gnu home services shepherd)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module (guix gexp)
   #:use-module (guix packages)
   #:use-module (oci services containers)
   #:use-module (srfi srfi-1)
@@ -87,8 +88,8 @@ volumes to add."))
         (runtime
          (home-oci-configuration-runtime config)))
     (oci-runtime-cli runtime runtime-cli
-                     (string-append (getenv "HOME")
-                                    "/.guix-home/profile"))))
+                     #~(string-append (getenv "HOME")
+                                      "/.guix-home/profile"))))
 
 (define (home-oci-networks-shepherd-name runtime)
   (string-append "home-" (oci-networks-shepherd-name runtime)))

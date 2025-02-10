@@ -557,10 +557,6 @@ by CONFIG through RUNTIME-CLI."
   (let* ((actions (mainline:oci-container-configuration-shepherd-actions config))
          (auto-start?
           (mainline:oci-container-configuration-auto-start? config))
-         (user (or user (mainline:oci-container-configuration-user config)))
-         (group (if (and group (maybe-value-set? group))
-                    group
-                    (mainline:oci-container-configuration-group config)))
          (host-environment
           (mainline:oci-container-configuration-host-environment config))
          (command (mainline:oci-container-configuration-command config))
