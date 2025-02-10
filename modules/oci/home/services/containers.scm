@@ -104,12 +104,12 @@ volumes to add."))
         (networks (home-oci-configuration-networks config))
         (volumes (home-oci-configuration-volumes config))
         (verbose? (home-oci-configuration-verbose? config)))
-    (oci-configuration->shepherd-services runtime runtime-cli containers networks volumes
-                                          #:verbose? verbose?
-                                          #:networks-name
-                                          (home-oci-networks-shepherd-name runtime)
-                                          #:volumes-name
-                                          (home-oci-volumes-shepherd-name runtime))))
+    (oci-state->shepherd-services runtime runtime-cli containers networks volumes
+                                  #:verbose? verbose?
+                                  #:networks-name
+                                  (home-oci-networks-shepherd-name runtime)
+                                  #:volumes-name
+                                  (home-oci-volumes-shepherd-name runtime))))
 
 (define (home-oci-extension-merge a b)
   (home-oci-extension
@@ -159,23 +159,23 @@ volumes to add."))
                     (inherit config)
                     (containers
                      (oci-objects-merge-lst
-                      (oci-configuration-containers config)
-                      (oci-extension-containers extension)
+                      (home-oci-configuration-containers config)
+                      (home-oci-extension-containers extension)
                       "container"
                       (lambda (oci-config)
                         (define runtime
                           (oci-configuration-runtime config))
                         (oci-container-shepherd-name runtime oci-config))))
                     (networks (oci-objects-merge-lst
-                               (oci-configuration-networks config)
-                               (oci-extension-networks extension)
+                               (home-oci-configuration-networks config)
+                               (home-oci-extension-networks extension)
                                "network"
-                               home-oci-networks-shepherd-name))
+                               oci-network-configuration-name))
                     (volumes (oci-objects-merge-lst
-                              (oci-configuration-volumes config)
-                              (oci-extension-volumes extension)
+                              (home-oci-configuration-volumes config)
+                              (home-oci-extension-volumes extension)
                               "volume"
-                              home-oci-volumes-shepherd-name)))))
+                              oci-volume-configuration-name)))))
                 (default-value (home-oci-configuration))
                 (description
                  "This service implements the provisioning of OCI object such
