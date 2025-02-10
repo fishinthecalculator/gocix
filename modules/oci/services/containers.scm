@@ -504,13 +504,29 @@ to load IMAGE through RUNTIME-CLI and to tag it with TAG afterwards."
                                   (string-length
                                    "Loaded image: ")))
                     (tag-command
-                     (list #$runtime-cli "tag" repository&tag #$tag)))
+                     (list #$runtime-cli "tag" repository&tag #$tag))
+                    (drop-old-tag-command
+                     (list #$runtime-cli "image" "rm" "-f" repository&tag)))
 
                (when #$verbose?
                  (format #t "Running~{ ~a~}~%" tag-command))
 
-               (apply invoke tag-command)
-               (format #t "Tagged ~a with ~a...~%" #$tarball #$tag))))))))
+               (define exit-code
+                 (status:exit-val (apply system* tag-command)))
+               (format #t "Tagged ~a with ~a..." #$tarball #$tag)
+
+               (if #$verbose?
+                   (format " Exit: ~a~%" exit-code)
+                   (format #t "~%"))
+
+               (when (equal? EXIT_SUCCESS exit-code)
+                 (when #$verbose?
+                   (format #t "Running~{ ~a~}" tag-command))
+                 (define drop-exit-code
+                   (status:exit-val (apply system* drop-old-tag-command)))
+                 (if #$verbose?
+                     (format " Exit: ~a~%" exit-code)
+                     (format #t "~%"))))))))))
 
 (define (oci-container-run-invokation runtime-cli name command image-reference
                                       options runtime-extra-arguments run-extra-arguments)
