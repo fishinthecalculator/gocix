@@ -1,5 +1,5 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2024 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2024, 2025 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services bonfire)
   #:use-module (gnu packages bash)
@@ -18,6 +18,7 @@
   #:use-module (guix packages)
   #:use-module (sops secrets)
   #:use-module (sops services sops)
+  #:use-module (sops services databases)
   #:use-module (oci self)
   #:use-module (oci services configuration)
   #:use-module (ice-9 match)
@@ -29,6 +30,7 @@
             bonfire-configuration-image
             bonfire-configuration-port
             bonfire-configuration-public-port
+            bonfire-configuration-create-database?
             bonfire-configuration-postgres-host
             bonfire-configuration-postgres-user
             bonfire-configuration-postgres-db
@@ -68,12 +70,6 @@
 (define (bonfire-image flavour system)
   (string-append "docker.io/bonfirenetworks/bonfire:" (bonfire-tag flavour system)))
 
-(define (serialize-string field-name value)
-  (serialize-environment-variable field-name value))
-
-(define (serialize-boolean field-name value)
-  (serialize-boolean-environment-variable field-name value))
-
 (define-maybe string)
 
 (define-configuration/no-serialization bonfire-configuration
@@ -84,12 +80,21 @@
   (hostname
    (string)
    "The domain name where Bonfire will be exposed.")
+  (create-database?
+   (boolean #t)
+   "Whether to create a database with the same name as the role.")
   (postgres-host
    (string "localhost")
    "The hostname where postgres will be looked for.")
   (postgres-db
    (string "bonfire_db")
-   "The database name of the Bonfire's Postgres database.")
+   "The database name of the Bonfire's Postgres database.  When
+@code{postgres-host} is equal to @code{\"localhost\"} or to a path that exists
+on the filesystem, the service will assume that the database is provisioned with
+Guix Systems' @code{postgresql-role-service-type}
+(@pxref{Database Services,,, guix, The GNU Guix Manual}).  In this case the
+@code{postgres-user} field will be ignored and this field will be used both as
+database name and as an authentication user name.")
   (postgres-user
    (string "bonfire")
    "The user name that Bonfire will use to authenticate against the Postgres database.")
@@ -118,35 +123,24 @@
    (string "443")
    "The public port where Bonfire will be exposed."))
 
-(define bonfire-configuration->oci-container-environment
-  (lambda (config)
-    (filter (lambda (variable)
-              (and (not (null? variable))
-                   (not (and (string? variable)
-                             (string-null? variable)))))
-            (map (lambda (f)
-                   (let ((field-name (configuration-field-name f))
-                         (type (configuration-field-type f))
-                         (value ((configuration-field-getter f) config)))
-                     (if (not (eq? field-name 'image))
-                         (match type
-                           ('string
-                            (serialize-string field-name value))
-                           ('maybe-string
-                            (if (maybe-value-set? value)
-                                (serialize-string field-name value)
-                                '()))
-                           ('list-of-strings
-                            (serialize-list-of-strings field-name value))
-                           ('boolean
-                            (serialize-boolean field-name value))
-                           (_
-                            (raise
-                             (formatted-message
-                              (G_ "Unknown bonfire-configuration field type: ~a")
-                              type))))
-                         '())))
-                 bonfire-configuration-fields))))
+(define (bonfire-configuration-local-database? config)
+  (define host
+    (bonfire-configuration-postgres-host config))
+  (define db
+    (bonfire-configuration-postgres-db config))
+  (or (string=? "localhost" host) (file-exists? db)))
+
+(define (bonfire-configuration->oci-container-environment config)
+  (append
+   (if (bonfire-configuration-local-database? config)
+       (list (string-append "POSTGRES_USER="
+                            (bonfire-configuration-postgres-db config)))
+       '())
+   (configuration->environment-variables config bonfire-configuration-fields
+                                         #:excluded `(create-database?
+                                                      ,@(if (bonfire-configuration-local-database? config)
+                                                            '(postgres-user)
+                                                            '())))))
 
 (define-configuration/no-serialization oci-bonfire-configuration
   (image
@@ -215,11 +209,17 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
     "SIGNING_SALT"
     "ENCRYPTION_SALT"))
 
+(define (%bonfire-secret-file config secret)
+  (string-append (oci-bonfire-configuration-secrets-directory config)
+                 "/" (sops-secret->file-name secret)))
+
 (define (%bonfire-secrets-files config)
-  (map (lambda (s)
-         (string-append (oci-bonfire-configuration-secrets-directory config)
-                        "/" (sops-secret->file-name s)))
+  (map (lambda (s) (%bonfire-secret-file config s))
        (%bonfire-secrets config)))
+
+(define (%bonfire-secrets-postgres-password-file config)
+  (%bonfire-secret-file
+   config (oci-bonfire-configuration-postgres-password config)))
 
 (define (%bonfire-secrets-specs config)
   (zip %bonfire-secrets-variables
@@ -367,6 +367,18 @@ for example by starting an interactive shell attached to the Elixir process.")
                                   (service-extension sops-secrets-service-type
                                                      (lambda (config)
                                                        (%bonfire-secrets config)))
+                                  (service-extension postgresql-role-service-type
+                                                     (lambda (oci-config)
+                                                       (define config
+                                                         (oci-bonfire-configuration-configuration oci-config))
+                                                       (if (bonfire-configuration-create-database? config)
+                                                           (list
+                                                            (postgresql-role
+                                                             (name (bonfire-configuration-postgres-host config))
+                                                             (password-file
+                                                              (%bonfire-secrets-postgres-password-file config))
+                                                             (create-database? #t)))
+                                                           '())))
                                   (service-extension activation-service-type
                                                      %bonfire-activation)))
                 (description
