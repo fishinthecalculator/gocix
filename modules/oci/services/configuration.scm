@@ -12,6 +12,7 @@
   #:export (field-name->environment-variable
             serialize-environment-variable
             serialize-boolean-environment-variable
+            configuration->environment-variables
 
             serialize-ini-string
             serialize-ini-integer
@@ -67,6 +68,34 @@
 
 (define (format-json-list values)
   (format-squared-list values))
+
+(define* (configuration->environment-variables config fields #:key (excluded '()))
+  (lambda (config)
+    (filter (lambda (variable)
+              (and (not (null? variable))
+                   (not (and (string? variable)
+                             (string-null? variable)))))
+            (map (lambda (f)
+                   (let ((field-name (configuration-field-name f))
+                         (type (configuration-field-type f))
+                         (value ((configuration-field-getter f) config)))
+                     (if (not (eq? field-name 'image))
+                         (match type
+                           ('string
+                            (serialize-environment-variable field-name value))
+                           ('maybe-string
+                            (if (maybe-value-set? value)
+                                (serialize-environment-variable field-name value)
+                                '()))
+                           ('boolean
+                            (serialize-boolean-environment-variable field-name value))
+                           (_
+                            (raise
+                             (formatted-message
+                              (G_ "Unknown environment-variable field type: ~a")
+                              type))))
+                         '())))
+                 fields))))
 
 ;; INI
 
