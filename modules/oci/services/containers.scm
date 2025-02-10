@@ -601,7 +601,7 @@ by CONFIG through RUNTIME-CLI."
                             #$@(if (maybe-value-set? log-file)
                                    (list #:log-file log-file)
                                    '())
-                            #$@(if (eq? runtime 'podman)
+                            #$@(if (and user (eq? runtime 'podman))
                                    (list #:directory
                                          #~(passwd:dir (getpwnam #$user)))
                                    '())
