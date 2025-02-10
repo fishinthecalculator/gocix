@@ -88,8 +88,8 @@ volumes to add."))
         (runtime
          (home-oci-configuration-runtime config)))
     (oci-runtime-cli runtime runtime-cli
-                     #~(string-append (getenv "HOME")
-                                      "/.guix-home/profile"))))
+                     (string-append (getenv "HOME")
+                                    "/.guix-home/profile"))))
 
 (define (home-oci-networks-shepherd-name runtime)
   (string-append "home-" (oci-networks-shepherd-name runtime)))
