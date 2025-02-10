@@ -82,6 +82,7 @@
             oci-volumes-shepherd-name
 
             oci-container-shepherd-service
+            oci-objects-merge-lst
             oci-service-type
             oci-service-accounts
             oci-service-profile
