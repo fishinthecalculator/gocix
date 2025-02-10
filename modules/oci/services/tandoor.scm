@@ -13,6 +13,7 @@
   #:use-module (ice-9 string-fun)
   #:use-module (sops secrets)
   #:use-module (sops services databases)
+  #:use-module (sops services sops)
   #:use-module (oci services configuration)
   #:use-module (oci services containers)
   #:export (oci-tandoor-service-type
