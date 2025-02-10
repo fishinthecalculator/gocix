@@ -12,9 +12,19 @@
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 string-fun)
   #:use-module (sops secrets)
+  #:use-module (sops services databases)
   #:use-module (oci services configuration)
   #:use-module (oci services containers)
   #:export (oci-tandoor-service-type
+
+            tandoor-configuration
+            tandoor-configuration?
+            tandoor-configuration-fields
+            tandoor-configuration-create-database?
+            tandoor-configuration-postgres-db
+            tandoor-configuration-postgres-host
+            tandoor-configuration-postgres-user
+
             oci-tandoor-configuration
             oci-tandoor-configuration?
             oci-tandoor-configuration-fields
@@ -49,10 +59,30 @@
       (oci-volume-configuration? value)))
 (define-maybe/no-serialization string-or-volume)
 
+(define-configuration/no-serialization tandoor-configuration
+  (create-database?
+   (boolean #t)
+   "Whether to create a database with the same name as the role.")
+  (postgres-host
+   (string "localhost")
+   "The hostname where postgres will be looked for.")
+  (postgres-db
+   (string "tandoor_db")
+   "The database name of the Tandoor's Postgres database.  When
+@code{postgres-host} is equal to @code{\"localhost\"} or to a path that exists
+on the filesystem, the service will assume that the database is provisioned with
+Guix Systems' @code{postgresql-role-service-type}
+(@pxref{Database Services,,, guix, The GNU Guix Manual}).  In this case the
+@code{postgres-user} field will be ignored and this field will be used both as
+database name and as an authentication user name.")
+  (postgres-user
+   (string "tandoor")
+   "The user name that Tandoor will use to authenticate against the Postgres database."))
+
 (define-configuration/no-serialization oci-tandoor-configuration
   (runtime
    (symbol 'docker)
-   "The OCI runtime to be used for this service")
+   "The OCI runtime to be used for this service.")
   (staticdir
    (maybe-string-or-volume)
    "The directory where tandoor writes static files.  It can be either an
@@ -65,6 +95,9 @@ will be mapped inside the container.  By default it is @code{\"/opt/recipes/stat
 @code{oci-volume-configuration} representing the OCI volume where Tandoor will
 write, or a string representing a file system path in the host system which
 will be mapped inside the container.  By default it is @code{\"/opt/recipes/mediafiles\"}.")
+  (configuration
+   (tandoor-configuration)
+   "A tandoor-configuration record used to configure the Tandoor instance.")
   (image
    (string tandoor-image)
    "The image to use for the OCI backed Shepherd service.")
@@ -91,6 +124,25 @@ to \"host\" the @code{port} field will be ignored.")
    (list '())
    "A list of pairs representing any extra environment variable that should be set inside the container. Refer to the @uref{mainline, https://docs.tandoor.dev/install/docker/#docker} documentation for more details."))
 
+(define (tandoor-configuration-local-database? config)
+  (define host
+    (tandoor-configuration-postgres-host config))
+  (define db
+    (tandoor-configuration-postgres-db config))
+  (or (string=? "localhost" host) (file-exists? db)))
+
+(define (tandoor-configuration->oci-container-environment config)
+  (append
+   (if (tandoor-configuration-local-database? config)
+       (list (string-append "POSTGRES_USER="
+                            (tandoor-configuration-postgres-db config)))
+       '())
+   (configuration->environment-variables config tandoor-configuration-fields
+                                         #:excluded `(create-database?
+                                                      ,@(if (tandoor-configuration-local-database? config)
+                                                            '(postgres-user)
+                                                            '())))))
+
 (define (%tandoor-secrets config)
   (list (oci-tandoor-configuration-postgres-password config)
         (oci-tandoor-configuration-secret-key config)))
@@ -99,11 +151,17 @@ to \"host\" the @code{port} field will be ignored.")
   '("POSTGRES_PASSWORD"
     "SECRET_KEY"))
 
+(define (%tandoor-secret-file config secret)
+  (string-append (oci-tandoor-configuration-secrets-directory config)
+                 "/" (sops-secret->file-name secret)))
+
 (define (%tandoor-secrets-files config)
-  (map (lambda (s)
-         (string-append (oci-tandoor-configuration-secrets-directory config)
-                        "/" (sops-secret->file-name s)))
+  (map (lambda (s) (%tandoor-secret-file config s))
        (%tandoor-secrets config)))
+
+(define (%tandoor-secrets-postgres-password-file config)
+  (%tandoor-secret-file
+   config (oci-tandoor-configuration-postgres-password config)))
 
 (define (%tandoor-secrets-specs config)
   (zip %tandoor-secrets-variables
@@ -240,6 +298,21 @@ and returns Tandoor's sh command."
                                          (oci-tandoor-configuration->oci-container-configuration config)))))
                   (service-extension account-service-type
                                      tandoor-accounts)
+                  (service-extension sops-secrets-service-type
+                                     (lambda (config)
+                                       (%tandoor-secrets config)))
+                  (service-extension postgresql-role-service-type
+                                     (lambda (oci-config)
+                                       (define config
+                                         (oci-tandoor-configuration-configuration oci-config))
+                                       (if (tandoor-configuration-create-database? config)
+                                           (list
+                                            (postgresql-role
+                                             (name (tandoor-configuration-postgres-db config))
+                                             (password-file
+                                              (%tandoor-secrets-postgres-password-file config))
+                                             (create-database? #t)))
+                                           '())))
                   (service-extension activation-service-type
                                      tandoor-activation)))
                 (description
