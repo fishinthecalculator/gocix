@@ -158,8 +158,16 @@ but ~a was found") %oci-supported-runtimes value)))
 but ~a was found") el))))
    value))
 
-(define oci-image-reference
-  (@@ (gnu services docker) oci-image-reference))
+(define (oci-image-reference image)
+  "Return a string OCI image reference representing IMAGE."
+  (define reference
+    (if (string? image)
+        image
+        (string-append (mainline:oci-image-repository image)
+                       ":" (mainline:oci-image-tag image))))
+  (if (> (length (string-split reference #\/)) 1)
+        reference
+        (string-append "localhost/" reference)))
 
 (define (list-of-oci-records? name predicate value)
   (map
@@ -189,7 +197,8 @@ but ~a was found") el))))
   (extra-arguments
    (list '())
    "A list of strings, gexps or file-like objects that will be directly passed
-to the runtime invokation."
+to the @command{docker volume create} or @command{podman volume create}
+invokation."
    (sanitizer oci-sanitize-extra-arguments)))
 
 (define (list-of-oci-volumes? value)
@@ -227,7 +236,8 @@ to the runtime invokation."
   (extra-arguments
    (list '())
    "A list of strings, gexps or file-like objects that will be directly passed
-to the runtime invokation."
+to the @command{docker network create} or @command{podman network create}
+invokation."
    (sanitizer oci-sanitize-extra-arguments)))
 
 (define (list-of-oci-networks? value)
@@ -477,81 +487,101 @@ for the OCI runtime volume create command."
 
 (define (oci-object-exists? runtime runtime-cli object verbose?)
   #~(lambda* (name #:key (format-string "{{.Name}}"))
-     #$(if (eq? runtime 'podman)
-           #~(let ((command
-                    (list #$runtime-cli
-                          #$object "exists" name)))
-               #$(when verbose?
-                   #~(format #t "Running~{ ~a~}~%" command))
-               (define exit-code (status:exit-val (apply system* command)))
-               #$(when verbose?
-                   #~(format #t "Exit code: ~a~%" exit-code))
-               (equal? EXIT_SUCCESS exit-code))
-           #~(let ((command
-                    (string-append #$runtime-cli
-                                   " " #$object " ls --format "
-                                   "\"" format-string "\"")))
-               #$(when verbose?
-                   #~(format #t "Running ~a~%" command))
-               (member name (read-lines (open-input-pipe command)))))))
+      (use-modules (ice-9 format)
+                   (ice-9 match)
+                   (ice-9 popen)
+                   (ice-9 rdelim)
+                   (srfi srfi-1))
 
-(define* (oci-image-loader runtime-cli name image tag #:key (verbose? #f))
+      (define (read-lines file-or-port)
+        (define (loop-lines port)
+          (let loop ((lines '()))
+            (match (read-line port)
+              ((? eof-object?)
+               (reverse lines))
+              (line
+               (loop (cons line lines))))))
+
+        (if (port? file-or-port)
+            (loop-lines file-or-port)
+            (call-with-input-file file-or-port
+              loop-lines)))
+
+      #$(if (eq? runtime 'podman)
+            #~(let ((command
+                     (list #$runtime-cli
+                           #$object "exists" name)))
+                (when #$verbose?
+                  (format #t "Running~{ ~a~}~%" command))
+                (define exit-code (status:exit-val (apply system* command)))
+                (when #$verbose?
+                  (format #t "Exit code: ~a~%" exit-code))
+                (equal? EXIT_SUCCESS exit-code))
+            #~(let ((command
+                     (string-append #$runtime-cli
+                                    " " #$object " ls --format "
+                                    "\"" format-string "\"")))
+                (when #$verbose?
+                  (format #t "Running ~a~%" command))
+                (member name (read-lines (open-input-pipe command)))))))
+
+(define* (oci-image-loader runtime runtime-cli name image tag #:key (verbose? #f))
   "Return a file-like object that, once lowered, will evaluate to a program able
 to load IMAGE through RUNTIME-CLI and to tag it with TAG afterwards."
   (let ((tarball (lower-oci-image name image)))
     (with-imported-modules '((guix build utils))
-      (program-file (format #f "~a-image-loader" name)
+      (program-file
+       (format #f "~a-image-loader" name)
        #~(begin
            (use-modules (guix build utils)
+                        (ice-9 match)
                         (ice-9 popen)
-                        (ice-9 rdelim))
+                        (ice-9 rdelim)
+                        (srfi srfi-1))
            (define object-exists?
              #$(oci-object-exists? runtime runtime-cli "image" verbose?))
+           (define load-command
+             (string-append #$runtime-cli
+                            " load -i " #$tarball))
 
            (if (object-exists? #$tag #:format-string "{{.Repository}}:{{.Tag}}")
+               (format #t "~a image already exists, skipping.~%" #$tag)
                (begin
                  (format #t "Loading image for ~a from ~a...~%" #$name #$tarball)
-                 (define load-command
-                   (string-append #$runtime-cli
-                                  " load -i " #$tarball))
-                 #$(when verbose?
-                     #~(format #t "Running ~a~%" load-command))
-                 (define line
-                   (read-line
-                    (open-input-pipe load-command)))
+                 (when #$verbose?
+                   (format #t "Running ~a~%" load-command))
+                 (let ((line (read-line
+                              (open-input-pipe load-command))))
+                   (unless (or (eof-object? line)
+                               (string-null? line))
+                     (format #t "~a~%" line)
+                     (let* ((repository&tag
+                             (string-drop line
+                                          (string-length
+                                           "Loaded image: ")))
+                            (tag-command
+                             (list #$runtime-cli "tag" repository&tag #$tag))
+                            (drop-old-tag-command
+                             (list #$runtime-cli "image" "rm" "-f" repository&tag)))
 
-                 (unless (or (eof-object? line)
-                             (string-null? line))
-                   (format #t "~a~%" line)
-                   (let* ((repository&tag
-                           (string-drop line
-                                        (string-length
-                                         "Loaded image: ")))
-                          (tag-command
-                           (list #$runtime-cli "tag" repository&tag #$tag))
-                          (drop-old-tag-command
-                           (list #$runtime-cli "image" "rm" "-f" repository&tag)))
+                       (unless (string=? repository&tag #$tag)
+                         (when #$verbose?
+                           (format #t "Running~{ ~a~}~%" tag-command))
 
-                     #$(when verbose?
-                         #~(format #t "Running~{ ~a~}~%" tag-command))
+                         (let ((exit-code
+                                (status:exit-val (apply system* tag-command))))
+                           (format #t "Tagged ~a with ~a...~%" #$tarball #$tag)
 
-                     (define exit-code
-                       (status:exit-val (apply system* tag-command)))
-                     (format #t "Tagged ~a with ~a..." #$tarball #$tag)
+                           (when #$verbose?
+                             (format #t "Exit code: ~a~%" exit-code))
 
-                     #$(if verbose?
-                           #~(format #t " Exit: ~a~%" exit-code)
-                           #~(format #t "~%"))
-
-                     (when (equal? EXIT_SUCCESS exit-code)
-                       #$(when verbose?
-                           #~(format #t "Running~{ ~a~}" tag-command))
-                       (let ((drop-exit-code
-                              (status:exit-val (apply system* drop-old-tag-command))))
-                         #$(if verbose?
-                               #~(format #t " Exit: ~a~%" drop-exit-code)
-                               #~(format #t "~%")))))))
-               (format #t "~a image already exists, skipping." #$tag)))))))
+                           (when (equal? EXIT_SUCCESS exit-code)
+                             (when #$verbose?
+                               (format #t "Running~{ ~a~}~%" drop-old-tag-command))
+                             (let ((drop-exit-code
+                                    (status:exit-val (apply system* drop-old-tag-command))))
+                               (when #$verbose?
+                                 (format #t "Exit code: ~a~%" drop-exit-code))))))))))))))))
 
 (define (oci-container-run-invokation runtime-cli name command image-reference
                                       options runtime-extra-arguments run-extra-arguments)
@@ -572,8 +602,8 @@ for the Shepherd service that will run IMAGE through RUNTIME-CLI."
    #~(begin
        (use-modules (ice-9 format)
                     (srfi srfi-1))
-       #$(when verbose?
-           #~(format #t "Running in verbose mode...~%"))
+       (when #$verbose?
+         (format #t "Running in verbose mode...~%"))
        (define invokation (list #$@invokation))
        #$@(if (mainline:oci-image? image)
               #~((system*
@@ -581,8 +611,8 @@ for the Shepherd service that will run IMAGE through RUNTIME-CLI."
                      runtime runtime-cli name image
                      image-reference #:verbose? verbose?)))
               #~())
-       #$(when verbose?
-           #~(format #t "Running~{ ~a~}~%" invokation))
+       (when #$verbose?
+         (format #t "Running~{ ~a~}~%" invokation))
        (apply execlp `(,(first invokation) ,@invokation)))))
 
 (define* (oci-container-shepherd-service runtime runtime-cli config
@@ -699,20 +729,6 @@ to create OCI networks and volumes through RUNTIME-CLI."
                     (ice-9 rdelim)
                     (srfi srfi-1))
 
-       (define (read-lines file-or-port)
-         (define (loop-lines port)
-           (let loop ((lines '()))
-             (match (read-line port)
-               ((? eof-object?)
-                (reverse lines))
-               (line
-                (loop (cons line lines))))))
-
-         (if (port? file-or-port)
-             (loop-lines file-or-port)
-             (call-with-input-file file-or-port
-               loop-lines)))
-
        (define object-exists?
          #$(oci-object-exists? runtime runtime-cli object verbose?))
 
@@ -723,12 +739,11 @@ to create OCI networks and volumes through RUNTIME-CLI."
               (format #t "~a ~a ~a already exists, skipping creation.~%"
                       #$(oci-runtime-name runtime) name #$object)
               (begin
-                #$(when verbose?
-                    #~(format #t "Running~{ ~a~}" invokation))
+                (when #$verbose?
+                  (format #t "Running~{ ~a~}~%" invokation))
                 (let ((exit-code (status:exit-val (apply system* invokation))))
-                  #$(if verbose?
-                        #~(format #t " Exit code: ~a~%" exit-code)
-                        #~(format #t "~%"))))))
+                  (when #$verbose?
+                    (format #t "Exit code: ~a~%" exit-code))))))
         (list #$@invokations)))))
 
 (define* (oci-object-shepherd-service object runtime runtime-cli name requirement invokations
