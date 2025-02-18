@@ -79,6 +79,7 @@
             oci-extension-networks
             oci-extension-volumes
 
+            oci-container-shepherd-name
             oci-networks-shepherd-name
             oci-volumes-shepherd-name
 
@@ -886,21 +887,26 @@ in CONFIG."
                                        (containers-requirement '())
                                        (networks-requirement '())
                                        (volumes-requirement '()))
-  (let* ((networks?
+  (let* ((networks-name
+          (if (string? networks-name)
+              networks-name
+              (oci-networks-shepherd-name runtime)))
+         (networks?
           (> (length networks) 0))
          (networks-service
           (if networks?
               (list
-               (string->symbol
-                (oci-networks-shepherd-name runtime)))
+               (string->symbol networks-name))
               '()))
+         (volumes-name
+          (if (string? volumes-name)
+              volumes-name
+              (oci-volumes-shepherd-name runtime)))
          (volumes?
           (> (length volumes) 0))
          (volumes-service
           (if volumes?
-              (list
-               (string->symbol
-                (oci-volumes-shepherd-name runtime)))
+              (list (string->symbol volumes-name))
               '())))
     (append
      (map
@@ -922,10 +928,7 @@ in CONFIG."
          (list
           (oci-networks-shepherd-service
            runtime runtime-cli
-           (if (string? networks-name)
-               networks-name
-               (oci-networks-shepherd-name runtime))
-           networks
+           networks-name networks
            #:user user #:group group
            #:runtime-extra-arguments runtime-extra-arguments
            #:runtime-environment runtime-environment
@@ -937,10 +940,7 @@ in CONFIG."
          (list
           (oci-volumes-shepherd-service
            runtime runtime-cli
-           (if (string? volumes-name)
-               volumes-name
-               (oci-volumes-shepherd-name runtime))
-           volumes
+           volumes-name volumes
            #:user user #:group group
            #:runtime-extra-arguments runtime-extra-arguments
            #:runtime-environment runtime-environment
