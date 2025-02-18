@@ -31,24 +31,5 @@
                  (lambda (config extension)
                    (for-home
                     (oci-configuration
-                     (inherit config)
-                     (containers
-                      (oci-objects-merge-lst
-                       (oci-configuration-containers config)
-                       (oci-extension-containers extension)
-                       "container"
-                       (lambda (oci-config)
-                         (define runtime
-                           (oci-configuration-runtime config))
-                         (oci-container-shepherd-name runtime oci-config))))
-                     (networks (oci-objects-merge-lst
-                                (oci-configuration-networks config)
-                                (oci-extension-networks extension)
-                                "network"
-                                oci-network-configuration-name))
-                     (volumes (oci-objects-merge-lst
-                               (oci-configuration-volumes config)
-                               (oci-extension-volumes extension)
-                               "volume"
-                               oci-volume-configuration-name))))))
+                     (inherit (oci-configuration-extend config extension))))))
                 (default-value (for-home (oci-configuration)))))

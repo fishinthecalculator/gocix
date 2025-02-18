@@ -92,7 +92,8 @@
             oci-service-profile
             oci-service-subids
             oci-state->shepherd-services
-            oci-configuration->shepherd-services))
+            oci-configuration->shepherd-services
+            oci-configuration-extend))
 
 ;;;
 ;;; This is the development implementation of the Guix OCI container system service.
@@ -1090,6 +1091,29 @@ remove the duplicate.") object (get-name element) object)))
          (formatted-message
           (G_ "Invalide oci-configuration ~a.") config)))))
 
+(define (oci-configuration-extend config extension)
+  (oci-configuration
+   (inherit config)
+   (containers
+    (oci-objects-merge-lst
+     (oci-configuration-containers config)
+     (oci-extension-containers extension)
+     "container"
+     (lambda (oci-config)
+       (define runtime
+         (oci-configuration-runtime config))
+       (oci-container-shepherd-name runtime oci-config))))
+   (networks (oci-objects-merge-lst
+              (oci-configuration-networks config)
+              (oci-extension-networks extension)
+              "network"
+              oci-network-configuration-name))
+   (volumes (oci-objects-merge-lst
+             (oci-configuration-volumes config)
+             (oci-extension-volumes extension)
+             "volume"
+             oci-volume-configuration-name))))
+
 (define oci-service-type
   (service-type (name 'oci)
                 (extensions
@@ -1103,46 +1127,20 @@ remove the duplicate.") object (get-name element) object)))
                                                (oci-configuration-runtime config)))
                                           (oci-service-profile runtime runtime-cli)))))
                   (service-extension subids-service-type
-                                     (oci-service-extension-wrap-validate oci-service-subids))
+                                     (oci-service-extension-wrap-validate
+                                      oci-service-subids))
                   (service-extension account-service-type
-                                     (oci-service-extension-wrap-validate oci-service-accounts))
+                                     (oci-service-extension-wrap-validate
+                                      oci-service-accounts))
                   (service-extension shepherd-root-service-type
                                      (oci-service-extension-wrap-validate
-                                      (lambda (config)
-                                        (let ((home-service?
-                                               (oci-configuration-home-service? config)))
-                                          ((if home-service?
-                                               home-oci-configuration->shepherd-services
-                                               oci-configuration->shepherd-services)
-                                           config)))))))
+                                      oci-configuration->shepherd-services))))
                 ;; Concatenate OCI object lists.
                 (compose (lambda (args)
                            (fold oci-extension-merge
                                  (oci-extension)
                                  args)))
-                (extend
-                 (lambda (config extension)
-                   (oci-configuration
-                    (inherit config)
-                    (containers
-                     (oci-objects-merge-lst
-                      (oci-configuration-containers config)
-                      (oci-extension-containers extension)
-                      "container"
-                      (lambda (oci-config)
-                        (define runtime
-                          (oci-configuration-runtime config))
-                        (oci-container-shepherd-name runtime oci-config))))
-                    (networks (oci-objects-merge-lst
-                               (oci-configuration-networks config)
-                               (oci-extension-networks extension)
-                               "network"
-                               oci-network-configuration-name))
-                    (volumes (oci-objects-merge-lst
-                              (oci-configuration-volumes config)
-                              (oci-extension-volumes extension)
-                              "volume"
-                              oci-volume-configuration-name)))))
+                (extend oci-configuration-extend)
                 (default-value (oci-configuration))
                 (description
                  "This service implements the provisioning of OCI object such
