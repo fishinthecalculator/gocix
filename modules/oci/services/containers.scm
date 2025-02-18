@@ -70,6 +70,7 @@
             oci-configuration-networks
             oci-configuration-volumes
             oci-configuration-verbose?
+            oci-configuration-valid?
 
             oci-extension
             oci-extension?
@@ -83,6 +84,8 @@
 
             oci-container-shepherd-service
             oci-objects-merge-lst
+            oci-extension-merge
+            oci-service-extension-wrap-validate
             oci-service-type
             oci-service-accounts
             oci-service-profile
@@ -948,8 +951,10 @@ in CONFIG."
 
 (define (oci-configuration->shepherd-services config)
   (let* ((runtime (oci-configuration-runtime config))
-         (runtime-cli
+         (system-runtime-cli
           (oci-runtime-system-cli config))
+         (home-runtime-cli
+          (oci-runtime-home-cli config))
          (runtime-extra-arguments
           (oci-configuration-runtime-extra-arguments config))
          (containers (oci-configuration-containers config))
@@ -958,34 +963,28 @@ in CONFIG."
          (user (oci-configuration-user config))
          (group (oci-runtime-group
                  runtime (oci-configuration-group config)))
-         (verbose? (oci-configuration-verbose? config)))
-    (oci-state->shepherd-services runtime runtime-cli containers networks volumes
-                                  #:user user
-                                  #:group
-                                  (oci-runtime-system-group runtime user group)
-                                  #:verbose? verbose?
-                                  #:runtime-extra-arguments
-                                  runtime-extra-arguments
-                                  #:runtime-environment
-                                  (oci-runtime-system-environment runtime user)
-                                  #:runtime-requirement
-                                  (oci-runtime-system-requirement runtime)
-                                  #:networks-requirement '(networking))))
-
-(define (home-oci-configuration->shepherd-services config)
-  (let ((runtime (oci-configuration-runtime config))
-        (runtime-cli
-         (oci-runtime-home-cli config))
-        (containers (oci-configuration-containers config))
-        (networks (oci-configuration-networks config))
-        (volumes (oci-configuration-volumes config))
-        (verbose? (oci-configuration-verbose? config)))
-    (oci-state->shepherd-services runtime runtime-cli containers networks volumes
-                                  #:verbose? verbose?
-                                  #:networks-name
-                                  (oci-networks-home-shepherd-name runtime)
-                                  #:volumes-name
-                                  (oci-volumes-home-shepherd-name runtime))))
+         (verbose? (oci-configuration-verbose? config))
+         (home-service?
+          (oci-configuration-home-service? config)))
+    (if home-service?
+        (oci-state->shepherd-services runtime home-runtime-cli containers networks volumes
+                                      #:verbose? verbose?
+                                      #:networks-name
+                                      (oci-networks-home-shepherd-name runtime)
+                                      #:volumes-name
+                                      (oci-volumes-home-shepherd-name runtime))
+        (oci-state->shepherd-services runtime system-runtime-cli containers networks volumes
+                                      #:user user
+                                      #:group
+                                      (oci-runtime-system-group runtime user group)
+                                      #:verbose? verbose?
+                                      #:runtime-extra-arguments
+                                      runtime-extra-arguments
+                                      #:runtime-environment
+                                      (oci-runtime-system-environment runtime user)
+                                      #:runtime-requirement
+                                      (oci-runtime-system-requirement runtime)
+                                      #:networks-requirement '(networking)))))
 
 (define (oci-service-subids config)
   "Return a subids-extension record representing subuids and subgids required by
@@ -1083,7 +1082,7 @@ remove the duplicate.") object (get-name element) object)))
             (else
              docker-cli))))))
 
-(define (wrap-validation extension)
+(define (oci-service-extension-wrap-validate extension)
   (lambda (config)
     (if (oci-configuration-valid? config)
         (extension config)
@@ -1096,7 +1095,7 @@ remove the duplicate.") object (get-name element) object)))
                 (extensions
                  (list
                   (service-extension profile-service-type
-                                     (wrap-validation
+                                     (oci-service-extension-wrap-validate
                                       (lambda (config)
                                         (let ((runtime-cli
                                                (oci-configuration-runtime-cli config))
@@ -1104,11 +1103,11 @@ remove the duplicate.") object (get-name element) object)))
                                                (oci-configuration-runtime config)))
                                           (oci-service-profile runtime runtime-cli)))))
                   (service-extension subids-service-type
-                                     (wrap-validation oci-service-subids))
+                                     (oci-service-extension-wrap-validate oci-service-subids))
                   (service-extension account-service-type
-                                     (wrap-validation oci-service-accounts))
+                                     (oci-service-extension-wrap-validate oci-service-accounts))
                   (service-extension shepherd-root-service-type
-                                     (wrap-validation
+                                     (oci-service-extension-wrap-validate
                                       (lambda (config)
                                         (let ((home-service?
                                                (oci-configuration-home-service? config)))
