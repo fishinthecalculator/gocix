@@ -16,6 +16,7 @@
   #:use-module (guix gexp)
   #:use-module (guix i18n)
   #:use-module (guix packages)
+  #:use-module (guix records)
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
@@ -60,7 +61,6 @@
 
             oci-configuration
             oci-configuration?
-            oci-configuration-fields
             oci-configuration-runtime
             oci-configuration-runtime-cli
             oci-configuration-runtime-extra-arguments
@@ -121,11 +121,11 @@ before it is able to run containers."
 (define (oci-runtime-group runtime maybe-group)
   "Implement the logic behind selection of the group that is to be used by
 Shepherd to execute OCI commands."
-  (if (maybe-value-set? maybe-group)
-      maybe-group
+  (if (eq? maybe-group #f)
       (if (eq? 'podman runtime)
           "cgroup"
-          "docker")))
+          "docker")
+      maybe-group))
 
 (define (oci-sanitize-runtime value)
   (unless (member value %oci-supported-runtimes)
@@ -243,59 +243,72 @@ invokation."
 (define (list-of-oci-networks? value)
   (list-of-oci-records? "networks" oci-network-configuration? value))
 
-(define-configuration/no-serialization oci-configuration
-  (runtime
-   (symbol 'docker)
-   "The OCI runtime to use to run commands.  It can be either @code{'docker} or
-@code{'podman}."
-   (sanitizer oci-sanitize-runtime))
-  (runtime-cli
-   (maybe-package)
-   "The OCI runtime command line to be installed in the system profile and used
-to provision OCI resources.  When unset it will default to @code{docker-cli}
-package for the @code{'docker} runtime or to @code{podman} package for the
-@code{'podman} runtime.")
-  (runtime-extra-arguments
-   (list '())
-   "A list of strings, gexps or file-like objects that will be placed
-after each @command{docker} or @command{podman} invokation.")
-  (user
-   (string "oci-container")
-   "The user name under whose authority OCI runtime commands will be run.")
-  (group
-   (maybe-string)
-   "The group name under whose authority OCI commands will be run.  When
-using the @code{'podman} OCI runtime, this field will be ignored and the
-default group of the user configured in the @code{user} field will be used.")
-  (subuids-range
-   (maybe-subid-range)
-   "An optional @code{subid-range} record allocating subuids for the user from
-the @code{user} field.  When unset, with the rootless Podman OCI runtime, it
-defaults to @code{(subid-range (name \"oci-container\"))}.")
-  (subgids-range
-   (maybe-subid-range)
-   "An optional @code{subid-range} record allocating subgids for the user from
-the @code{user} field.  When unset, with the rootless Podman OCI runtime, it
-defaults to @code{(subid-range (name \"oci-container\"))}.")
-  (containers
-   (list-of-oci-containers '())
-   "The list of @code{oci-container-configuration} records representing the
-containers to provision.  Most users are supposed not to use this field and use
-the @code{oci-extension} record instead.")
-  (networks
-   (list-of-oci-networks '())
-   "The list of @code{oci-network-configuration} records representing the
-networks to provision.  Most users are supposed not to use this field and use
-the @code{oci-extension} record instead.")
-  (volumes
-   (list-of-oci-volumes '())
-   "The list of @code{oci-volume-configuration} records representing the
-volumes to provision.  Most users are supposed not to use this field and use
-the @code{oci-extension} record instead.")
-  (verbose?
-   (boolean #f)
-   "When true, additional output will be printed, allowing to better follow the
-flow of execution."))
+(define-record-type* <oci-configuration>
+  oci-configuration
+  make-oci-configuration
+  oci-configuration?
+  this-oci-configuration
+
+  (runtime                  oci-configuration-runtime
+                            (default 'docker))
+  (runtime-cli              oci-configuration-runtime-cli
+                            (default #f))                               ; package or string
+  (runtime-extra-arguments  oci-configuration-runtime-extra-arguments   ; strings or gexps
+                            (default '()))                              ; or file-like objects
+  (user                     oci-configuration-user
+                            (default "oci-container"))
+  (group                    oci-configuration-group                     ; string
+                            (default #f))
+  (subuids-range            oci-configuration-subuids-range             ; subid-range
+                            (default #f))
+  (subgids-range            oci-configuration-subgids-range             ; subid-range
+                            (default #f))
+  (containers               oci-configuration-containers                ; oci-container-configurations
+                            (default '()))
+  (networks                 oci-configuration-networks                  ; oci-network-configurations
+                            (default '()))
+  (volumes                  oci-configuration-volumes                   ; oci-volume-configurations
+                            (default '()))
+  (verbose?                 oci-configuration-verbose?
+                            (default #f))
+  (home-service?            oci-configuration-home-service?
+                            (default for-home?) (innate)))
+
+(define (package-or-string? value)
+  (or (package? value) (string? value)))
+
+(define (oci-configuration-valid? config)
+  (define runtime-cli
+    (oci-configuration-runtime-cli config))
+  (define group
+    (oci-configuration-group config))
+  (define subuids-range
+    (oci-configuration-subuids-range config))
+  (define subgids-range
+    (oci-configuration-subgids-range config))
+  (and
+   (symbol?
+    (oci-sanitize-runtime (oci-configuration-runtime config)))
+   (or (eq? runtime-cli #f)
+       (package-or-string? runtime-cli))
+   (list? (oci-configuration-runtime-extra-arguments config))
+   (string? (oci-configuration-user config))
+   (or (eq? group #f)
+       (string? group))
+   (or (eq? subuids-range #f)
+       (subid-range? subuids-range))
+   (or (eq? subgids-range #f)
+       (subid-range? subgids-range))
+   (list-of-oci-containers?
+    (oci-configuration-containers config))
+   (list-of-oci-networks?
+    (oci-configuration-networks config))
+   (list-of-oci-volumes?
+    (oci-configuration-volumes config))
+   (boolean?
+    (oci-configuration-verbose? config))
+   (boolean?
+    (oci-configuration-home-service? config))))
 
 (define (oci-runtime-system-environment runtime user)
   (if (eq? runtime 'podman)
@@ -319,9 +332,9 @@ runtime command requested by the user."
       ;; It is a user defined absolute path
       runtime-cli
       #~(string-append
-         #$(if (maybe-value-set? runtime-cli)
-               runtime-cli
-               path)
+         #$(if (eq? runtime-cli #f)
+               path
+               runtime-cli)
          #$(if (eq? 'podman runtime)
                "/bin/podman"
                "/bin/docker"))))
@@ -332,6 +345,15 @@ runtime command requested by the user."
         (runtime
          (oci-configuration-runtime config)))
     (oci-runtime-cli runtime runtime-cli path)))
+
+(define (oci-runtime-home-cli config)
+  (let ((runtime-cli
+         (oci-configuration-runtime-cli config))
+        (runtime
+         (oci-configuration-runtime config)))
+    (oci-runtime-cli runtime runtime-cli
+                     (string-append (getenv "HOME")
+                                    "/.guix-home/profile"))))
 
 (define-configuration/no-serialization oci-extension
   (containers
@@ -388,6 +410,16 @@ RUNTIME."
   "Return the name of the OCI volumes provisioning Shepherd service based on
 RUNTIME."
   (string-append (symbol->string runtime) "-volumes"))
+
+(define (oci-networks-home-shepherd-name runtime)
+  "Return the name of the OCI volumes provisioning Home Shepherd service based on
+RUNTIME."
+  (string-append "home-" (oci-networks-shepherd-name runtime)))
+
+(define (oci-volumes-home-shepherd-name runtime)
+  "Return the name of the OCI volumes provisioning Home Shepherd service based on
+RUNTIME."
+  (string-append "home-" (oci-volumes-shepherd-name runtime)))
 
 (define (oci-container-configuration->options config)
   "Map CONFIG, an oci-container-configuration record, to a gexp that, upon
@@ -940,6 +972,21 @@ in CONFIG."
                                   (oci-runtime-system-requirement runtime)
                                   #:networks-requirement '(networking))))
 
+(define (home-oci-configuration->shepherd-services config)
+  (let ((runtime (oci-configuration-runtime config))
+        (runtime-cli
+         (oci-runtime-home-cli config))
+        (containers (oci-configuration-containers config))
+        (networks (oci-configuration-networks config))
+        (volumes (oci-configuration-volumes config))
+        (verbose? (oci-configuration-verbose? config)))
+    (oci-state->shepherd-services runtime runtime-cli containers networks volumes
+                                  #:verbose? verbose?
+                                  #:networks-name
+                                  (oci-networks-home-shepherd-name runtime)
+                                  #:volumes-name
+                                  (oci-volumes-home-shepherd-name runtime))))
+
 (define (oci-service-subids config)
   "Return a subids-extension record representing subuids and subgids required by
 the rootless Podman backend."
@@ -963,16 +1010,16 @@ the rootless Podman backend."
   (define subgid-ranges
     (delete-duplicate-ranges
      (cons
-      (if (maybe-value-set? subgids)
-          subgids
-          (subid-range (name user)))
+      (if (eq? subgids #f)
+          (subid-range (name user))
+          subgids)
       container-users)))
   (define subuid-ranges
     (delete-duplicate-ranges
      (cons
-      (if (maybe-value-set? subuids)
-          subuids
-          (subid-range (name user)))
+      (if (eq? subuids #f)
+          (subid-range (name user))
+          subuids)
       container-users)))
 
   (if (eq? 'podman runtime)
@@ -1024,32 +1071,51 @@ remove the duplicate.") object (get-name element) object)))
              oci-volume-configuration-name))))
 
 (define (oci-service-profile runtime runtime-cli)
-  (list bash-minimal
-        (cond
-         ((maybe-value-set? runtime-cli)
-          runtime-cli)
-         ((eq? 'podman runtime)
-          podman)
-         (else
-          docker-cli))))
+  `(,bash-minimal
+    ,@(if (string? runtime-cli)
+          '()
+          (list
+           (cond
+            ((not (eq? runtime-cli #f))
+             runtime-cli)
+            ((eq? 'podman runtime)
+             podman)
+            (else
+             docker-cli))))))
+
+(define (wrap-validation extension)
+  (lambda (config)
+    (if (oci-configuration-valid? config)
+        (extension config)
+        (raise
+         (formatted-message
+          (G_ "Invalide oci-configuration ~a.") config)))))
 
 (define oci-service-type
   (service-type (name 'oci)
                 (extensions
                  (list
                   (service-extension profile-service-type
-                                     (lambda (config)
-                                       (let ((runtime-cli
-                                              (oci-configuration-runtime-cli config))
-                                             (runtime
-                                              (oci-configuration-runtime config)))
-                                         (oci-service-profile runtime runtime-cli))))
+                                     (wrap-validation
+                                      (lambda (config)
+                                        (let ((runtime-cli
+                                               (oci-configuration-runtime-cli config))
+                                              (runtime
+                                               (oci-configuration-runtime config)))
+                                          (oci-service-profile runtime runtime-cli)))))
                   (service-extension subids-service-type
-                                     oci-service-subids)
+                                     (wrap-validation oci-service-subids))
                   (service-extension account-service-type
-                                     oci-service-accounts)
+                                     (wrap-validation oci-service-accounts))
                   (service-extension shepherd-root-service-type
-                                     oci-configuration->shepherd-services)))
+                                     (wrap-validation
+                                      (lambda (config)
+                                        (let ((home-service?
+                                               (oci-configuration-home-service? config)))
+                                          ((if home-service?
+                                               home-oci-configuration->shepherd-services
+                                               oci-configuration->shepherd-services)
+                                           config)))))))
                 ;; Concatenate OCI object lists.
                 (compose (lambda (args)
                            (fold oci-extension-merge
