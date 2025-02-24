@@ -682,7 +682,26 @@ by CONFIG through RUNTIME-CLI."
          (invokation
           (oci-container-run-invokation
            runtime-cli name command image-reference
-           options runtime-extra-arguments extra-arguments)))
+           options runtime-extra-arguments extra-arguments))
+         (container-action
+          (lambda* (command #:key (environment-variables #f))
+            #~(lambda _
+                (fork+exec-command
+                 (list
+                  #$@command)
+                 #$@(if user (list #:user user) '())
+                 #$@(if group (list #:group group) '())
+                 #$@(if (maybe-value-set? log-file)
+                        (list #:log-file log-file)
+                        '())
+                 #$@(if (and user (eq? runtime 'podman))
+                        (list #:directory
+                              #~(passwd:dir (getpwnam #$user)))
+                        '())
+                 #$@(if environment-variables
+                        (list #:environment-variables
+                              environment-variables)
+                        '()))))))
 
     (shepherd-service (provision `(,(string->symbol name)))
                       (requirement `(,@oci-requirement
@@ -694,40 +713,18 @@ by CONFIG through RUNTIME-CLI."
                         (oci-runtime-name runtime) " backed Shepherd service for "
                         (if (mainline:oci-image? image) name image) "."))
                       (start
-                       #~(lambda ()
-                           (fork+exec-command
-                            (list
-                             #$(oci-container-entrypoint
-                                runtime runtime-cli name image image-reference
-                                invokation #:verbose? verbose?))
-                            #$@(if user (list #:user user) '())
-                            #$@(if group (list #:group group) '())
-                            #$@(if (maybe-value-set? log-file)
-                                   (list #:log-file log-file)
-                                   '())
-                            #$@(if (and user (eq? runtime 'podman))
-                                   (list #:directory
-                                         #~(passwd:dir (getpwnam #$user)))
-                                   '())
-                            #:environment-variables
-                            (append
-                             (list #$@host-environment)
-                             (list #$@runtime-environment)))))
+                       (container-action
+                        (list (oci-container-entrypoint
+                               runtime runtime-cli name image image-reference
+                               invokation #:verbose? verbose?))
+                        #:environment-variables
+                        #~(append
+                           (list #$@host-environment)
+                           (list #$@runtime-environment))))
                       (stop
-                       #~(lambda _
-                           (fork+exec-command
-                            (list
-                             #$runtime-cli "rm" "-f" #$name)
-                            #$@(if user (list #:user user) '())
-                            #$@(if group (list #:group group) '())
-                            #$@(if (maybe-value-set? log-file)
-                                   (list #:log-file log-file)
-                                   '())
-                            #$@(if (and user (eq? runtime 'podman))
-                                   (list #:directory
-                                         #~(passwd:dir (getpwnam #$user)))
-                                   '()))))
-
+                       (container-action
+                        (list
+                         runtime-cli "rm" "-f" name)))
                       (actions
                        (append
                         (list
@@ -743,8 +740,9 @@ by CONFIG through RUNTIME-CLI."
                                  (format #f "Pull ~a's image (~a)."
                                          service-name image))
                                 (procedure
-                                 #~(lambda _
-                                     (invoke #$runtime-cli "pull" #$image)))))))
+                                 (container-action
+                                  (list
+                                   runtime-cli "pull" image)))))))
                         actions)))))
 
 (define (oci-object-create-invokation object runtime-cli name options
