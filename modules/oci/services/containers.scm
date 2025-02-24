@@ -715,7 +715,19 @@ by CONFIG through RUNTIME-CLI."
                              (list #$@runtime-environment)))))
                       (stop
                        #~(lambda _
-                           (invoke #$runtime-cli "rm" "-f" #$name)))
+                           (fork+exec-command
+                            (list
+                             #$runtime-cli "rm" "-f" #$name)
+                            #$@(if user (list #:user user) '())
+                            #$@(if group (list #:group group) '())
+                            #$@(if (maybe-value-set? log-file)
+                                   (list #:log-file log-file)
+                                   '())
+                            #$@(if (and user (eq? runtime 'podman))
+                                   (list #:directory
+                                         #~(passwd:dir (getpwnam #$user)))
+                                   '()))))
+
                       (actions
                        (append
                         (list
