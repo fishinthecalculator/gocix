@@ -155,6 +155,13 @@ will be mapped inside the container.  By default it is @code{\"/var/lib/grafana\
    "The docker network where the grafana container will be attached. When equal
 to \"host\" the @code{port} field will be ignored."))
 
+(define (oci-grafana-datadir config)
+  (define maybe-datadir
+    (oci-grafana-configuration-datadir config))
+  (if (maybe-value-set? maybe-datadir)
+      maybe-datadir
+      "/var/lib/grafana"))
+
 (define (grafana-accounts config)
   (let ((runtime (oci-grafana-configuration-runtime config)))
     (list (user-account
@@ -170,7 +177,7 @@ to \"host\" the @code{port} field will be ignored."))
 (define (grafana-activation config)
   "Return an activation gexp for Grafana."
   (let ((runtime (oci-grafana-configuration-runtime config))
-        (datadir (oci-grafana-configuration-datadir config)))
+        (datadir (oci-grafana-datadir config)))
     (if (string? datadir)
         #~(begin
             (use-modules (guix build utils))
@@ -188,12 +195,7 @@ to \"host\" the @code{port} field will be ignored."))
 
 (define oci-grafana-configuration->oci-container-configuration
   (lambda (config)
-    (let* ((maybe-datadir
-            (oci-grafana-configuration-datadir config))
-           (datadir
-            (if (maybe-value-set? maybe-datadir)
-                maybe-datadir
-                "/var/lib/grafana"))
+    (let* ((datadir (oci-grafana-datadir config))
            (grafana.ini
             (mixed-text-file
              "grafana.ini"
