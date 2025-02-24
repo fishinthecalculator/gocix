@@ -175,8 +175,8 @@ to \"host\" the @code{port} field will be ignored."))
         #~(begin
             (use-modules (guix build utils))
             (let* ((user (getpwnam
-                          (if #$(eq? 'podman runtime
-                                     "oci-container" "grafana"))))
+                          (if #$(eq? 'podman runtime)
+                              "oci-container" "grafana")))
                    (uid (passwd:uid user))
                    (gid (passwd:gid user))
                    (datadir #$datadir))
