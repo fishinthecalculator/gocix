@@ -683,12 +683,18 @@ by CONFIG through RUNTIME-CLI."
           (oci-container-run-invokation
            runtime-cli name command image-reference
            options runtime-extra-arguments extra-arguments))
+         (wrap-command
+          (lambda (command)
+            (if (eq? runtime 'podman)
+                (list
+                 "/bin/sh" "-l" "-c"
+                 #~(string-join (list #$@command) " "))
+                command)))
          (container-action
           (lambda* (command #:key (environment-variables #f))
             #~(lambda _
                 (fork+exec-command
-                 (list
-                  #$@command)
+                 (list #$@command)
                  #$@(if user (list #:user user) '())
                  #$@(if group (list #:group group) '())
                  #$@(if (maybe-value-set? log-file)
@@ -723,8 +729,8 @@ by CONFIG through RUNTIME-CLI."
                            (list #$@runtime-environment))))
                       (stop
                        (container-action
-                        (list
-                         runtime-cli "rm" "-f" name)))
+                        (wrap-command
+                         (list runtime-cli "rm" "-f" name))))
                       (actions
                        (append
                         (list
@@ -741,8 +747,8 @@ by CONFIG through RUNTIME-CLI."
                                          service-name image))
                                 (procedure
                                  (container-action
-                                  (list
-                                   runtime-cli "pull" image)))))))
+                                  (wrap-command
+                                   (list runtime-cli "pull" image))))))))
                         actions)))))
 
 (define (oci-object-create-invokation object runtime-cli name options
