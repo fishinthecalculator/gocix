@@ -126,13 +126,21 @@
    "Everything you want to manually add to grafana.ini.")
   (prefix gf-))
 
+(define (string-or-volume? value)
+  (or (string? value)
+      (oci-volume-configuration? value)))
+(define-maybe/no-serialization string-or-volume)
+
 (define-configuration/no-serialization oci-grafana-configuration
   (runtime
    (symbol 'docker)
    "The OCI runtime to be used for this service")
   (datadir
-   (string "/var/lib/grafana")
-   "The directory where grafana writes state.")
+   (maybe-string-or-volume)
+   "The directory where grafana writes state.  It can be either an
+@code{oci-volume-configuration} representing the OCI volume where Grafana will
+write state, or a string representing a file system path in the host system which
+will be mapped inside the container.  By default it is @code{\"/var/lib/grafana\"}.")
   (image
    (string grafana-image)
    "The image to use for the OCI backed Shepherd service.")
@@ -173,31 +181,28 @@ to \"host\" the @code{port} field will be ignored."))
 
 (define (grafana-activation config)
   "Return an activation gexp for Grafana."
-  (let* ((datadir (oci-grafana-configuration-datadir config))
-         (grafana.ini
-          (mixed-text-file
-           "grafana.ini"
-           (serialize-configuration (oci-grafana-configuration-grafana.ini config)
-                                    grafana-configuration-fields))))
-    #~(begin
-        (use-modules (guix build utils))
-        (let* ((user (getpwnam "grafana"))
-               (uid (passwd:uid user))
-               (gid (passwd:gid user))
-               (datadir #$datadir))
-          ;; Setup datadir
-          (mkdir-p datadir)
-          (chown datadir uid gid)
-          ;; Activate configuration
-          (activate-special-files
-           '(("/etc/grafana/grafana.ini"
-              #$grafana.ini)))))))
+  (let* ((datadir (oci-grafana-datadir config))
+         (grafana.ini (oci-grafana-grafana.ini config)))
+    (if (string? datadir)
+        #~(begin
+            (use-modules (guix build utils))
+            (let* ((user (getpwnam "grafana"))
+                   (uid (passwd:uid user))
+                   (gid (passwd:gid user))
+                   (datadir #$datadir))
+              ;; Setup datadir
+              (mkdir-p datadir)
+              (chown datadir uid gid)
+              ;; Activate configuration
+              (activate-special-files
+               '(("/etc/grafana/grafana.ini"
+                  #$grafana.ini)))))
+        #~(begin))))
 
 (define oci-grafana-configuration->oci-container-configuration
   (lambda (config)
-    (let* ((datadir
-            (oci-grafana-configuration-datadir config))
-           (grafana.ini (oci-grafana-configuration-grafana.ini config))
+    (let* ((datadir (oci-grafana-datadir config))
+           (grafana.ini (oci-grafana-grafana.ini config))
            (network
             (oci-grafana-configuration-network config))
            (image
@@ -210,10 +215,11 @@ to \"host\" the @code{port} field will be ignored."))
              (ports
               `((,port . "3000")))
              (volumes
-              `((,datadir . "/var/lib/grafana")
-                ;; Needed because grafana.ini is a symlink to an item in the store.
-                ("/gnu/store" . "/gnu/store")
-                ("/etc/grafana/grafana.ini" . "/opt/bitnami/grafana/conf/grafana.ini"))))))
+              `((,(if (string? datadir)
+                      datadir
+                      (oci-volume-configuration-name datadir))
+                 . "/var/lib/grafana")
+                (,grafana.ini . "/opt/bitnami/grafana/conf/grafana.ini"))))))
       (list
        (if (maybe-value-set? network)
            (mainline:oci-container-configuration
@@ -224,10 +230,16 @@ to \"host\" the @code{port} field will be ignored."))
 
 (define oci-grafana-service-type
   (service-type (name 'grafana)
-                (extensions (list (service-extension oci-container-service-type
-                                                     oci-grafana-configuration->oci-container-configuration)
+                (extensions (list (service-extension oci-service-type
+                                                     (lambda (config)
+                                                       (oci-extension
+                                                        (volumes
+                                                         (let ((datadir (oci-grafana-datadir config)))
+                                                           (if (oci-volume-configuration? datadir) (list datadir) '())))
+                                                        (containers
+                                                         (oci-grafana-configuration->oci-container-configuration config)))))
                                   (service-extension account-service-type
-                                                     grafana-accounts)
+                                                     (const grafana-accounts))
                                   (service-extension activation-service-type
                                                      grafana-activation)))
                 (default-value (oci-grafana-configuration))
