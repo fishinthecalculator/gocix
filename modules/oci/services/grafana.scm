@@ -147,6 +147,19 @@
    "The docker network where the grafana container will be attached. When equal
 to \"host\" the @code{port} field will be ignored."))
 
+(define (oci-grafana-datadir config)
+  (define maybe-datadir
+    (oci-grafana-configuration-datadir config))
+  (if (maybe-value-set? maybe-datadir)
+      maybe-datadir
+      "/var/lib/grafana"))
+
+(define (oci-grafana-grafana.ini config)
+  (mixed-text-file
+   "grafana.ini"
+   (serialize-configuration (oci-grafana-configuration-grafana.ini config)
+                            grafana-configuration-fields)))
+
 (define grafana-accounts
   (list (user-account
          (name "grafana")
