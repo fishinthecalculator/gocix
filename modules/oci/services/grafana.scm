@@ -17,6 +17,7 @@
             oci-grafana-configuration
             oci-grafana-configuration?
             oci-grafana-configuration-fields
+            oci-grafana-configuration-runtime
             oci-grafana-configuration-datadir
             oci-grafana-configuration-image
             oci-grafana-configuration-port
@@ -24,8 +25,8 @@
             oci-grafana-configuration-network
             oci-grafana-configuration->oci-container-configuration
 
-            %grafana-accounts
-            %grafana-activation
+            grafana-accounts
+            grafana-activation
 
             grafana-configuration
             grafana-configuration?
@@ -125,7 +126,10 @@
    "Everything you want to manually add to grafana.ini.")
   (prefix gf-))
 
-(define-configuration oci-grafana-configuration
+(define-configuration/no-serialization oci-grafana-configuration
+  (runtime
+   (symbol 'docker)
+   "The OCI runtime to be used for this service")
   (datadir
    (string "/var/lib/grafana")
    "The directory where grafana writes state.")
@@ -141,10 +145,9 @@
   (network
    (maybe-string)
    "The docker network where the grafana container will be attached. When equal
-to \"host\" the @code{port} field will be ignored.")
-  (no-serialization))
+to \"host\" the @code{port} field will be ignored."))
 
-(define %grafana-accounts
+(define grafana-accounts
   (list (user-account
          (name "grafana")
          (comment "Grafana's Service Account")
@@ -155,7 +158,7 @@ to \"host\" the @code{port} field will be ignored.")
          (home-directory "/var/empty")
          (shell (file-append shadow "/sbin/nologin")))))
 
-(define (%grafana-activation config)
+(define (grafana-activation config)
   "Return an activation gexp for Grafana."
   (let* ((datadir (oci-grafana-configuration-datadir config))
          (grafana.ini
@@ -211,9 +214,9 @@ to \"host\" the @code{port} field will be ignored.")
                 (extensions (list (service-extension oci-container-service-type
                                                      oci-grafana-configuration->oci-container-configuration)
                                   (service-extension account-service-type
-                                                     (const %grafana-accounts))
+                                                     grafana-accounts)
                                   (service-extension activation-service-type
-                                                     %grafana-activation)))
+                                                     grafana-activation)))
                 (default-value (oci-grafana-configuration))
                 (description
                  "This service install a OCI backed Grafana Shepherd Service.")))
