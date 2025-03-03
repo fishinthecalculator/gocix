@@ -197,6 +197,8 @@ to \"host\" the @code{port} field will be ignored."))
               ;; Setup datadir
               (mkdir-p datadir)
               (chown datadir uid gid)
+              (when #$(eq? 'podman runtime)
+                (chmod datadir #o660))
               ;; Activate configuration
               (activate-special-files
                '(("/etc/grafana/grafana.ini"
