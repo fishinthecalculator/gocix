@@ -168,16 +168,17 @@ to \"host\" the @code{port} field will be ignored."))
    (serialize-configuration (oci-grafana-configuration-grafana.ini config)
                             grafana-configuration-fields)))
 
-(define grafana-accounts
-  (list (user-account
-         (name "grafana")
-         (comment "Grafana's Service Account")
-         (uid 1001)
-         (group "root")
-         (supplementary-groups '("tty"))
-         (system? #t)
-         (home-directory "/var/empty")
-         (shell (file-append shadow "/sbin/nologin")))))
+(define (grafana-accounts config)
+  (let ((runtime (oci-grafana-configuration-runtime config)))
+    (list (user-account
+           (name "grafana")
+           (comment "Grafana's Service Account")
+           (uid 1001)
+           (group (if (eq? 'podman runtime) "users" "root"))
+           (supplementary-groups '("tty"))
+           (system? (eq? 'docker runtime))
+           (home-directory "/var/empty")
+           (shell (file-append shadow "/sbin/nologin"))))))
 
 (define (grafana-activation config)
   "Return an activation gexp for Grafana."
@@ -239,7 +240,7 @@ to \"host\" the @code{port} field will be ignored."))
                                                         (containers
                                                          (oci-grafana-configuration->oci-container-configuration config)))))
                                   (service-extension account-service-type
-                                                     (const grafana-accounts))
+                                                     grafana-accounts)
                                   (service-extension activation-service-type
                                                      grafana-activation)))
                 (default-value (oci-grafana-configuration))
