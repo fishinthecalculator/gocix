@@ -185,25 +185,26 @@ to \"host\" the @code{port} field will be ignored."))
   (let* ((datadir (oci-grafana-datadir config))
          (grafana.ini (oci-grafana-grafana.ini config))
          (runtime (oci-grafana-configuration-runtime config)))
-    (if (string? datadir)
-        #~(begin
-            (use-modules (guix build utils))
-            (let* ((user (getpwnam
-                          (if #$(eq? 'podman runtime)
-                              "oci-container" "grafana")))
-                   (uid (passwd:uid user))
-                   (gid (passwd:gid user))
-                   (datadir #$datadir))
-              ;; Setup datadir
-              (mkdir-p datadir)
-              (chown datadir uid gid)
-              (when #$(eq? 'podman runtime)
-                (chmod datadir #o660))
-              ;; Activate configuration
-              (activate-special-files
-               '(("/etc/grafana/grafana.ini"
-                  #$grafana.ini)))))
-        #~(begin))))
+    #~(begin
+        (use-modules (guix build utils))
+        #$(if (string? datadir)
+              #~(let* ((user (getpwnam
+                              (if #$(eq? 'podman runtime)
+                                  "oci-container" "grafana")))
+                       (uid (passwd:uid user))
+                       (gid (passwd:gid user))
+                       (datadir #$datadir))
+                  ;; Setup datadir
+                  (mkdir-p datadir)
+                  (chown datadir uid gid)
+                  (if #$(eq? 'podman runtime)
+                      (chmod datadir #o660)
+                      (chmod datadir #o755)))
+              #~())
+        ;; Activate configuration
+        (activate-special-files
+         '(("/etc/grafana/grafana.ini"
+            #$grafana.ini))))))
 
 (define oci-grafana-configuration->oci-container-configuration
   (lambda (config)
