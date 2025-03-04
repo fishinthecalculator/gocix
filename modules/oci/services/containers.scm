@@ -620,13 +620,16 @@ to load IMAGE through RUNTIME-CLI and to tag it with TAG afterwards."
                                (when #$verbose?
                                  (format #t "Exit code: ~a~%" drop-exit-code))))))))))))))))
 
-(define (oci-container-run-invokation runtime-cli name command image-reference
+(define (oci-container-run-invokation runtime runtime-cli name command image-reference
                                       options runtime-extra-arguments run-extra-arguments)
   "Return a list representing the OCI runtime
 invokation for running containers."
   ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
-  `(,runtime-cli ,@runtime-extra-arguments "run"
-    "--rm" "--name" ,name
+  `(,runtime-cli ,@runtime-extra-arguments "run" "--rm"
+    ,@(if (eq? runtime 'podman)
+          '("--replace")
+          '())
+    "--name" ,name
     ,@options ,@run-extra-arguments
     ,image-reference ,@command))
 
@@ -681,7 +684,7 @@ by CONFIG through RUNTIME-CLI."
           (mainline:oci-container-configuration-extra-arguments config))
          (invokation
           (oci-container-run-invokation
-           runtime-cli name command image-reference
+           runtime runtime-cli name command image-reference
            options runtime-extra-arguments extra-arguments))
          (wrap-command
           (lambda (command)
