@@ -35,7 +35,7 @@
 ;; Check it out! It's pretty cool.
 
 (define forgejo-tag
-  "1.21.4-0-rootless")
+  "10.0.1-rootless")
 
 (define forgejo-image
   (string-append "codeberg.org/forgejo/forgejo:" forgejo-tag))
