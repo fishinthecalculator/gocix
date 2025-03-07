@@ -107,7 +107,7 @@ to \"host\" the @code{port} field will be ignored.")
 (define (forgejo-activation config)
   "Return an activation gexp for Forgejo."
   (let* ((runtime (oci-forgejo-configuration-runtime config))
-         (datadir (oci-forgejo-configuration-datadir config))
+         (datadir (pk 'forgejo-datadir (oci-forgejo-datadir config)))
          (gid
            (oci-forgejo-configuration-gid config))
          (uid
