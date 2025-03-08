@@ -11,6 +11,12 @@ The uid assigned to the Forgejo service account.
 @item @code{gid} (default: @code{98715}) (type: positive)
 The gid assigned to the Forgejo service account.
 
+@item @code{log-file} (type: maybe-string)
+When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is
+created if it does not exist, otherwise it is appended to.  By default
+it is @code{"/var/log/forgejo.log"}.
+
 @item @code{runtime} (default: @code{docker}) (type: symbol)
 The OCI runtime to be used for this service
 

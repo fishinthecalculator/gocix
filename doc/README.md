@@ -456,6 +456,12 @@ The uid assigned to the Forgejo service account.
 ` gid ` (default: ` 98715 ` ) (type: positive)  
 The gid assigned to the Forgejo service account.
 
+` log-file ` (type: maybe-string)  
+When ` log-file ` is set, it names the file to which the service’s
+standard output and standard error are redirected. ` log-file ` is
+created if it does not exist, otherwise it is appended to. By default it
+is ` "/var/log/forgejo.log" ` .
+
 ` runtime ` (default: ` docker ` ) (type: symbol)  
 The OCI runtime to be used for this service
 
