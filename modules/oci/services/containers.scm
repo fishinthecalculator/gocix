@@ -643,7 +643,12 @@ for the Shepherd service that will run IMAGE through RUNTIME-CLI."
        (use-modules (ice-9 format)
                     (srfi srfi-1))
        (when #$verbose?
-         (format #t "Running in verbose mode...~%"))
+         (format #t "Running in verbose mode...~%")
+         (format #t "Current user: ~a ~a~%"
+                 (getuid) (passwd:name (getpwuid (getuid))))
+         (format #t "Current group: ~a ~a~%"
+                 (getgid) (group:name (getgrgid (getgid))))
+         (format #t "Current directory ~a~%" (getcwd)))
        (define invocation (list #$@invocation))
        #$@pre-script
        (when #$verbose?
