@@ -157,7 +157,8 @@ to \"host\" the @code{port} field will be ignored.")
 (define oci-forgejo-configuration->oci-container-configuration
   (lambda (config)
     (let* ((app.ini (oci-forgejo-configuration-app.ini config))
-           (datadir (oci-forgejo-configuration-datadir config))
+           (datadir (oci-forgejo-datadir config))
+           (log-file (oci-forgejo-log-file config))
            (gid
             (oci-forgejo-configuration-gid config))
            (image
@@ -173,6 +174,7 @@ to \"host\" the @code{port} field will be ignored.")
            (container-config
             (mainline:oci-container-configuration
              (image image)
+             (log-file log-file)
              (environment
               `(("USER_UID" . ,(number->string uid))
                 ("USER_GID" . ,(number->string gid))))
