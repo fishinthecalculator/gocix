@@ -119,7 +119,8 @@ The list of labels that will be used to tag the current volume.
 
 ` extra-arguments ` (default: ` () ` ) (type: list)  
 A list of strings, gexps or file-like objects that will be directly
-passed to the runtime invokation.
+passed to the ` docker network create ` or ` podman network create `
+invokation.
 
 <!-- -->
 
@@ -134,7 +135,8 @@ The list of labels that will be used to tag the current volume.
 
 ` extra-arguments ` (default: ` () ` ) (type: list)  
 A list of strings, gexps or file-like objects that will be directly
-passed to the runtime invokation.
+passed to the ` docker volume create ` or ` podman volume create `
+invokation.
 
 <!-- -->
 
@@ -221,11 +223,21 @@ documentation](https://bonfirenetworks.org/docs) for details.
 ` hostname ` (type: string)  
 The domain name where Bonfire will be exposed.
 
+` create-database? ` (default: ` #t ` ) (type: boolean)  
+Whether to create a database with the same name as the role.
+
 ` postgres-host ` (default: ` "localhost" ` ) (type: string)  
 The hostname where postgres will be looked for.
 
 ` postgres-db ` (default: ` "bonfire_db" ` ) (type: string)  
-The database name of the Bonfire’s Postgres database.
+The database name of the Bonfire’s Postgres database. When
+` postgres-host ` is equal to ` "localhost" ` or to a path that exists
+on the filesystem, the service will assume that the database is
+provisioned with Guix Systems’ ` postgresql-role-service-type ` (see
+[Database Services](guix.html#Database-Services) in The GNU Guix Manual
+). In this case the ` postgres-user ` field will be ignored and this
+field will be used both as database name and as an authentication user
+name.
 
 ` postgres-user ` (default: ` "bonfire" ` ) (type: string)  
 The user name that Bonfire will use to authenticate against the Postgres
@@ -370,8 +382,8 @@ The logging configuration for conduit.
 
 ## 2.4 Forgejo
 
-<span id="index-forgejo_002dconfiguration"></span> Data Type: **forgejo-configuration**  
-Available ` forgejo-configuration ` fields are:
+<span id="index-oci_002dforgejo_002dconfiguration"></span> Data Type: **oci-forgejo-configuration**  
+Available ` oci-forgejo-configuration ` fields are:
 
 ` uid ` (default: ` 34595 ` ) (type: positive)  
 The uid assigned to the Forgejo service account.
@@ -379,7 +391,10 @@ The uid assigned to the Forgejo service account.
 ` gid ` (default: ` 98715 ` ) (type: positive)  
 The gid assigned to the Forgejo service account.
 
-` image ` (default: ` "codeberg.org/forgejo/forgejo:1.21.4-0-rootless" ` ) (type: string)  
+` runtime ` (default: ` docker ` ) (type: symbol)  
+The OCI runtime to be used for this service
+
+` image ` (default: ` "codeberg.org/forgejo/forgejo:10.0.1-rootless" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "3000" ` ) (type: string)  
@@ -388,8 +403,16 @@ The port where forgejo will be exposed.
 ` ssh-port ` (default: ` "2202" ` ) (type: string)  
 The port where forgejo’s ssh service will be exposed.
 
-` datadir ` (default: ` "/var/lib/forgejo" ` ) (type: string)  
-The directory where forgejo writes state.
+` datadir ` (type: maybe-string-or-volume)  
+The directory where forgejo writes state. It can be either an
+` oci-volume-configuration ` representing the OCI volume where Forgejo
+will write state, or a string representing a file system path in the
+host system which will be mapped inside the container. By default it is
+` "/var/lib/forgejo" ` .
+
+` network ` (type: maybe-string)  
+The OCI network where the forgejo container will be attached. When equal
+to "host" the ` port ` field will be ignored.
 
 ` app.ini ` (type: maybe-file-like)  
 The ` app.ini ` configuration passed to Forgejo.
@@ -454,8 +477,12 @@ Available ` oci-grafana-configuration ` fields are:
 ` runtime ` (default: ` docker ` ) (type: symbol)  
 The OCI runtime to be used for this service
 
-` datadir ` (default: ` "/var/lib/grafana" ` ) (type: string)  
-The directory where grafana writes state.
+` datadir ` (type: maybe-string-or-volume)  
+The directory where grafana writes state. It can be either an
+` oci-volume-configuration ` representing the OCI volume where Grafana
+will write state, or a string representing a file system path in the
+host system which will be mapped inside the container. By default it is
+` "/var/lib/grafana" ` .
 
 ` image ` (default: ` "docker.io/bitnami/grafana:10.1.5" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
@@ -558,8 +585,12 @@ details.
 <span id="index-oci_002dprometheus_002dconfiguration"></span> Data Type: **oci-prometheus-configuration**  
 Available ` oci-prometheus-configuration ` fields are:
 
-` datadir ` (default: ` "/var/lib/prometheus" ` ) (type: string)  
-The directory where prometheus writes state.
+` datadir ` (type: maybe-string-or-volume)  
+The directory where prometheus writes state. It can be either an
+` oci-volume-configuration ` representing the OCI volume where
+Prometheus will write state, or a string representing a file system path
+in the host system which will be mapped inside the container. By default
+it is ` "/var/lib/prometheus" ` .
 
 ` file ` (type: maybe-file-like)  
 The configuration file to use for the OCI backed Shepherd service.
@@ -735,5 +766,5 @@ labels for example.
 
 ------------------------------------------------------------------------
 
-This document was generated on *January 29, 2025* using [*texi2html
+This document was generated on *March 8, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

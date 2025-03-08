@@ -34,7 +34,8 @@ The list of labels that will be used to tag the current volume.
 
 @item @code{extra-arguments} (default: @code{()}) (type: list)
 A list of strings, gexps or file-like objects that will be directly
-passed to the runtime invokation.
+passed to the @command{docker network create} or @command{podman network
+create} invokation.
 
 @end table
 

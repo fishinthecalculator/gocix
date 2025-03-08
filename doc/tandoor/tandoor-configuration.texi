@@ -1,0 +1,33 @@
+
+@c %start of fragment
+
+@deftp {Data Type} tandoor-configuration
+Available @code{tandoor-configuration} fields are:
+
+@table @asis
+@item @code{create-database?} (default: @code{#t}) (type: boolean)
+Whether to create a database with the same name as the role.
+
+@item @code{postgres-host} (default: @code{"localhost"}) (type: string)
+The hostname where postgres will be looked for.
+
+@item @code{postgres-db} (default: @code{"tandoor_db"}) (type: string)
+The database name of the Tandoor's Postgres database.  When
+@code{postgres-host} is equal to @code{"localhost"} or to a path that
+exists on the filesystem, the service will assume that the database is
+provisioned with Guix Systems' @code{postgresql-role-service-type}
+(@pxref{Database Services,,, guix,The GNU Guix Manual}).  In this case
+the @code{postgres-user} field will be ignored and this field will be
+used both as database name and as an authentication user name.
+
+@item @code{postgres-user} (default: @code{"tandoor"}) (type: string)
+The user name that Tandoor will use to authenticate against the Postgres
+database.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

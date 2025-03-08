@@ -1,0 +1,64 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-tandoor-configuration
+Available @code{oci-tandoor-configuration} fields are:
+
+@table @asis
+@item @code{runtime} (default: @code{docker}) (type: symbol)
+The OCI runtime to be used for this service.
+
+@item @code{staticdir} (type: maybe-string-or-volume)
+The directory where tandoor writes static files.  It can be either an
+@code{oci-volume-configuration} representing the OCI volume where
+Tandoor will write, or a string representing a file system path in the
+host system which will be mapped inside the container.  By default it is
+@code{"/opt/recipes/staticfiles"}.
+
+@item @code{mediadir} (type: maybe-string-or-volume)
+The directory where tandoor writes media files.  It can be either an
+@code{oci-volume-configuration} representing the OCI volume where
+Tandoor will write, or a string representing a file system path in the
+host system which will be mapped inside the container.  By default it is
+@code{"/opt/recipes/mediafiles"}.
+
+@item @code{configuration} (type: tandoor-configuration)
+A tandoor-configuration record used to configure the Tandoor instance.
+
+@item @code{image} (default: @code{"docker.io/vabene1111/recipes:1.5.31-open-data-plugin"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{port} (default: @code{"8080"}) (type: string)
+This host port will be mapped onto the Tandoor configured port inside
+the container.
+
+@item @code{requirement} (default: @code{(postgresql)}) (type: list)
+A list of Shepherd services that will be waited for before starting
+Tandoor.
+
+@item @code{secrets-directory} (default: @code{"/run/secrets"}) (type: string)
+The directory where secrets are looked for.
+
+@item @code{postgres-password} (type: sops-secret)
+POSTGRES_PASSWORD Tandoor secret.
+
+@item @code{secret-key} (type: sops-secret)
+SECRET_KEY Tandoor secret.
+
+@item @code{network} (type: maybe-string)
+The docker network where the tandoor container will be attached.  When
+equal to "host" the @code{port} field will be ignored.
+
+@item @code{extra-variables} (default: @code{()}) (type: list)
+A list of pairs representing any extra environment variable that should
+be set inside the container.  Refer to the
+@uref{mainline,https://docs.tandoor.dev/install/docker/#docker}
+documentation for more details.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

@@ -1,0 +1,46 @@
+
+@c %start of fragment
+
+@deftp {Data Type} oci-forgejo-configuration
+Available @code{oci-forgejo-configuration} fields are:
+
+@table @asis
+@item @code{uid} (default: @code{34595}) (type: positive)
+The uid assigned to the Forgejo service account.
+
+@item @code{gid} (default: @code{98715}) (type: positive)
+The gid assigned to the Forgejo service account.
+
+@item @code{runtime} (default: @code{docker}) (type: symbol)
+The OCI runtime to be used for this service
+
+@item @code{image} (default: @code{"codeberg.org/forgejo/forgejo:10.0.1-rootless"}) (type: string)
+The image to use for the OCI backed Shepherd service.
+
+@item @code{port} (default: @code{"3000"}) (type: string)
+The port where forgejo will be exposed.
+
+@item @code{ssh-port} (default: @code{"2202"}) (type: string)
+The port where forgejo's ssh service will be exposed.
+
+@item @code{datadir} (type: maybe-string-or-volume)
+The directory where forgejo writes state.  It can be either an
+@code{oci-volume-configuration} representing the OCI volume where
+Forgejo will write state, or a string representing a file system path in
+the host system which will be mapped inside the container.  By default
+it is @code{"/var/lib/forgejo"}.
+
+@item @code{network} (type: maybe-string)
+The OCI network where the forgejo container will be attached.  When
+equal to "host" the @code{port} field will be ignored.
+
+@item @code{app.ini} (type: maybe-file-like)
+The @code{app.ini} configuration passed to Forgejo.
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+

@@ -121,7 +121,7 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 @node Forgejo
 @section Forgejo
 
-@include forgejo/forgejo-configuration.texi
+@include forgejo/oci-forgejo-configuration.texi
 
 @node Grafana
 @section Grafana
