@@ -200,7 +200,7 @@ to \"host\" the @code{port} field will be ignored."))
                   (if #$(eq? 'podman runtime)
                       (chmod datadir #o660)
                       (chmod datadir #o755)))
-              #~())
+              #~(begin))
         ;; Activate configuration
         (activate-special-files
          '(("/etc/grafana/grafana.ini"

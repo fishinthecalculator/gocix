@@ -132,7 +132,7 @@ to \"host\" the @code{port} field will be ignored.")
                   (if #$(eq? 'podman runtime)
                       (chmod datadir #o660)
                       (chmod datadir #o750)))
-              #~()))))
+              #~(begin)))))
 
 (define oci-forgejo-configuration->oci-container-configuration
   (lambda (config)
