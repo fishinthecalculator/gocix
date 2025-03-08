@@ -87,6 +87,71 @@ into Guix proper. To achieve this vision gocix services strive to:
 
 ## 2.1 OCI Service
 
+Should you wish to manage your Open Container Initiative (OCI)
+containers with the same consistent interface you use for your other
+Shepherd services, ` oci-service-type ` is the tool to use: given an OCI
+container image, it will run it in a Shepherd service. One example where
+this is useful: it lets you run services that are available as OCI
+images but not yet packaged for Guix.
+
+<span id="index-oci_002dservice_002dtype"></span> Variable: **oci-service-type**  
+This is a thin wrapper around Docker’s or Podman’s CLI that executes OCI
+images backed processes as Shepherd Services.
+
+<div class="lisp">
+
+``` lisp
+(simple-service 'oci-provisioning
+                oci-service-type
+                (oci-extension
+                  (networks
+                    (list
+                      (oci-network-configuration (name "monitoring"))))
+                  (containers
+                   (list
+                    (oci-container-configuration
+                     (network "monitoring")
+                     (image
+                      (oci-image
+                        (repository "guile")
+                        (tag "3")
+                        (value (specifications->manifest '("guile")))
+                        (pack-options '(#:symlinks (("/bin/guile" -> "bin/guile"))
+                                        #:max-layers 2))))
+                     (entrypoint "/bin/guile")
+                     (command
+                      '("-c" "(display \"hello!\n\")")))
+                    (oci-container-configuration
+                      (image "prom/prometheus")
+                      (network "host")
+                      (ports
+                       '(("9000" . "9000")
+                         ("9090" . "9090"))))
+                    (oci-container-configuration
+                      (image "grafana/grafana:10.0.1")
+                      (network "host")
+                      (volumes
+                       '("/var/lib/grafana:/var/lib/grafana")))))))
+```
+
+</div>
+
+In this example three different Shepherd services are going to be added
+to the system. Each ` oci-container-configuration ` record translates to
+a ` docker run ` or ` podman run ` invocation and its fields directly
+map to options. You can refer to the
+[Docker](https://docs.docker.com/engine/reference/commandline/run) or
+[Podman](https://docs.podman.io/en/stable/markdown/podman-run.1.html)
+upstream documentation for semantics of each value. If the images are
+not found, they will be pulled. You can refer to the
+[Docker](https://docs.docker.com/engine/reference/commandline/pull/) or
+[Podman](https://docs.podman.io/en/stable/markdown/podman-pull.1.html)
+upstream documentation for semantics. The services with
+` (network "host") ` are going to be attached to the host network and
+are supposed to behave like native processes with regard to networking.
+
+<!-- -->
+
 <span id="index-oci_002dnetwork_002dconfiguration"></span> Data Type: **oci-network-configuration**  
 Available ` oci-network-configuration ` fields are:
 
