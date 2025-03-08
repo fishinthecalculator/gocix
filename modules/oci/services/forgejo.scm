@@ -16,6 +16,7 @@
   #:export (oci-forgejo-configuration
             oci-forgejo-configuration?
             oci-forgejo-configuration-fields
+            oci-forgejo-configuration-log-file
             oci-forgejo-configuration-uid
             oci-forgejo-configuration-gid
             oci-forgejo-configuration-image
@@ -55,6 +56,12 @@
   (gid
    (positive 98715)
    "The gid assigned to the Forgejo service account.")
+  (log-file
+   (maybe-string)
+   "When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is created
+if it does not exist, otherwise it is appended to.  By default it is
+@code{\"/var/log/forgejo.log\"}.")
   (runtime
    (symbol 'docker)
    "The OCI runtime to be used for this service")
@@ -88,6 +95,13 @@ to \"host\" the @code{port} field will be ignored.")
       maybe-datadir
       "/var/lib/forgejo"))
 
+(define (oci-forgejo-log-file config)
+  (define maybe-log-file
+    (oci-forgejo-configuration-log-file config))
+  (if (maybe-value-set? maybe-log-file)
+      maybe-log-file
+      "/var/log/forgejo.log"))
+
 (define (forgejo-accounts config)
   (let ((runtime (oci-forgejo-configuration-runtime config)))
     (list (user-group
@@ -107,13 +121,19 @@ to \"host\" the @code{port} field will be ignored.")
 (define (forgejo-activation config)
   "Return an activation gexp for Forgejo."
   (let* ((runtime (oci-forgejo-configuration-runtime config))
-         (datadir (oci-forgejo-configuration-datadir config))
+         (datadir (oci-forgejo-datadir config))
+         (log-file (oci-forgejo-log-file config))
          (gid
            (oci-forgejo-configuration-gid config))
          (uid
            (oci-forgejo-configuration-uid config)))
     #~(begin
         (use-modules (guix build utils))
+        ;; Setup log directory
+        (let ((logs-directory (dirname #$log-file)))
+          (unless (file-exists? logs-directory)
+            (mkdir-p logs-directory)))
+        ;; Setup datadir
         #$(if (string? datadir)
               #~(let ((datadir #$datadir)
                       (uid
