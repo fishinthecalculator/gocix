@@ -731,7 +731,11 @@ by CONFIG through RUNTIME-CLI."
                          (oci-container-entrypoint
                           runtime runtime-cli name image image-reference
                           (list runtime-cli "rm" "-f" name)
-                          #:verbose? verbose?))))
+                          #:verbose? verbose?))
+                        #:environment-variables
+                        #~(append
+                           (list #$@host-environment)
+                           (list #$@runtime-environment))))
                       (actions
                        (append
                         (list
@@ -752,7 +756,11 @@ by CONFIG through RUNTIME-CLI."
                                    (oci-container-entrypoint
                                     runtime runtime-cli service-name image image-reference
                                     (list runtime-cli "pull" image)
-                                    #:verbose? verbose?))))))))
+                                    #:verbose? verbose?))
+                                  #:environment-variables
+                                  #~(append
+                                     (list #$@host-environment)
+                                     (list #$@runtime-environment))))))))
                         actions)))))
 
 (define (oci-object-create-invokation object runtime-cli name options
