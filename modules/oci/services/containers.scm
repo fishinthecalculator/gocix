@@ -681,13 +681,6 @@ by CONFIG through RUNTIME-CLI."
           (oci-container-run-invokation
            runtime runtime-cli name command image-reference
            options runtime-extra-arguments extra-arguments))
-         (wrap-command
-          (lambda (command)
-            (if (eq? runtime 'podman)
-                (list
-                 "/bin/sh" "-l" "-c"
-                 #~(string-join (list #$@command) " "))
-                command)))
          (container-action
           (lambda* (command #:key (environment-variables #f))
             #~(lambda _
@@ -757,7 +750,7 @@ by CONFIG through RUNTIME-CLI."
                                  (container-action
                                   (list
                                    (oci-container-entrypoint
-                                    runtime runtime-cli name image image-reference
+                                    runtime runtime-cli service-name image image-reference
                                     (list runtime-cli "pull" image)
                                     #:verbose? verbose?))))))))
                         actions)))))
