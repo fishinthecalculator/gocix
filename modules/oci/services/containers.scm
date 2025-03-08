@@ -634,7 +634,7 @@ invokation for running containers."
     ,image-reference ,@command))
 
 (define* (oci-container-entrypoint runtime runtime-cli name image image-reference
-                                   invokation #:key (verbose? #f))
+                                   invocation #:key (verbose? #f) (pre-script #~()))
   "Return a file-like object that, once lowered, will evaluate to the entrypoint
 for the Shepherd service that will run IMAGE through RUNTIME-CLI."
   (program-file
@@ -644,16 +644,11 @@ for the Shepherd service that will run IMAGE through RUNTIME-CLI."
                     (srfi srfi-1))
        (when #$verbose?
          (format #t "Running in verbose mode...~%"))
-       (define invokation (list #$@invokation))
-       #$@(if (mainline:oci-image? image)
-              #~((system*
-                  #$(oci-image-loader
-                     runtime runtime-cli name image
-                     image-reference #:verbose? verbose?)))
-              #~())
+       (define invocation (list #$@invocation))
+       #$@pre-script
        (when #$verbose?
-         (format #t "Running~{ ~a~}~%" invokation))
-       (apply execlp `(,(first invokation) ,@invokation)))))
+         (format #t "Running~{ ~a~}~%" invocation))
+       (apply execlp `(,(first invocation) ,@invocation)))))
 
 (define* (oci-container-shepherd-service runtime runtime-cli config
                                          #:key
@@ -725,15 +720,25 @@ by CONFIG through RUNTIME-CLI."
                        (container-action
                         (list (oci-container-entrypoint
                                runtime runtime-cli name image image-reference
-                               invokation #:verbose? verbose?))
+                               invokation #:verbose? verbose?
+                               #:pre-script
+                               (if (mainline:oci-image? image)
+                                   #~((system*
+                                       #$(oci-image-loader
+                                          runtime runtime-cli name image
+                                          image-reference #:verbose? verbose?)))
+                                   #~())))
                         #:environment-variables
                         #~(append
                            (list #$@host-environment)
                            (list #$@runtime-environment))))
                       (stop
                        (container-action
-                        (wrap-command
-                         (list runtime-cli "rm" "-f" name))))
+                        (list
+                         (oci-container-entrypoint
+                          runtime runtime-cli name image image-reference
+                          (list runtime-cli "rm" "-f" name)
+                          #:verbose? verbose?))))
                       (actions
                        (append
                         (list
@@ -750,8 +755,11 @@ by CONFIG through RUNTIME-CLI."
                                          service-name image))
                                 (procedure
                                  (container-action
-                                  (wrap-command
-                                   (list runtime-cli "pull" image))))))))
+                                  (list
+                                   (oci-container-entrypoint
+                                    runtime runtime-cli name image image-reference
+                                    (list runtime-cli "pull" image)
+                                    #:verbose? verbose?))))))))
                         actions)))))
 
 (define (oci-object-create-invokation object runtime-cli name options
