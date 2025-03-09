@@ -3,7 +3,7 @@
 Edition 0.1  
 28 August 2024  
 
-Copyright ©Giacomo Leidi 2024
+Copyright ©Giacomo Leidi 2024, 2025
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -447,6 +447,30 @@ The logging configuration for conduit.
 
 ## 2.4 Forgejo
 
+<span id="index-oci_002dforgejo_002dservice_002dtype"></span> Variable: **oci-forgejo-service-type**  
+This service allows hosting a Forgejo instance on the Guix System. A
+suitable default configuration could be something like the following:
+
+<div class="lisp">
+
+``` lisp
+(service oci-forgejo-service-type
+         (oci-forgejo-configuration
+          (runtime 'podman)
+          (port "3000")
+          (ssh-port "2202")
+          (datadir
+           (oci-volume-configuration
+            (name "forgejo")))))
+```
+
+</div>
+
+Upon reconfiguration this will yield the ` podman-forgejo ` OCI backed
+Shepherd service.
+
+<!-- -->
+
 <span id="index-oci_002dforgejo_002dconfiguration"></span> Data Type: **oci-forgejo-configuration**  
 Available ` oci-forgejo-configuration ` fields are:
 
@@ -837,5 +861,5 @@ labels for example.
 
 ------------------------------------------------------------------------
 
-This document was generated on *March 8, 2025* using [*texi2html
+This document was generated on *March 9, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  
