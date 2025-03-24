@@ -171,6 +171,7 @@ to \"host\" the @code{port} field will be ignored.")
             (oci-forgejo-configuration-ssh-port config))
            (uid
             (oci-forgejo-configuration-uid config))
+           (runtime (oci-forgejo-configuration-runtime config))
            (container-config
             (mainline:oci-container-configuration
              (image image)
@@ -185,7 +186,12 @@ to \"host\" the @code{port} field will be ignored.")
               `((,(if (string? datadir)
                       datadir
                       (oci-volume-configuration-name datadir))
-                 . "/var/lib/gitea")
+                 .
+                 ,(let ((mountpoint "/var/lib/gitea"))
+                    (if (eq? runtime 'podman)
+                        (string-append mountpoint ":U")
+                        mountpoint)))
+
                 ,@(if (maybe-value-set? app.ini)
                       `((,app.ini . "/etc/gitea/app.ini:ro"))
                       '())
