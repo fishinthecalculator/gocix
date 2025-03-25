@@ -193,7 +193,7 @@ to \"host\" the @code{port} field will be ignored.")
                         mountpoint)))
 
                 ,@(if (maybe-value-set? app.ini)
-                      `((,app.ini . "/etc/gitea/app.ini:ro"))
+                      `((,app.ini . "/etc/forgejo/app.ini:ro"))
                       '())
                 ("/etc/timezone" . "/etc/timezone:ro")
                 ("/etc/localtime" . "/etc/localtime:ro"))))))
