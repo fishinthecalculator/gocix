@@ -54,7 +54,7 @@
 ;; Check it out! It's pretty cool.
 
 (define grafana-tag
-  "10.1.5")
+  "11.5.3")
 
 (define grafana-image
   (string-append "docker.io/bitnami/grafana:" grafana-tag))
