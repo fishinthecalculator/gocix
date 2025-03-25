@@ -114,9 +114,9 @@
   "Return a list of Shepherd service names required by a given OCI runtime,
 before it is able to run containers."
   (if (eq? 'podman runtime)
-      '(cgroups2-fs-owner cgroups2-limits
+      '(cgroups2-fs-owner cgroups2-limits elogind dbus-system
         rootless-podman-shared-root-fs user-processes)
-      '(dockerd user-processes)))
+      '(dockerd user-processes elogind dbus-system)))
 
 (define (oci-runtime-name runtime)
   "Return a human readable name for a given OCI runtime."
@@ -913,6 +913,45 @@ in CONFIG."
          (create-home-directory? (eq? 'podman runtime))
          (shell (file-append shadow "/sbin/nologin")))))
 
+(define oci-service-pam-mount-rules
+  `((debug (@ (enable "0")))
+    (volume (@ (sgrp "users")
+               (fstype "tmpfs")
+               (mountpoint "/run/user/%(USERUID)")
+               (options "noexec,nosuid,nodev,size=1g,mode=0700,uid=%(USERUID),gid=%(USERGID)")))
+    (logout (@ (wait "0")
+               (hup "0")
+               (term "yes")
+               (kill "no")))
+    (mkmountpoint (@ (enable "1") (remove "true")))))
+
+(define (oci-service-pam-extension config)
+  (define optional-pam-mount
+    (pam-entry
+     (control "optional")
+     (module (file-append greetd-pam-mount "/lib/security/pam_mount.so"))
+     (arguments '("disable_interactive"))))
+
+  (list
+   (unix-pam-service "greetd"
+                     #:login-uid? #t
+                     #:allow-empty-passwords?
+                     (greetd-allow-empty-passwords? config)
+                     #:motd
+                     (greetd-motd config))
+   (pam-extension
+    (transformer
+     (lambda (pam)
+       (if (member (pam-service-name pam)
+                   '("login" "greetd" "su" "slim" "gdm-password"))
+           (pam-service
+            (inherit pam)
+            (auth (append (pam-service-auth pam)
+                          (list optional-pam-mount)))
+            (session (append (pam-service-session pam)
+                             (list optional-pam-mount))))
+           pam))))))
+
 (define* (oci-state->shepherd-services runtime runtime-cli containers networks volumes
                                        #:key (user #f) (group #f) (verbose? #f)
                                        (networks-name #f) (volumes-name #f)
@@ -1168,6 +1207,9 @@ remove the duplicate.") object (get-name element) object)))
                   (service-extension subids-service-type
                                      (oci-service-extension-wrap-validate
                                       oci-service-subids))
+                  (service-extension pam-root-service-type
+                                     (oci-service-extension-wrap-validate
+                                      ))
                   (service-extension account-service-type
                                      (oci-service-extension-wrap-validate
                                       oci-service-accounts))
