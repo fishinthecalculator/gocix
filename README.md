@@ -2,6 +2,8 @@
 
  🌿 Welcome to gocix! This project aims at providing a community managed library of Guix services. Code from this channel implements a Guix native experience for services that are not yet guixable, through [OCI backed Shepherd Services](https://guix.gnu.org/en/manual/devel/en/guix.html#index-oci_002dcontainer_002dservice_002dtype).
 
+The inclusion of the main piece of this project - `oci-service-type` - into Guix is currently being discussed [in an issue](issues.guix.gnu.org/76081).
+
 ## Motivation
 
 Services in gocix are supposed to be used to run useful stuff with Guix. They are for the community by the community and there are all the intentions of collaborating with upstream once underlying packages are into Guix proper. To achieve this vision gocix services strive to:
