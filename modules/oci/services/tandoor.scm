@@ -38,6 +38,7 @@
             oci-tandoor-configuration-secrets-directory
             oci-tandoor-configuration-postgres-password
             oci-tandoor-configuration-secret-key
+            oci-tandoor-configuration-log-file
             oci-tandoor-configuration-network
             oci-tandoor-configuration->oci-container-configuration
 
@@ -89,16 +90,22 @@ database name and as an authentication user name.")
    "The directory where tandoor writes static files.  It can be either an
 @code{oci-volume-configuration} representing the OCI volume where Tandoor will
 write, or a string representing a file system path in the host system which
-will be mapped inside the container.  By default it is @code{\"/opt/recipes/staticfiles\"}.")
+will be mapped inside the container.  By default it is @code{\"/var/lib/tandoor/staticfiles\"}.")
   (mediadir
    (maybe-string-or-volume)
    "The directory where tandoor writes media files.  It can be either an
 @code{oci-volume-configuration} representing the OCI volume where Tandoor will
 write, or a string representing a file system path in the host system which
-will be mapped inside the container.  By default it is @code{\"/opt/recipes/mediafiles\"}.")
+will be mapped inside the container.  By default it is @code{\"/var/lib/tandoor/mediafiles\"}.")
   (configuration
    (tandoor-configuration)
    "A tandoor-configuration record used to configure the Tandoor instance.")
+  (log-file
+   (maybe-string)
+   "When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is created
+if it does not exist, otherwise it is appended to.  By default it is
+@code{\"/var/log/tandoor.log\"}.")
   (image
    (string tandoor-image)
    "The image to use for the OCI backed Shepherd service.")
@@ -106,7 +113,7 @@ will be mapped inside the container.  By default it is @code{\"/opt/recipes/medi
    (string "8080")
    "This host port will be mapped onto the Tandoor configured port inside the container.")
   (requirement
-   (list '(postgresql))
+   (list '(postgresql sops-secrets))
    "A list of Shepherd services that will be waited for before starting Tandoor.")
   (secrets-directory
    (string "/run/secrets")
@@ -181,12 +188,33 @@ and returns Tandoor's sh command."
      ,(string-append "exec -a " (car command) " " command))
    "; "))
 
+(define (oci-tandoor-log-file config)
+  (define maybe-log-file
+    (oci-tandoor-configuration-log-file config))
+  (if (maybe-value-set? maybe-log-file)
+      maybe-log-file
+      "/var/log/tandoor.log"))
+
+(define (oci-tandoor-staticdir config)
+  (define maybe-staticdir
+    (oci-tandoor-configuration-staticdir config))
+  (if (maybe-value-set? maybe-staticdir)
+      maybe-staticdir
+      "/var/lib/tandoor/staticfiles"))
+
+(define (oci-tandoor-mediadir config)
+  (define maybe-mediadir
+    (oci-tandoor-configuration-mediadir config))
+  (if (maybe-value-set? maybe-mediadir)
+      maybe-mediadir
+      "/var/lib/tandoor/mediafiles"))
+
 (define (tandoor-accounts config)
   (let ((runtime (oci-tandoor-configuration-runtime config)))
     (list (user-account
            (name "tandoor")
            (comment "Tandoor's Service Account")
-           (group "users")
+           (group (if (eq? 'podman runtime) "users" "root"))
            (supplementary-groups '("tty"))
            (system? (eq? 'docker runtime))
            (home-directory "/var/empty")
@@ -195,36 +223,31 @@ and returns Tandoor's sh command."
 (define (tandoor-activation config)
   "Return an activation gexp for Tandoor."
   (let ((runtime (oci-tandoor-configuration-runtime config))
-        (datadir (oci-tandoor-configuration-datadir config)))
-    (if (string? datadir)
-        #~(begin
-            (use-modules (guix build utils))
-            (let* ((user (getpwnam
-                          (if #$(eq? 'podman runtime
-                                     "oci-container" "tandoor"))))
-                   (uid (passwd:uid user))
-                   (gid (passwd:gid user))
-                   (datadir #$datadir))
-              ;; Setup datadir
-              (mkdir-p datadir)
-              (chown datadir uid gid)
-              (chmod datadir #o660)))
-        #~(begin))))
+        (mediadir (oci-tandoor-mediadir config))
+        (staticdir (oci-tandoor-staticdir config)))
+    #~(begin
+        (use-modules (guix build utils))
+        #$@(map (lambda (dir)
+                  #~(let* ((user (getpwnam
+                                  (if #$(eq? 'podman runtime
+                                             "oci-container" "tandoor"))))
+                           (uid (passwd:uid user))
+                           (gid (passwd:gid user))
+                           (dir #$dir))
+                      ;; Setup datadir
+                      (mkdir-p dir)
+                      (chown dir uid gid)
+                      (if #$(eq? 'podman runtime)
+                          (chmod datadir #o660)
+                          (chmod datadir #o755))))
+                (list mediadir staticdir)))))
 
 (define oci-tandoor-configuration->oci-container-configuration
   (lambda (config)
-    (let* ((maybe-mediadir
-            (oci-tandoor-configuration-mediadir config))
-           (maybe-staticdir
-            (oci-tandoor-configuration-staticdir config))
-           (staticdir
-            (if (maybe-value-set? maybe-datadir)
-                maybe-datadir
-                "/opt/recipes/staticfiles"))
-           (mediadir
-            (if (maybe-value-set? maybe-datadir)
-                maybe-datadir
-                "/opt/recipes/mediafiles"))
+    (let* ((mediadir (oci-tandoor-mediadir config))
+           (staticdir (oci-tandoor-staticdir config))
+           (tandoor-config
+            (oci-tandoor-configuration-configuration config))
            (environment
             (tandoor-configuration->oci-container-environment
              tandoor-config))
@@ -256,6 +279,7 @@ and returns Tandoor's sh command."
              (command
               `("-c" ,(oci-tandoor-sh-command
                        (%tandoor-secrets-specs config)
+                       ;; https://hub.docker.com/layers/vabene1111/recipes/1.5-open-data-plugin/images/sha256-821dbb6047ead52f981b05f6ac3411702d2881a8fb6c8c532ce4f653426d31c6
                        "/opt/recipes/boot.sh")))
              (environment
               (append
@@ -290,9 +314,9 @@ and returns Tandoor's sh command."
                                        (oci-extension
                                         (volumes
                                          (let ((mediadir
-                                                (oci-tandoor-configuration-mediadir config))
+                                                (oci-tandoor-mediadir config))
                                                (staticdir
-                                                (oci-tandoor-configuration-staticdir config)))
+                                                (oci-tandoor-staticdir config)))
                                            `(,@(if (oci-volume-configuration? mediadir) (list mediadir) '())
                                              ,@(if (oci-volume-configuration? staticdir) (list staticdir) '()))))
                                         (containers
