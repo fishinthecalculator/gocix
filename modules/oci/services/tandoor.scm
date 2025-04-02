@@ -337,7 +337,7 @@ and returns Tandoor's sh command."
                                             (postgresql-role
                                              (name (tandoor-configuration-postgres-db config))
                                              (password-file
-                                              (%tandoor-secrets-postgres-password-file config))
+                                              (%tandoor-secrets-postgres-password-file oci-config))
                                              (create-database? #t)))
                                            '())))
                   (service-extension activation-service-type
