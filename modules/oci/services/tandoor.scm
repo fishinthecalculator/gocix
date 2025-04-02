@@ -98,7 +98,7 @@ will be mapped inside the container.  By default it is @code{\"/var/lib/tandoor/
 write, or a string representing a file system path in the host system which
 will be mapped inside the container.  By default it is @code{\"/var/lib/tandoor/mediafiles\"}.")
   (configuration
-   (tandoor-configuration)
+   (tandoor-configuration (tandoor-configuration))
    "A tandoor-configuration record used to configure the Tandoor instance.")
   (log-file
    (maybe-string)
