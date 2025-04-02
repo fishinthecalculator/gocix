@@ -4,51 +4,6 @@
 
 The inclusion of the main piece of this project - `oci-service-type` - into Guix is currently being discussed [in an issue](https://issues.guix.gnu.org/76081).
 
-### Migrating to the `oci-service-type`
-
-The `oci-service-type` deprecates the `ci-container-service-type`: it is
-completely backward compatible and now, while deprecated, the
-`oci-container-service-type` is actually implemented extending the
-`oci-service-type`.
-
-It brings additional features, such as: rootless podman support, the ability
-to provision networks and volumes, and better image caching.
-
-To make the switch in service code you need to change your extension from
- ``` lisp
-(service-extension oci-container-service-type
-                   oci-bonfire-configuration->oci-container-configuration)
-```
-to
- ``` lisp
-(service-extension oci-service-type
-                   (lambda (config)
-                     (oci-extension
-                      (containers
-                       (list
-                        (oci-bonfire-configuration->oci-container-configuration config))))))
-```
-
-To make the switch in `operating-system` records, you need to change from
-
- ``` lisp
-(simple-service 'oci-containers
-                oci-container-service-type
-                (list
-                 (oci-container-configuration
-                  ...)))
-```
-to
- ``` lisp
-(simple-service 'oci-containers
-                oci-service-type
-                (oci-extension
-                 (containers
-                  (list
-                   (oci-container-configuration
-                    ...)))))
-```
-
 ## Motivation
 
 Services in gocix are supposed to be used to run useful stuff with Guix. They are for the community by the community and there are all the intentions of collaborating with upstream once underlying packages are into Guix proper. To achieve this vision gocix services strive to:
@@ -147,6 +102,51 @@ modules:
                  (oci-grafana-configuration
                   (image "bitnami/grafana:10.1.5")
                   (network "host"))))))
+```
+
+### Migrating to the `oci-service-type`
+
+The `oci-service-type` deprecates the `ci-container-service-type`: it is
+completely backward compatible and now, while deprecated, the
+`oci-container-service-type` is actually implemented extending the
+`oci-service-type`.
+
+It brings additional features, such as: rootless podman support, the ability
+to provision networks and volumes, and better image caching.
+
+To make the switch in service code you need to change your extension from
+ ``` lisp
+(service-extension oci-container-service-type
+                   oci-bonfire-configuration->oci-container-configuration)
+```
+to
+ ``` lisp
+(service-extension oci-service-type
+                   (lambda (config)
+                     (oci-extension
+                      (containers
+                       (list
+                        (oci-bonfire-configuration->oci-container-configuration config))))))
+```
+
+To make the switch in `operating-system` records, you need to change from
+
+ ``` lisp
+(simple-service 'oci-containers
+                oci-container-service-type
+                (list
+                 (oci-container-configuration
+                  ...)))
+```
+to
+ ``` lisp
+(simple-service 'oci-containers
+                oci-service-type
+                (oci-extension
+                 (containers
+                  (list
+                   (oci-container-configuration
+                    ...)))))
 ```
 
 ## Documentation
