@@ -186,7 +186,8 @@ and returns Tandoor's sh command."
                (string-append
                 "export " variable "=\"$(cat " secret ")\"")))
             secrets-specs)
-     ,(string-append "exec -a " (car command) " " command))
+     ,(string-append "exec -a " (first command) " "
+                     (string-join command " ")))
    "; "))
 
 (define (oci-tandoor-log-file config)
@@ -281,7 +282,7 @@ and returns Tandoor's sh command."
               `("-c" ,(oci-tandoor-sh-command
                        (%tandoor-secrets-specs config)
                        ;; https://hub.docker.com/layers/vabene1111/recipes/1.5-open-data-plugin/images/sha256-821dbb6047ead52f981b05f6ac3411702d2881a8fb6c8c532ce4f653426d31c6
-                       "/opt/recipes/boot.sh")))
+                       '("/opt/recipes/boot.sh"))))
              (environment
               (append
                environment
