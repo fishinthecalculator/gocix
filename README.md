@@ -109,7 +109,7 @@ modules:
 The `oci-service-type` deprecates the `ci-container-service-type`: it is
 completely backward compatible and now, while deprecated, the
 `oci-container-service-type` is actually implemented extending the
-`oci-service-type`.
+`oci-service-type` and a Guix Home service.
 
 It brings additional features, such as: rootless podman support, the ability
 to provision networks and volumes, and better image caching.
