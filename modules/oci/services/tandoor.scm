@@ -254,8 +254,8 @@ and returns Tandoor's sh command."
         (use-modules (guix build utils))
         #$@(map (lambda (dir)
                   #~(let* ((user (getpwnam
-                                  (if #$(eq? 'podman runtime
-                                             "oci-container" "tandoor"))))
+                                  (if #$(eq? 'podman runtime)
+                                      "oci-container" "tandoor")))
                            (uid (passwd:uid user))
                            (gid (passwd:gid user))
                            (dir #$dir))
