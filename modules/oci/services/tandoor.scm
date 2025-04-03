@@ -263,8 +263,8 @@ and returns Tandoor's sh command."
                       (mkdir-p dir)
                       (chown dir uid gid)
                       (if #$(eq? 'podman runtime)
-                          (chmod datadir #o660)
-                          (chmod datadir #o755))))
+                          (chmod dir #o660)
+                          (chmod dir #o755))))
                 host-directories))))
 
 (define oci-tandoor-configuration->oci-container-configuration
