@@ -245,9 +245,11 @@ and returns Tandoor's sh command."
 
 (define (tandoor-activation config)
   "Return an activation gexp for Tandoor."
-  (let ((runtime (oci-tandoor-configuration-runtime config))
-        (mediadir (oci-tandoor-mediadir config))
-        (staticdir (oci-tandoor-staticdir config)))
+  (let* ((runtime (oci-tandoor-configuration-runtime config))
+         (mediadir (oci-tandoor-mediadir config))
+         (staticdir (oci-tandoor-staticdir config))
+         (host-directories
+          (filter string? (list mediadir staticdir))))
     #~(begin
         (use-modules (guix build utils))
         #$@(map (lambda (dir)
@@ -263,7 +265,7 @@ and returns Tandoor's sh command."
                       (if #$(eq? 'podman runtime)
                           (chmod datadir #o660)
                           (chmod datadir #o755))))
-                (list mediadir staticdir)))))
+                host-directories))))
 
 (define oci-tandoor-configuration->oci-container-configuration
   (lambda (config)
