@@ -33,6 +33,7 @@
             oci-tandoor-configuration-runtime
             oci-tandoor-configuration-staticdir
             oci-tandoor-configuration-mediadir
+            oci-tandoor-configuration-provision
             oci-tandoor-configuration-requirement
             oci-tandoor-configuration-image
             oci-tandoor-configuration-port
@@ -42,6 +43,11 @@
             oci-tandoor-configuration-log-file
             oci-tandoor-configuration-network
             oci-tandoor-configuration->oci-container-configuration
+
+            oci-tandoor-provision
+            oci-tandoor-log-file
+            oci-tandoor-staticdir
+            oci-tandoor-mediadir
 
             tandoor-accounts
             tandoor-activation))
@@ -86,6 +92,11 @@ database name and as an authentication user name.")
   (runtime
    (symbol 'docker)
    "The OCI runtime to be used for this service.")
+  (provision
+   (maybe-string)
+   "The name of the provisioned Shepherd service.  When unset, it defaults to
+either @code{docker-tandoor} or @code{podman-tandoor} depending on the value of
+the @code{runtime} field.")
   (staticdir
    (maybe-string-or-volume)
    "The directory where tandoor writes static files.  It can be either an
@@ -190,6 +201,16 @@ and returns Tandoor's sh command."
                      (string-join command " ")))
    "; "))
 
+(define (oci-tandoor-provision config)
+  (define runtime-name
+    (symbol->string
+     (oci-tandoor-configuration-runtime config)))
+  (define maybe-provision
+    (oci-tandoor-configuration-provision config))
+  (if (maybe-value-set? maybe-provision)
+      maybe-provision
+      (string-append runtime-name "-tandoor")))
+
 (define (oci-tandoor-log-file config)
   (define maybe-log-file
     (oci-tandoor-configuration-log-file config))
@@ -248,6 +269,7 @@ and returns Tandoor's sh command."
   (lambda (config)
     (let* ((mediadir (oci-tandoor-mediadir config))
            (staticdir (oci-tandoor-staticdir config))
+           (provision (oci-tandoor-provision config))
            (tandoor-config
             (oci-tandoor-configuration-configuration config))
            (environment
@@ -274,6 +296,7 @@ and returns Tandoor's sh command."
                   (%tandoor-secrets-files config))))
            (container-config
             (mainline:oci-container-configuration
+             (provision provision)
              (image image)
              (requirement `(,@requirement sops-secrets))
              (log-file log-file)
