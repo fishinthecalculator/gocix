@@ -353,18 +353,6 @@ and returns Tandoor's sh command."
                   (service-extension sops-secrets-service-type
                                      (lambda (config)
                                        (%tandoor-secrets config)))
-                  (service-extension postgresql-role-service-type
-                                     (lambda (oci-config)
-                                       (define config
-                                         (oci-tandoor-configuration-configuration oci-config))
-                                       (if (tandoor-configuration-create-database? config)
-                                           (list
-                                            (postgresql-role
-                                             (name (tandoor-configuration-postgres-db config))
-                                             (password-file
-                                              (%tandoor-secrets-postgres-password-file oci-config))
-                                             (create-database? #t)))
-                                           '())))
                   (service-extension activation-service-type
                                      tandoor-activation)))
                 (description
