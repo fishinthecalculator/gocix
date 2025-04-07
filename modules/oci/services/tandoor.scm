@@ -272,6 +272,7 @@ and returns Tandoor's sh command."
     (let* ((mediadir (oci-tandoor-mediadir config))
            (staticdir (oci-tandoor-staticdir config))
            (provision (oci-tandoor-provision config))
+           (log-file (oci-tandoor-log-file config))
            (tandoor-config
             (oci-tandoor-configuration-configuration config))
            (environment
@@ -279,8 +280,6 @@ and returns Tandoor's sh command."
              tandoor-config))
            (extra-variables
             (oci-tandoor-configuration-extra-variables config))
-           (log-file
-            (oci-tandoor-configuration-log-file config))
            (network
             (oci-tandoor-configuration-network config))
            (image
