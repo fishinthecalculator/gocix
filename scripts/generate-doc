@@ -16,7 +16,7 @@ format_modules() {
 }
 
 print_configurations() {
-  grep -r define-configuration ./modules |
+  grep -r define-configuration ./modules | grep -v ';' |
     sed -E 's/^.*modules\/(.+)\.scm:\(define-configuration(\/no-serialization)? (.*)$/\1\t\3/' |
     sort -u |
     while read -r line; do
