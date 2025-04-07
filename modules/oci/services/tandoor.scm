@@ -323,8 +323,8 @@ and returns Tandoor's sh command."
              (ports
               `((,port . "8080")))
              (volumes
-              `((,@secrets-directories
-                 ,(if (string? staticdir)
+              `(,@secrets-directories
+                (,(if (string? staticdir)
                       staticdir
                       (oci-volume-configuration-name staticdir))
                  . "/opt/recipes/staticfiles")
