@@ -287,6 +287,13 @@ and returns Tandoor's sh command."
             (oci-tandoor-configuration-image config))
            (requirement
             (oci-tandoor-configuration-requirement config))
+           (secrets-directories
+            (delete-duplicates
+             (map (lambda (secret-file)
+                    (define secret-directory (dirname secret-file))
+                    (string-append secret-directory ":"
+                                   secret-directory ":ro"))
+                  (%tandoor-secrets-files config))))
            (port
             (oci-tandoor-configuration-port config))
            (secrets-directories
@@ -316,7 +323,8 @@ and returns Tandoor's sh command."
              (ports
               `((,port . "8080")))
              (volumes
-              `((,(if (string? staticdir)
+              `((,@secrets-directories
+                 ,(if (string? staticdir)
                       staticdir
                       (oci-volume-configuration-name staticdir))
                  . "/opt/recipes/staticfiles")
