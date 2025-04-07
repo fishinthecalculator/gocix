@@ -8,24 +8,35 @@ Available @code{oci-tandoor-configuration} fields are:
 @item @code{runtime} (default: @code{docker}) (type: symbol)
 The OCI runtime to be used for this service.
 
+@item @code{provision} (type: maybe-string)
+The name of the provisioned Shepherd service.  When unset, it defaults
+to either @code{docker-tandoor} or @code{podman-tandoor} depending on
+the value of the @code{runtime} field.
+
 @item @code{staticdir} (type: maybe-string-or-volume)
 The directory where tandoor writes static files.  It can be either an
 @code{oci-volume-configuration} representing the OCI volume where
 Tandoor will write, or a string representing a file system path in the
 host system which will be mapped inside the container.  By default it is
-@code{"/opt/recipes/staticfiles"}.
+@code{"/var/lib/tandoor/staticfiles"}.
 
 @item @code{mediadir} (type: maybe-string-or-volume)
 The directory where tandoor writes media files.  It can be either an
 @code{oci-volume-configuration} representing the OCI volume where
 Tandoor will write, or a string representing a file system path in the
 host system which will be mapped inside the container.  By default it is
-@code{"/opt/recipes/mediafiles"}.
+@code{"/var/lib/tandoor/mediafiles"}.
 
 @item @code{configuration} (type: tandoor-configuration)
 A tandoor-configuration record used to configure the Tandoor instance.
 
-@item @code{image} (default: @code{"docker.io/vabene1111/recipes:1.5.31-open-data-plugin"}) (type: string)
+@item @code{log-file} (type: maybe-string)
+When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is
+created if it does not exist, otherwise it is appended to.  By default
+it is @code{"/var/log/tandoor.log"}.
+
+@item @code{image} (default: @code{"docker.io/vabene1111/recipes:1.5.34-open-data-plugin"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{port} (default: @code{"8080"}) (type: string)
@@ -34,7 +45,8 @@ the container.
 
 @item @code{requirement} (default: @code{(postgresql)}) (type: list)
 A list of Shepherd services that will be waited for before starting
-Tandoor.
+Tandoor.  The @code{sops-secrets} service is always appended to this
+list.
 
 @item @code{secrets-directory} (default: @code{"/run/secrets"}) (type: string)
 The directory where secrets are looked for.

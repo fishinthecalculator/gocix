@@ -15,7 +15,7 @@ Grafana will write state, or a string representing a file system path in
 the host system which will be mapped inside the container.  By default
 it is @code{"/var/lib/grafana"}.
 
-@item @code{image} (default: @code{"docker.io/bitnami/grafana:10.1.5"}) (type: string)
+@item @code{image} (default: @code{"docker.io/bitnami/grafana:11.5.3"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{port} (default: @code{"3000"}) (type: string)

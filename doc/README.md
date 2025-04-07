@@ -185,7 +185,7 @@ The list of labels that will be used to tag the current volume.
 ` extra-arguments ` (default: ` () ` ) (type: list)  
 A list of strings, gexps or file-like objects that will be directly
 passed to the ` docker network create ` or ` podman network create `
-invokation.
+invocation.
 
 <!-- -->
 
@@ -201,7 +201,7 @@ The list of labels that will be used to tag the current volume.
 ` extra-arguments ` (default: ` () ` ) (type: list)  
 A list of strings, gexps or file-like objects that will be directly
 passed to the ` docker volume create ` or ` podman volume create `
-invokation.
+invocation.
 
 <!-- -->
 
@@ -579,7 +579,7 @@ will write state, or a string representing a file system path in the
 host system which will be mapped inside the container. By default it is
 ` "/var/lib/grafana" ` .
 
-` image ` (default: ` "docker.io/bitnami/grafana:10.1.5" ` ) (type: string)  
+` image ` (default: ` "docker.io/bitnami/grafana:11.5.3" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "3000" ` ) (type: string)  
@@ -861,5 +861,5 @@ labels for example.
 
 ------------------------------------------------------------------------
 
-This document was generated on *March 9, 2025* using [*texi2html
+This document was generated on *April 8, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  
