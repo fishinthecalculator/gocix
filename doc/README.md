@@ -682,6 +682,9 @@ details.
 <span id="index-oci_002dprometheus_002dconfiguration"></span> Data Type: **oci-prometheus-configuration**  
 Available ` oci-prometheus-configuration ` fields are:
 
+` runtime ` (default: ` docker ` ) (type: symbol)  
+The OCI runtime to be used for this service.
+
 ` datadir ` (type: maybe-string-or-volume)  
 The directory where prometheus writes state. It can be either an
 ` oci-volume-configuration ` representing the OCI volume where
@@ -696,12 +699,18 @@ The configuration file to use for the OCI backed Shepherd service.
 The configuration record to use for the OCI backed Shepherd service. If
 the ` file ` field is set, this field will be ignored.
 
-` image ` (default: ` "docker.io/prom/prometheus:v2.45.0" ` ) (type: string)  
+` image ` (default: ` "docker.io/prom/prometheus:v3.2.1" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` network ` (type: maybe-string)  
 The docker network where the grafana container will be attached. When
 equal to "host" the ` port ` field will be ignored.
+
+` log-file ` (type: maybe-string)  
+When ` log-file ` is set, it names the file to which the service’s
+standard output and standard error are redirected. ` log-file ` is
+created if it does not exist, otherwise it is appended to. By default it
+is ` "/var/log/prometheus.log" ` .
 
 ` port ` (default: ` "9000" ` ) (type: string)  
 This host port will be mapped onto the Prometheus dashboard configured
@@ -787,8 +796,8 @@ The configuration file to use for Blackbox Exporter.
 The image to use for the OCI backed Shepherd service.
 
 ` network ` (type: maybe-string)  
-The docker network where the grafana container will be attached. When
-equal to "host" the ` port ` field will be ignored.
+The docker network where the container will be attached. When equal to
+"host" the ` port ` field will be ignored.
 
 ` port ` (default: ` "9115" ` ) (type: string)  
 This host port will be mapped onto the HTTP port inside the container.
@@ -841,7 +850,7 @@ The image to use for the OCI backed Shepherd service.
 This host port will be mapped onto the Tandoor configured port inside
 the container.
 
-` requirement ` (default: ` (postgresql sops-postgres-role) ` ) (type: list)  
+` requirement ` (default: ` (postgresql sops-postgres-roles) ` ) (type: list)  
 A list of Shepherd services that will be waited for before starting
 Tandoor. The ` sops-secrets ` service is always appended to this list.
 
@@ -964,5 +973,5 @@ labels for example.
 
 ------------------------------------------------------------------------
 
-This document was generated on *April 8, 2025* using [*texi2html
+This document was generated on *April 9, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

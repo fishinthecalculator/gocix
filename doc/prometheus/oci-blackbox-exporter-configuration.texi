@@ -15,8 +15,8 @@ The configuration file to use for Blackbox Exporter.
 The image to use for the OCI backed Shepherd service.
 
 @item @code{network} (type: maybe-string)
-The docker network where the grafana container will be attached.  When
-equal to "host" the @code{port} field will be ignored.
+The docker network where the container will be attached.  When equal to
+"host" the @code{port} field will be ignored.
 
 @item @code{port} (default: @code{"9115"}) (type: string)
 This host port will be mapped onto the HTTP port inside the container.

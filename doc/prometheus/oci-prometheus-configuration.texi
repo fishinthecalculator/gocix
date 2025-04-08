@@ -5,6 +5,9 @@
 Available @code{oci-prometheus-configuration} fields are:
 
 @table @asis
+@item @code{runtime} (default: @code{docker}) (type: symbol)
+The OCI runtime to be used for this service.
+
 @item @code{datadir} (type: maybe-string-or-volume)
 The directory where prometheus writes state.  It can be either an
 @code{oci-volume-configuration} representing the OCI volume where
@@ -19,12 +22,18 @@ The configuration file to use for the OCI backed Shepherd service.
 The configuration record to use for the OCI backed Shepherd service.  If
 the @code{file} field is set, this field will be ignored.
 
-@item @code{image} (default: @code{"docker.io/prom/prometheus:v2.45.0"}) (type: string)
+@item @code{image} (default: @code{"docker.io/prom/prometheus:v3.2.1"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{network} (type: maybe-string)
 The docker network where the grafana container will be attached.  When
 equal to "host" the @code{port} field will be ignored.
+
+@item @code{log-file} (type: maybe-string)
+When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is
+created if it does not exist, otherwise it is appended to.  By default
+it is @code{"/var/log/prometheus.log"}.
 
 @item @code{port} (default: @code{"9000"}) (type: string)
 This host port will be mapped onto the Prometheus dashboard configured
