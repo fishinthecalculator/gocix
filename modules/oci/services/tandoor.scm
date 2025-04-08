@@ -23,6 +23,7 @@
             tandoor-configuration?
             tandoor-configuration-fields
             tandoor-configuration-create-database?
+            tandoor-configuration-db-engine
             tandoor-configuration-postgres-db
             tandoor-configuration-postgres-host
             tandoor-configuration-postgres-user
@@ -75,6 +76,10 @@
   (postgres-host
    (string "localhost")
    "The hostname where postgres will be looked for.")
+  (db-engine
+   (string "django.db.backends.postgresql")
+   "The database engine used by Tandoor.  It defaults to
+@code{django.db.backends.postgresql}.")
   (postgres-db
    (string "tandoor_db")
    "The database name of the Tandoor's Postgres database.  When
