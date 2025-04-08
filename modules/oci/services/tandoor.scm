@@ -79,7 +79,9 @@
   (db-engine
    (string "django.db.backends.postgresql")
    "The database engine used by Tandoor.  It defaults to
-@code{django.db.backends.postgresql}.")
+@code{django.db.backends.postgresql}.  You can look at
+the @code{/opt/recipes/boot.sh} file inside the container
+for more details.")
   (postgres-db
    (string "tandoor_db")
    "The database name of the Tandoor's Postgres database.  When
@@ -130,7 +132,7 @@ if it does not exist, otherwise it is appended to.  By default it is
    (string "8080")
    "This host port will be mapped onto the Tandoor configured port inside the container.")
   (requirement
-   (list '(postgresql))
+   (list '(postgresql sops-postgres-role))
    "A list of Shepherd services that will be waited for before starting Tandoor.
 The @code{sops-secrets} service is always appended to this list.")
   (secrets-directory
