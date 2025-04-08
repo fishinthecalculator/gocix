@@ -1,5 +1,5 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2023, 2024 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2023-2025 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services prometheus)
   #:use-module (gnu packages admin)
@@ -51,15 +51,17 @@
             oci-prometheus-configuration
             oci-prometheus-configuration?
             oci-prometheus-configuration-fields
+            oci-prometheus-configuration-runtime
             oci-prometheus-configuration-datadir
             oci-prometheus-configuration-network
             oci-prometheus-configuration-file
             oci-prometheus-configuration-record
             oci-prometheus-configuration-image
+            oci-prometheus-configuration-log-file
             oci-prometheus-configuration-port
             oci-prometheus-configuration->oci-container-configuration
-            %prometheus-accounts
-            %prometheus-activation
+            prometheus-accounts
+            prometheus-activation
 
             oci-blackbox-exporter-configuration
             oci-blackbox-exporter-configuration?
@@ -75,7 +77,7 @@
             oci-blackbox-exporter-service-type))
 
 (define prometheus-tag
-  "v2.45.0")
+  "v3.2.1")
 
 (define prometheus-image
   (string-append "docker.io/prom/prometheus:" prometheus-tag))
@@ -215,6 +217,9 @@ scrape_configs:
 (define-maybe prometheus-configuration)
 
 (define-configuration oci-prometheus-configuration
+  (runtime
+   (symbol 'docker)
+   "The OCI runtime to be used for this service.")
   (datadir
    (maybe-string-or-volume)
    "The directory where prometheus writes state.  It can be either an
@@ -229,12 +234,18 @@ will be mapped inside the container.  By default it is @code{\"/var/lib/promethe
    "The configuration record to use for the OCI backed Shepherd service.  If
 the @code{file} field is set, this field will be ignored.")
   (image
-  (string prometheus-image)
+   (string prometheus-image)
    "The image to use for the OCI backed Shepherd service.")
   (network
    (maybe-string)
    "The docker network where the grafana container will be attached. When equal
 to \"host\" the @code{port} field will be ignored.")
+  (log-file
+   (maybe-string)
+   "When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is created
+if it does not exist, otherwise it is appended to.  By default it is
+@code{\"/var/log/prometheus.log\"}.")
   (port
    (string "9000")
    "This host port will be mapped onto the Prometheus dashboard configured port
@@ -245,43 +256,61 @@ inside the container.")
 port inside the container.")
   (no-serialization))
 
-(define %prometheus-accounts
-  (list (user-group
-         (name "prometheus")
-         (id 65534)
-         (system? #t))
-        (user-account
-          (name "prometheus")
-          (comment "Prometheus's Service Account")
-          (uid 65534)
-          (group "prometheus")
-          (supplementary-groups '("tty"))
-          (system? #t)
-          (home-directory "/var/empty")
-          (shell (file-append shadow "/sbin/nologin")))))
+(define (oci-prometheus-log-file config)
+  (define maybe-log-file
+    (oci-prometheus-configuration-log-file config))
+  (if (maybe-value-set? maybe-log-file)
+      maybe-log-file
+      "/var/log/prometheus.log"))
 
-(define (%prometheus-activation config)
+(define (oci-prometheus-datadir config)
+  (define maybe-datadir
+    (oci-prometheus-configuration-datadir config))
+  (if (maybe-value-set? maybe-datadir)
+      maybe-datadir
+      "/var/lib/prometheus"))
+
+(define (prometheus-accounts config)
+  (let ((runtime (oci-prometheus-configuration-runtime config)))
+    (list (user-group
+           (name "prometheus")
+           (id 65534)
+           (system? #t))
+          (user-account
+            (name "prometheus")
+            (comment "Prometheus's Service Account")
+            (uid 65534)
+            (group (if (eq? 'podman runtime) "users" "prometheus"))
+            (supplementary-groups '("tty"))
+            (system? (eq? 'docker runtime))
+            (home-directory "/var/empty")
+            (shell (file-append shadow "/sbin/nologin"))))))
+
+(define (prometheus-activation config)
   "Return an activation gexp for Prometheus."
-  (let ((datadir (oci-prometheus-configuration-datadir config)))
-    (if (string? datadir)
-        #~(begin
-            (use-modules (guix build utils))
-            (let* ((user (getpwnam "oci-container"))
-                   (uid (passwd:uid user))
-                   (gid (passwd:gid user))
-                   (datadir #$datadir))
-              (mkdir-p datadir)
-              (chown datadir uid gid)))
-        #~(begin))))
+  (let* ((datadir (oci-prometheus-datadir config))
+         (runtime (oci-prometheus-configuration-runtime config)))
+    #~(begin
+        (use-modules (guix build utils))
+        #$(if (string? datadir)
+              #~(let* ((user (getpwnam
+                              (if #$(eq? 'podman runtime)
+                                  "oci-container" "prometheus")))
+                       (uid (passwd:uid user))
+                       (gid (passwd:gid user))
+                       (datadir #$datadir))
+                  ;; Setup datadir
+                  (mkdir-p datadir)
+                  (chown datadir uid gid)
+                  (if #$(eq? 'podman runtime)
+                      (chmod datadir #o660)
+                      (chmod datadir #o755)))
+              #~(begin)))))
 
 (define oci-prometheus-configuration->oci-container-configuration
   (lambda (config)
-    (let* ((maybe-datadir
-            (oci-prometheus-configuration-datadir config))
-           (datadir
-            (if (maybe-value-set? maybe-datadir)
-                maybe-datadir
-                "/var/lib/prometheus"))
+    (let* ((datadir (oci-prometheus-datadir config))
+           (log-file (oci-prometheus-log-file config))
            (network
             (oci-prometheus-configuration-network config))
            (image
@@ -306,6 +335,7 @@ port inside the container.")
                 "--config.file=/etc/prometheus/prometheus.yml"
                 "--web.enable-admin-api"))
              (image image)
+             (log-file log-file)
              (ports
               `((,port . "9000")
                 (,metrics-port . "9090")))
@@ -346,9 +376,9 @@ port inside the container.")
                                                         (containers
                                                          (oci-prometheus-configuration->oci-container-configuration config)))))
                                   (service-extension account-service-type
-                                                     (const %prometheus-accounts))
+                                                     prometheus-accounts)
                                   (service-extension activation-service-type
-                                                     %prometheus-activation)))
+                                                     prometheus-activation)))
                 (compose
                  (lambda (args) (fold prometheus-extension-merge (prometheus-extension) args)))
                 (extend
@@ -393,7 +423,7 @@ port inside the container.")
    "The image to use for the OCI backed Shepherd service.")
   (network
    (maybe-string)
-   "The docker network where the grafana container will be attached. When equal
+   "The docker network where the container will be attached. When equal
 to \"host\" the @code{port} field will be ignored.")
   (port
    (string "9115")
