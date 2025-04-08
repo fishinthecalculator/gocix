@@ -66,6 +66,7 @@ This channel exposes at @code{(oci services)} a set of Guix System services for 
 @item pict-rs
 @item Prometheus
 @item Prometheus Blackbox Exporter
+@item Tandoor
 @item Traefik whoami
 @end itemize
 
@@ -92,6 +93,7 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 * pict-rs::
 * Prometheus::
 * Prometheus Blackbox Exporter::
+* Tandoor::
 * Traefik whoami::
 @end menu
 
@@ -237,6 +239,12 @@ Upon reconfiguration this will yield the @code{podman-forgejo} OCI backed Shephe
 @section Prometheus Blackbox Exporter
 
 @include prometheus/oci-blackbox-exporter-configuration.texi
+
+@node Tandoor
+@section Tandoor
+
+@include tandoor/oci-tandoor-configuration.texi
+@include tandoor/tandoor-configuration.texi
 
 @node Traefik whoami
 @section Traefik whoami

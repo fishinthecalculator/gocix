@@ -43,6 +43,7 @@ for many useful applications, such as:
 - pict-rs
 - Prometheus
 - Prometheus Blackbox Exporter
+- Tandoor
 - Traefik whoami
 
 These services are supposed to feel like services backed by native Guix
@@ -79,7 +80,8 @@ into Guix proper. To achieve this vision gocix services strive to:
 | [2.7 pict-rs](#pict_002drs)                                       |     |     |
 | [2.8 Prometheus](#Prometheus)                                     |     |     |
 | [2.9 Prometheus Blackbox Exporter](#Prometheus-Blackbox-Exporter) |     |     |
-| [2.10 Traefik whoami](#Traefik-whoami)                            |     |     |
+| [2.10 Tandoor](#Tandoor)                                          |     |     |
+| [2.11 Traefik whoami](#Traefik-whoami)                            |     |     |
 
 ------------------------------------------------------------------------
 
@@ -794,9 +796,109 @@ If ` network ` is set this field will be ignored.
 
 ------------------------------------------------------------------------
 
+<span id="Tandoor"></span> <span id="Tandoor-1"></span>
+
+## 2.10 Tandoor
+
+<span id="index-oci_002dtandoor_002dconfiguration"></span> Data Type: **oci-tandoor-configuration**  
+Available ` oci-tandoor-configuration ` fields are:
+
+` runtime ` (default: ` docker ` ) (type: symbol)  
+The OCI runtime to be used for this service.
+
+` provision ` (type: maybe-string)  
+The name of the provisioned Shepherd service. When unset, it defaults to
+either ` docker-tandoor ` or ` podman-tandoor ` depending on the value
+of the ` runtime ` field.
+
+` staticdir ` (type: maybe-string-or-volume)  
+The directory where tandoor writes static files. It can be either an
+` oci-volume-configuration ` representing the OCI volume where Tandoor
+will write, or a string representing a file system path in the host
+system which will be mapped inside the container. By default it is
+` "/var/lib/tandoor/staticfiles" ` .
+
+` mediadir ` (type: maybe-string-or-volume)  
+The directory where tandoor writes media files. It can be either an
+` oci-volume-configuration ` representing the OCI volume where Tandoor
+will write, or a string representing a file system path in the host
+system which will be mapped inside the container. By default it is
+` "/var/lib/tandoor/mediafiles" ` .
+
+` configuration ` (type: tandoor-configuration)  
+A tandoor-configuration record used to configure the Tandoor instance.
+
+` log-file ` (type: maybe-string)  
+When ` log-file ` is set, it names the file to which the service’s
+standard output and standard error are redirected. ` log-file ` is
+created if it does not exist, otherwise it is appended to. By default it
+is ` "/var/log/tandoor.log" ` .
+
+` image ` (default: ` "docker.io/vabene1111/recipes:1.5.34-open-data-plugin" ` ) (type: string)  
+The image to use for the OCI backed Shepherd service.
+
+` port ` (default: ` "8080" ` ) (type: string)  
+This host port will be mapped onto the Tandoor configured port inside
+the container.
+
+` requirement ` (default: ` (postgresql sops-postgres-role) ` ) (type: list)  
+A list of Shepherd services that will be waited for before starting
+Tandoor. The ` sops-secrets ` service is always appended to this list.
+
+` secrets-directory ` (default: ` "/run/secrets" ` ) (type: string)  
+The directory where secrets are looked for.
+
+` postgres-password ` (type: sops-secret)  
+POSTGRES_PASSWORD Tandoor secret.
+
+` secret-key ` (type: sops-secret)  
+SECRET_KEY Tandoor secret.
+
+` network ` (type: maybe-string)  
+The docker network where the tandoor container will be attached. When
+equal to "host" the ` port ` field will be ignored.
+
+` extra-variables ` (default: ` () ` ) (type: list)  
+A list of pairs representing any extra environment variable that should
+be set inside the container. Refer to the
+[https://docs.tandoor.dev/install/docker/#docker](mainline)
+documentation for more details.
+
+<!-- -->
+
+<span id="index-tandoor_002dconfiguration"></span> Data Type: **tandoor-configuration**  
+Available ` tandoor-configuration ` fields are:
+
+` create-database? ` (default: ` #t ` ) (type: boolean)  
+Whether to create a database with the same name as the role.
+
+` postgres-host ` (default: ` "localhost" ` ) (type: string)  
+The hostname where postgres will be looked for.
+
+` db-engine ` (default: ` "django.db.backends.postgresql" ` ) (type: string)  
+The database engine used by Tandoor. It defaults to
+` django.db.backends.postgresql ` . You can look at the
+` /opt/recipes/boot.sh ` file inside the container for more details.
+
+` postgres-db ` (default: ` "tandoor_db" ` ) (type: string)  
+The database name of the Tandoor’s Postgres database. When
+` postgres-host ` is equal to ` "localhost" ` or to a path that exists
+on the filesystem, the service will assume that the database is
+provisioned with Guix Systems’ ` postgresql-role-service-type ` (see
+[Database Services](guix.html#Database-Services) in The GNU Guix Manual
+). In this case the ` postgres-user ` field will be ignored and this
+field will be used both as database name and as an authentication user
+name.
+
+` postgres-user ` (default: ` "tandoor" ` ) (type: string)  
+The user name that Tandoor will use to authenticate against the Postgres
+database.
+
+------------------------------------------------------------------------
+
 <span id="Traefik-whoami"></span> <span id="Traefik-whoami-1"></span>
 
-## 2.10 Traefik whoami
+## 2.11 Traefik whoami
 
 <span id="index-oci_002dwhoami_002dconfiguration"></span> Data Type: **oci-whoami-configuration**  
 Available ` oci-whoami-configuration ` fields are:
@@ -854,7 +956,8 @@ labels for example.
   - <a href="#Prometheus-Blackbox-Exporter"
     id="toc-Prometheus-Blackbox-Exporter-1">2.9 Prometheus Blackbox
     Exporter</a>
-  - <a href="#Traefik-whoami" id="toc-Traefik-whoami-1">2.10 Traefik
+  - <a href="#Tandoor" id="toc-Tandoor-1">2.10 Tandoor</a>
+  - <a href="#Traefik-whoami" id="toc-Traefik-whoami-1">2.11 Traefik
     whoami</a>
 
 </div>
