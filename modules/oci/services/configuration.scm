@@ -78,7 +78,8 @@
                  (let ((field-name (configuration-field-name f))
                        (type (configuration-field-type f))
                        (value ((configuration-field-getter f) config)))
-                   (if (not (eq? field-name 'image))
+                   (if (and (not (eq? field-name 'image))
+                            (not (member field-name excluded)))
                        (match type
                          ('string
                           (serialize-environment-variable field-name value))
