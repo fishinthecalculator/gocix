@@ -287,19 +287,12 @@ and returns Tandoor's sh command."
             (oci-tandoor-configuration-image config))
            (requirement
             (oci-tandoor-configuration-requirement config))
-           (secrets-directories
-            (delete-duplicates
-             (map (lambda (secret-file)
-                    (define secret-directory (dirname secret-file))
-                    (string-append secret-directory ":"
-                                   secret-directory ":ro"))
-                  (%tandoor-secrets-files config))))
            (port
             (oci-tandoor-configuration-port config))
            (secrets
             (delete-duplicates
              (map (lambda (secret-file)
-                    (string-append secret-file ":ro"))
+                    (string-append secret-file ":" secret-file ":ro"))
                   (%tandoor-secrets-files config))))
            (container-config
             (mainline:oci-container-configuration
