@@ -360,6 +360,7 @@ and returns Tandoor's sh command."
                                            (list
                                             (postgresql-role
                                              (name (tandoor-configuration-postgres-db config))
+                                             (requirement '(sops-secrets))
                                              (password-file
                                               (%tandoor-secrets-postgres-password-file oci-config))
                                              (create-database? #t)))
