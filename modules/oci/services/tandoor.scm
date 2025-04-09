@@ -273,7 +273,10 @@ and returns Tandoor's sh command."
                       (if #$(eq? 'podman runtime)
                           (chmod dir #o660)
                           (chmod dir #o755))))
-                host-directories))))
+                (if (any (lambda (d) (string-prefix? "/var/lib/tandoor" d))
+                         host-directories)
+                    (append '("/var/lib/tandoor") host-directories)
+                    host-directories)))))
 
 (define oci-tandoor-configuration->oci-container-configuration
   (lambda (config)
