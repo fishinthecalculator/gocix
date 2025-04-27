@@ -270,9 +270,9 @@ and returns Tandoor's sh command."
                       ;; Setup datadir
                       (mkdir-p dir)
                       (chown dir uid gid)
-                      (if #$(eq? 'podman runtime)
-                          (chmod dir #o660)
-                          (chmod dir #o755))))
+                      ;; Somehow NGINX needs executable permissions
+                      ;; to be able to serve static files.
+                      (chmod dir #o755)))
                 (if (any (lambda (d) (string-prefix? "/var/lib/tandoor" d))
                          host-directories)
                     (append '("/var/lib/tandoor") host-directories)
