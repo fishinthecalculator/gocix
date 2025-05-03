@@ -6,6 +6,7 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module (gnu services databases)
   #:use-module (gnu services docker)
   #:use-module (gnu services shepherd) ;for shepherd-action
   #:use-module (gnu system shadow)
@@ -18,7 +19,6 @@
   #:use-module (guix packages)
   #:use-module (sops secrets)
   #:use-module (sops services sops)
-  #:use-module (sops services databases)
   #:use-module (oci self)
   #:use-module (oci services configuration)
   #:use-module (ice-9 match)
