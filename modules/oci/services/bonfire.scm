@@ -65,7 +65,7 @@
             oci-bonfire-service-type))
 
 (define (bonfire-tag flavour system)
-  (string-append "0.9.10-beta.70-" flavour "-" system))
+  (string-append "0.9.12-beta.24-" flavour "-" system))
 
 (define (bonfire-image flavour system)
   (string-append "docker.io/bonfirenetworks/bonfire:" (bonfire-tag flavour system)))
