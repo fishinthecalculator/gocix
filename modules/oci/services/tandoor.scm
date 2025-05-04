@@ -14,6 +14,7 @@
   #:use-module (ice-9 match)
   #:use-module (ice-9 string-fun)
   #:use-module (sops secrets)
+  #:use-module (sops utils)
   #:use-module (sops services sops)
   #:use-module (oci services configuration)
   #:use-module (oci services containers)
@@ -195,20 +196,6 @@ to \"host\" the @code{port} field will be ignored.")
   (zip %tandoor-secrets-variables
        (%tandoor-secrets-files config)))
 
-(define* (oci-tandoor-sh-command secrets-specs command)
-  "Exports each one of the SECRETS-SPECS as an environment variable
-and returns Tandoor's sh command."
-  (string-join
-   `("set -e"
-     ,@(map (match-lambda
-              ((variable secret)
-               (string-append
-                "export " variable "=\"$(cat " secret ")\"")))
-            secrets-specs)
-     ,(string-append "exec -a " (first command) " "
-                     (string-join command " ")))
-   "; "))
-
 (define (oci-tandoor-provision config)
   (define runtime-name
     (symbol->string
@@ -312,7 +299,7 @@ and returns Tandoor's sh command."
              (log-file log-file)
              (entrypoint "/bin/sh")
              (command
-              `("-c" ,(oci-tandoor-sh-command
+              `("-c" ,(sops-secrets-sh-command-wrapper
                        (%tandoor-secrets-specs config)
                        ;; https://hub.docker.com/layers/vabene1111/recipes/1.5-open-data-plugin/images/sha256-821dbb6047ead52f981b05f6ac3411702d2881a8fb6c8c532ce4f653426d31c6
                        '("/opt/recipes/boot.sh"))))
