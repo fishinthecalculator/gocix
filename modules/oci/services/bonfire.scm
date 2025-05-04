@@ -7,7 +7,7 @@
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
   #:use-module (gnu services databases)
-  #:use-module (gnu services docker)
+  #:use-module ((gnu services docker) #:prefix mainline:)
   #:use-module (gnu services shepherd) ;for shepherd-action
   #:use-module (gnu system shadow)
   #:use-module (guix build-system copy)
@@ -21,6 +21,7 @@
   #:use-module (sops services sops)
   #:use-module (oci self)
   #:use-module (oci services configuration)
+  #:use-module (oci services containers)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1)
   #:export (bonfire-configuration
@@ -286,7 +287,7 @@ and returns Bonfire's sh command."
                                    secret-directory ":ro"))
                   (%bonfire-secrets-files config))))
            (container-config
-            (oci-container-configuration
+            (mainline:oci-container-configuration
              (image image)
              (auto-start? auto-start?)
              (requirement `(,@requirement sops-secrets))
@@ -312,7 +313,7 @@ and returns Bonfire's sh command."
              (log-file log-file))))
       (list
        (if (maybe-value-set? network)
-           (oci-container-configuration
+           (mainline:oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))
@@ -324,8 +325,8 @@ and returns Bonfire's sh command."
           (first
            (oci-bonfire-configuration->oci-container-configuration
             bonfire-config)))
-         (image (oci-container-configuration-image config))
-         (options (oci-container-configuration->options
+         (image (mainline:oci-container-configuration-image config))
+         (options (mainline:oci-container-configuration->options
                    config)))
     (program-file
      "bonfire-iex"
@@ -356,8 +357,15 @@ for example by starting an interactive shell attached to the Elixir process.")
 
 (define oci-bonfire-service-type
   (service-type (name 'bonfire)
-                (extensions (list (service-extension oci-container-service-type
-                                                     oci-bonfire-configuration->oci-container-configuration)
+                (extensions (list (service-extension oci-service-type
+                                                     (lambda (config)
+                                                       (oci-extension
+                                                        (volumes
+                                                         (let ((upload-data-directory
+                                                                (oci-bonfire-configuration-upload-data-directory config)))
+                                                           `(,@(if (oci-volume-configuration? upload-data-directory) (list upload-data-directory) '()))))
+                                                        (containers
+                                                         (oci-bonfire-configuration->oci-container-configuration config)))))
                                   (service-extension profile-service-type
                                                      (lambda (config)
                                                        (list
