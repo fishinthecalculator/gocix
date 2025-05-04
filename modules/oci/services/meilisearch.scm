@@ -1,12 +1,12 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2024 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2024, 2025 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services meilisearch)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
-  #:use-module (gnu services docker)
+  #:use-module ((gnu services docker) #:prefix mainline:)
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
@@ -15,6 +15,7 @@
   #:use-module (sops secrets)
   #:use-module (sops services sops)
   #:use-module (oci services configuration)
+  #:use-module (oci services containers)
   #:export (oci-meilisearch-configuration
             oci-meilisearch-configuration?
             oci-meilisearch-configuration-fields
@@ -99,7 +100,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
            (port
             (oci-meilisearch-configuration-port config))
            (container-config
-            (oci-container-configuration
+            (mainline:oci-container-configuration
              (image image)
              (requirement '(sops-secrets))
              (entrypoint "/sbin/tini")
@@ -117,7 +118,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                 ("/run/secrets/meilisearch" . "/run/secrets/meilisearch:ro"))))))
       (list
        (if (maybe-value-set? network)
-           (oci-container-configuration
+           (mainline:oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))
@@ -125,8 +126,11 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
 
 (define oci-meilisearch-service-type
   (service-type (name 'meilisearch)
-                (extensions (list (service-extension oci-container-service-type
-                                                     oci-meilisearch-configuration->oci-container-configuration)
+                (extensions (list (service-extension oci-service-type
+                                                     (lambda (config)
+                                                       (oci-extension
+                                                        (containers
+                                                         (oci-meilisearch-configuration->oci-container-configuration config)))))
                                   (service-extension sops-secrets-service-type
                                                      (lambda (config)
                                                        (list (oci-meilisearch-configuration-master-key config))))
