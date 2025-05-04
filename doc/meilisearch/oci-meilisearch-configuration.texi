@@ -5,7 +5,7 @@
 Available @code{oci-meilisearch-configuration} fields are:
 
 @table @asis
-@item @code{image} (default: @code{"docker.io/getmeili/meilisearch:v1.6.0"}) (type: string)
+@item @code{image} (default: @code{"docker.io/getmeili/meilisearch:v1.14"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{port} (default: @code{"7700"}) (type: string)

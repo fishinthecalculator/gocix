@@ -283,7 +283,7 @@ volumes to add.
 <span id="index-bonfire_002dconfiguration"></span> Data Type: **bonfire-configuration**  
 Available ` bonfire-configuration ` fields are:
 
-` flavour ` (default: ` "classic" ` ) (type: string)  
+` flavour ` (default: ` "social" ` ) (type: string)  
 The flavour of the Bonfire instance. You can refer to [upstream’s
 documentation](https://bonfirenetworks.org/docs) for details.
 
@@ -609,7 +609,7 @@ equal to "host" the ` port ` field will be ignored.
 <span id="index-oci_002dmeilisearch_002dconfiguration"></span> Data Type: **oci-meilisearch-configuration**  
 Available ` oci-meilisearch-configuration ` fields are:
 
-` image ` (default: ` "docker.io/getmeili/meilisearch:v1.6.0" ` ) (type: string)  
+` image ` (default: ` "docker.io/getmeili/meilisearch:v1.14" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "7700" ` ) (type: string)  
