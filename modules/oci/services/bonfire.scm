@@ -60,6 +60,7 @@
             oci-bonfire-configuration-network
             oci-bonfire-configuration-extra-variables
 
+            oci-bonfire-upload-data-directory
             oci-bonfire-log-file
 
             bonfire-configuration->oci-container-environment
@@ -145,13 +146,21 @@ database name and as an authentication user name.")
                                                             '(postgres-user)
                                                             '())))))
 
+(define (string-or-volume? value)
+  (or (string? value)
+      (oci-volume-configuration? value)))
+(define-maybe/no-serialization string-or-volume)
+
 (define-configuration/no-serialization oci-bonfire-configuration
   (image
    (string (bonfire-image "classic" "amd64"))
    "The image to use for the OCI backed Shepherd service.")
   (upload-data-directory
-   (string "/var/lib/bonfire/uploads")
-   "Upload data directory.")
+   (maybe-string-or-volume)
+   "The directory where Bonfire writes uploaded files.  It can be either an
+@code{oci-volume-configuration} representing the OCI volume where Bonfire will
+write, or a string representing a file system path in the host system which
+will be mapped inside the container.  By default it is @code{\"/var/lib/bonfire/uploads\"}.")
   (configuration
    (bonfire-configuration)
    "A bonfire-configuration record used to configure the Bonfire instance.")
@@ -204,6 +213,13 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
       maybe-log-file
       "/var/log/bonfire.log"))
 
+(define (oci-bonfire-upload-data-directory config)
+  (define maybe-upload-data-directory
+    (oci-bonfire-configuration-upload-data-directory config))
+  (if (maybe-value-set? maybe-upload-data-directory)
+      maybe-upload-data-directory
+      "/var/lib/bonfire/uploads"))
+
 (define (%bonfire-secrets config)
   (list (oci-bonfire-configuration-meili-master-key config)
         (oci-bonfire-configuration-postgres-password config)
@@ -239,12 +255,13 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
 (define (%bonfire-activation config)
   "Return an activation gexp for Bonfire."
   (let ((upload-data-directory
-         (oci-bonfire-configuration-upload-data-directory config)))
+         (oci-bonfire-upload-data-directory config)))
     #~(begin
         (use-modules (guix build utils))
-        (let* ((upload-data-directory #$upload-data-directory))
-          ;; Setup datadirs
-          (mkdir-p upload-data-directory)))))
+        (let ((upload-data-directory #$upload-data-directory))
+          ;; Setup uploads directory.
+          (mkdir-p upload-data-directory)
+          (chmod upload-data-directory #o755)))))
 
 (define* (oci-bonfire-sh-command secrets-specs command)
   "Exports each one of the SECRETS-SPECS as an environment variable
@@ -266,7 +283,7 @@ and returns Bonfire's sh command."
            (bonfire-config
             (oci-bonfire-configuration-configuration config))
            (upload-data-directory
-            (oci-bonfire-configuration-upload-data-directory config))
+            (oci-bonfire-upload-data-directory config))
            (environment
             (bonfire-configuration->oci-container-environment
              bonfire-config))
@@ -311,7 +328,10 @@ and returns Bonfire's sh command."
              (ports
               `((,port . ,port)))
              (volumes
-              `((,upload-data-directory . "/opt/app/data/uploads")
+              `((,(if (string? upload-data-directory)
+                      upload-data-directory
+                      (oci-volume-configuration-name upload-data-directory))
+                 . "/opt/app/data/uploads")
                 ,@secrets-directories))
              (log-file log-file))))
       (list
@@ -365,7 +385,7 @@ for example by starting an interactive shell attached to the Elixir process.")
                                                        (oci-extension
                                                         (volumes
                                                          (let ((upload-data-directory
-                                                                (oci-bonfire-configuration-upload-data-directory config)))
+                                                                (oci-bonfire-upload-data-directory config)))
                                                            `(,@(if (oci-volume-configuration? upload-data-directory) (list upload-data-directory) '()))))
                                                         (containers
                                                          (oci-bonfire-configuration->oci-container-configuration config)))))
