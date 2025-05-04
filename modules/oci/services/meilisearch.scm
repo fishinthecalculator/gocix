@@ -31,7 +31,7 @@
 ;; Check it out! It's pretty cool.
 
 (define meilisearch-tag
-  "v1.6.0")
+  "v1.14")
 
 (define meilisearch-image
   (string-append "docker.io/getmeili/meilisearch:" meilisearch-tag))
