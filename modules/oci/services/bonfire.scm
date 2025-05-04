@@ -60,6 +60,8 @@
             oci-bonfire-configuration-network
             oci-bonfire-configuration-extra-variables
 
+            oci-bonfire-log-file
+
             bonfire-configuration->oci-container-environment
             oci-bonfire-configuration->oci-container-configuration
 
@@ -160,7 +162,8 @@ database name and as an authentication user name.")
    (maybe-string)
    "When @code{log-file} is set, it names the file to which the service’s
 standard output and standard error are redirected.  @code{log-file} is created
-if it does not exist, otherwise it is appended to.")
+if it does not exist, otherwise it is appended to.  By default it is
+@code{\"/var/log/bonfire.log\"}.")
   (auto-start?
    (boolean #t)
    "Whether Bonfire should be started automatically by the Shepherd.  If it
@@ -193,6 +196,13 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
   (extra-variables
    (list '())
    "A list of pairs representing any extra environment variable that should be set inside the container. Refer to the @uref{mainline, https://bonfirenetworks.org/docs/deploy/} documentation for more details."))
+
+(define (oci-bonfire-log-file config)
+  (define maybe-log-file
+    (oci-bonfire-configuration-log-file config))
+  (if (maybe-value-set? maybe-log-file)
+      maybe-log-file
+      "/var/log/bonfire.log"))
 
 (define (%bonfire-secrets config)
   (list (oci-bonfire-configuration-meili-master-key config)
@@ -228,20 +238,13 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
 
 (define (%bonfire-activation config)
   "Return an activation gexp for Bonfire."
-  (let* ((log-file
-          (oci-bonfire-configuration-log-file config))
-         (upload-data-directory
-          (oci-bonfire-configuration-upload-data-directory config)))
+  (let ((upload-data-directory
+         (oci-bonfire-configuration-upload-data-directory config)))
     #~(begin
         (use-modules (guix build utils))
         (let* ((upload-data-directory #$upload-data-directory))
           ;; Setup datadirs
-          (mkdir-p upload-data-directory)
-
-          (when #$(maybe-value-set? log-file)
-                (let ((logs-directory (dirname #$log-file)))
-                  (unless (file-exists? logs-directory)
-                    (mkdir-p logs-directory))))))))
+          (mkdir-p upload-data-directory)))))
 
 (define* (oci-bonfire-sh-command secrets-specs command)
   "Exports each one of the SECRETS-SPECS as an environment variable
@@ -270,7 +273,7 @@ and returns Bonfire's sh command."
            (extra-variables
             (oci-bonfire-configuration-extra-variables config))
            (log-file
-            (oci-bonfire-configuration-log-file config))
+            (oci-bonfire-log-file config))
            (network
             (oci-bonfire-configuration-network config))
            (port
