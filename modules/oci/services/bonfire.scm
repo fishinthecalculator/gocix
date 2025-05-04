@@ -78,7 +78,7 @@
 
 (define-configuration/no-serialization bonfire-configuration
   (flavour
-   (string "classic")
+   (string "social")
    "The flavour of the Bonfire instance.  You can refer to
 @uref{https://bonfirenetworks.org/docs, upstream's documentation} for details.")
   (hostname
