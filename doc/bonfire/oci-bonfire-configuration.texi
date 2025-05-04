@@ -5,11 +5,15 @@
 Available @code{oci-bonfire-configuration} fields are:
 
 @table @asis
-@item @code{image} (default: @code{"docker.io/bonfirenetworks/bonfire:0.9.10-beta.70-classic-amd64"}) (type: string)
+@item @code{image} (default: @code{"docker.io/bonfirenetworks/bonfire:0.9.12-beta.24-classic-amd64"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
-@item @code{upload-data-directory} (default: @code{"/var/lib/bonfire/uploads"}) (type: string)
-Upload data directory.
+@item @code{upload-data-directory} (type: maybe-string-or-volume)
+The directory where Bonfire writes uploaded files.  It can be either an
+@code{oci-volume-configuration} representing the OCI volume where
+Bonfire will write, or a string representing a file system path in the
+host system which will be mapped inside the container.  By default it is
+@code{"/var/lib/bonfire/uploads"}.
 
 @item @code{configuration} (type: bonfire-configuration)
 A bonfire-configuration record used to configure the Bonfire instance.
@@ -21,7 +25,8 @@ Bonfire.
 @item @code{log-file} (type: maybe-string)
 When @code{log-file} is set, it names the file to which the service’s
 standard output and standard error are redirected.  @code{log-file} is
-created if it does not exist, otherwise it is appended to.
+created if it does not exist, otherwise it is appended to.  By default
+it is @code{"/var/log/bonfire.log"}.
 
 @item @code{auto-start?} (default: @code{#t}) (type: boolean)
 Whether Bonfire should be started automatically by the Shepherd.  If it

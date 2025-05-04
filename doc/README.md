@@ -339,11 +339,15 @@ The public port where Bonfire will be exposed.
 <span id="index-oci_002dbonfire_002dconfiguration"></span> Data Type: **oci-bonfire-configuration**  
 Available ` oci-bonfire-configuration ` fields are:
 
-` image ` (default: ` "docker.io/bonfirenetworks/bonfire:0.9.10-beta.70-classic-amd64" ` ) (type: string)  
+` image ` (default: ` "docker.io/bonfirenetworks/bonfire:0.9.12-beta.24-classic-amd64" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
-` upload-data-directory ` (default: ` "/var/lib/bonfire/uploads" ` ) (type: string)  
-Upload data directory.
+` upload-data-directory ` (type: maybe-string-or-volume)  
+The directory where Bonfire writes uploaded files. It can be either an
+` oci-volume-configuration ` representing the OCI volume where Bonfire
+will write, or a string representing a file system path in the host
+system which will be mapped inside the container. By default it is
+` "/var/lib/bonfire/uploads" ` .
 
 ` configuration ` (type: bonfire-configuration)  
 A bonfire-configuration record used to configure the Bonfire instance.
@@ -355,7 +359,8 @@ Bonfire.
 ` log-file ` (type: maybe-string)  
 When ` log-file ` is set, it names the file to which the service’s
 standard output and standard error are redirected. ` log-file ` is
-created if it does not exist, otherwise it is appended to.
+created if it does not exist, otherwise it is appended to. By default it
+is ` "/var/log/bonfire.log" ` .
 
 ` auto-start? ` (default: ` #t ` ) (type: boolean)  
 Whether Bonfire should be started automatically by the Shepherd. If it
@@ -973,5 +978,5 @@ labels for example.
 
 ------------------------------------------------------------------------
 
-This document was generated on *April 9, 2025* using [*texi2html
+This document was generated on *May 4, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  
