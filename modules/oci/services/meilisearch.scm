@@ -17,6 +17,7 @@
   #:use-module (sops services sops)
   #:use-module (oci services configuration)
   #:use-module (oci services containers)
+  #:use-module (srfi srfi-1)
   #:export (oci-meilisearch-configuration
             oci-meilisearch-configuration?
             oci-meilisearch-configuration-fields
@@ -91,6 +92,8 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
   (map (lambda (s) (%meilisearch-secret-file config s))
        (%meilisearch-secrets config)))
 
+(define (%meilisearch-secrets-specs config) (zip %meilisearch-secrets-variables (%meilisearch-secrets-files config)))
+
 (define (%meilisearch-activation config)
   "Return an activation gexp for Meilisearch."
   (let* ((datadir (oci-meilisearch-configuration-datadir config))
@@ -131,7 +134,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
              (command
               `("--" "sh" "-c"
                 ,(sops-secrets-sh-command-wrapper
-                  (%tandoor-secrets-specs config)
+                  (%meilisearch-secrets-specs config)
                   '("/bin/meilisearch"))))
              (environment
               (append
