@@ -165,7 +165,7 @@ will be mapped inside the container.  By default it is @code{\"/var/lib/bonfire/
    (bonfire-configuration)
    "A bonfire-configuration record used to configure the Bonfire instance.")
   (requirement
-   (list '(postgresql))
+   (list '(user-processes postgresql postgres-roles sops-secrets))
    "A list of Shepherd services that will be waited for before starting Bonfire.")
   (log-file
    (maybe-string)
@@ -310,7 +310,7 @@ and returns Bonfire's sh command."
             (mainline:oci-container-configuration
              (image image)
              (auto-start? auto-start?)
-             (requirement `(,@requirement sops-secrets))
+             (requirement requirement)
              (entrypoint "/bin/sh")
              (command
               `("-c" ,(oci-bonfire-sh-command (%bonfire-secrets-specs config)
