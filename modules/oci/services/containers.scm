@@ -21,7 +21,8 @@
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
 
-  #:export (oci-container-service-type
+  #:export (oci-container-configuration->options
+            oci-container-service-type
 
             list-of-oci-containers?
             list-of-oci-networks?
