@@ -153,7 +153,7 @@ database name and as an authentication user name.")
 
 (define-configuration/no-serialization oci-bonfire-configuration
   (image
-   (string (bonfire-image "classic" "amd64"))
+   (string (bonfire-image "social" "amd64"))
    "The image to use for the OCI backed Shepherd service.")
   (upload-data-directory
    (maybe-string-or-volume)
@@ -349,7 +349,7 @@ and returns Bonfire's sh command."
            (oci-bonfire-configuration->oci-container-configuration
             bonfire-config)))
          (image (mainline:oci-container-configuration-image config))
-         (options (mainline:oci-container-configuration->options
+         (options (oci-container-configuration->options
                    config)))
     (program-file
      "bonfire-iex"
@@ -407,7 +407,7 @@ for example by starting an interactive shell attached to the Elixir process.")
                                                             (postgresql-role
                                                              (name (bonfire-configuration-postgres-host config))
                                                              (password-file
-                                                              (%bonfire-secrets-postgres-password-file config))
+                                                              (%bonfire-secrets-postgres-password-file oci-config))
                                                              (create-database? #t)))
                                                            '())))
                                   (service-extension activation-service-type
