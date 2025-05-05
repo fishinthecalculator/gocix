@@ -405,7 +405,7 @@ for example by starting an interactive shell attached to the Elixir process.")
                                                        (if (bonfire-configuration-create-database? config)
                                                            (list
                                                             (postgresql-role
-                                                             (name (bonfire-configuration-postgres-host config))
+                                                             (name (bonfire-configuration-postgres-db config))
                                                              (password-file
                                                               (%bonfire-secrets-postgres-password-file oci-config))
                                                              (create-database? #t)))
