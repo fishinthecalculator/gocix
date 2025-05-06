@@ -55,7 +55,7 @@
             oci-bonfire-configuration-signing-salt
             oci-bonfire-configuration-encryption-salt
             oci-bonfire-configuration-mail-key
-            oci-bonfire-configuration-mail-api-key
+            oci-bonfire-configuration-mail-private-key
             oci-bonfire-configuration-mail-password
             oci-bonfire-configuration-postgres-password
             oci-bonfire-configuration-log-file
@@ -196,9 +196,9 @@ is @code{#f} Bonfire has to be started manually with @command{herd start}.")
   (mail-key
    (maybe-sops-secret)
    "MAIL_KEY Bonfire secret.")
-  (mail-api-key
+  (mail-private-key
    (maybe-sops-secret)
-   "MAIL_API_KEY Bonfire secret.")
+   "MAIL_PRIVATE_KEY Bonfire secret.")
   (mail-password
    (maybe-sops-secret)
    "MAIL_PASSWORD Bonfire secret.")
@@ -232,12 +232,12 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
 
 (define (%bonfire-secrets config)
   (let ((mail-key (oci-bonfire-configuration-mail-key config))
-        (mail-api-key (oci-bonfire-configuration-mail-api-key config))
+        (mail-private-key (oci-bonfire-configuration-mail-private-key config))
         (mail-password (oci-bonfire-configuration-mail-password config)))
     `(,(oci-bonfire-configuration-meili-master-key config)
       ,(oci-bonfire-configuration-postgres-password config)
       ,@(if (maybe-value-set? mail-key) (list mail-key) '())
-      ,@(if (maybe-value-set? mail-api-key) (list mail-api-key) '())
+      ,@(if (maybe-value-set? mail-private-key) (list mail-private-key) '())
       ,@(if (maybe-value-set? mail-password) (list mail-password) '())
       ,(oci-bonfire-configuration-secret-key-base config)
       ,(oci-bonfire-configuration-signing-salt config)
@@ -245,12 +245,12 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
 
 (define (%bonfire-secrets-variables config)
   (let ((mail-key (oci-bonfire-configuration-mail-key config))
-        (mail-api-key (oci-bonfire-configuration-mail-api-key config))
+        (mail-private-key (oci-bonfire-configuration-mail-private-key config))
         (mail-password (oci-bonfire-configuration-mail-password config)))
     `("MEILI_MASTER_KEY"
       "POSTGRES_PASSWORD"
       ,@(if (maybe-value-set? mail-key) '("MAIL_KEY") '())
-      ,@(if (maybe-value-set? mail-api-key) '("MAIL_API_KEY") '())
+      ,@(if (maybe-value-set? mail-private-key) '("MAIL_PRIVATE_KEY") '())
       ,@(if (maybe-value-set? mail-password) '("MAIL_PASSWORD") '())
       "SECRET_KEY_BASE"
       "SIGNING_SALT"
