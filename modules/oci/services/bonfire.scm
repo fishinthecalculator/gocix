@@ -269,8 +269,8 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
    config (oci-bonfire-configuration-postgres-password config)))
 
 (define (%bonfire-secrets-specs config)
-  (zip (%bonfire-secrets-variables config)
-       (%bonfire-secrets-files config)))
+  (pk 'specs (zip (%bonfire-secrets-variables config)
+                  (%bonfire-secrets-files config))))
 
 (define (%bonfire-activation config)
   "Return an activation gexp for Bonfire."
