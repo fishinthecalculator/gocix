@@ -54,6 +54,8 @@
             oci-bonfire-configuration-secret-key-base
             oci-bonfire-configuration-signing-salt
             oci-bonfire-configuration-encryption-salt
+            oci-bonfire-configuration-mail-key
+            oci-bonfire-configuration-mail-api-key
             oci-bonfire-configuration-mail-password
             oci-bonfire-configuration-postgres-password
             oci-bonfire-configuration-log-file
@@ -151,6 +153,8 @@ database name and as an authentication user name.")
       (oci-volume-configuration? value)))
 (define-maybe/no-serialization string-or-volume)
 
+(define-maybe/no-serialization sops-secret)
+
 (define-configuration/no-serialization oci-bonfire-configuration
   (image
    (string (bonfire-image "social" "amd64"))
@@ -189,9 +193,15 @@ is @code{#f} Bonfire has to be started manually with @command{herd start}.")
   (encryption-salt
    (sops-secret)
    "ENCRYPTION_SALT Bonfire secret.")
-  (mail-password
-   (sops-secret)
+  (mail-key
+   (maybe-sops-secret)
    "MAIL_KEY Bonfire secret.")
+  (mail-api-key
+   (maybe-sops-secret)
+   "MAIL_API_KEY Bonfire secret.")
+  (mail-password
+   (maybe-sops-secret)
+   "MAIL_PASSWORD Bonfire secret.")
   (postgres-password
    (sops-secret)
    "POSTGRES_PASSWORD Bonfire secret.")
@@ -221,20 +231,30 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
       "/var/lib/bonfire/uploads"))
 
 (define (%bonfire-secrets config)
-  (list (oci-bonfire-configuration-meili-master-key config)
-        (oci-bonfire-configuration-postgres-password config)
-        (oci-bonfire-configuration-mail-password config)
-        (oci-bonfire-configuration-secret-key-base config)
-        (oci-bonfire-configuration-signing-salt config)
-        (oci-bonfire-configuration-encryption-salt config)))
+  (let ((mail-key (oci-bonfire-configuration-mail-key config))
+        (mail-api-key (oci-bonfire-configuration-mail-api-key config))
+        (mail-password (oci-bonfire-configuration-mail-password-key config)))
+    `(,(oci-bonfire-configuration-meili-master-key config)
+      ,(oci-bonfire-configuration-postgres-password config)
+      ,@(if (maybe-value-set? mail-key) (list mail-key) '())
+      ,@(if (maybe-value-set? mail-api-key) (list mail-api-key) '())
+      ,@(if (maybe-value-set? mail-password) (list mail-password) '())
+      ,(oci-bonfire-configuration-secret-key-base config)
+      ,(oci-bonfire-configuration-signing-salt config)
+      ,(oci-bonfire-configuration-encryption-salt config))))
 
-(define %bonfire-secrets-variables
-  '("MEILI_MASTER_KEY"
-    "POSTGRES_PASSWORD"
-    "MAIL_KEY"
-    "SECRET_KEY_BASE"
-    "SIGNING_SALT"
-    "ENCRYPTION_SALT"))
+(define (%bonfire-secrets-variables config)
+  (let ((mail-key (oci-bonfire-configuration-mail-key config))
+        (mail-api-key (oci-bonfire-configuration-mail-api-key config))
+        (mail-password (oci-bonfire-configuration-mail-password-key config)))
+    `("MEILI_MASTER_KEY"
+      "POSTGRES_PASSWORD"
+      ,@(if (maybe-value-set? mail-key) '("MAIL_KEY") '())
+      ,@(if (maybe-value-set? mail-api-key) '("MAIL_API_KEY") '())
+      ,@(if (maybe-value-set? mail-password) '("MAIL_PASSWORD") '())
+      "SECRET_KEY_BASE"
+      "SIGNING_SALT"
+      "ENCRYPTION_SALT")))
 
 (define (%bonfire-secret-file config secret)
   (string-append (oci-bonfire-configuration-secrets-directory config)
@@ -249,7 +269,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
    config (oci-bonfire-configuration-postgres-password config)))
 
 (define (%bonfire-secrets-specs config)
-  (zip %bonfire-secrets-variables
+  (zip (%bonfire-secrets-variables config)
        (%bonfire-secrets-files config)))
 
 (define (%bonfire-activation config)
