@@ -368,7 +368,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
                               " -c '"
                               #$(sops-secrets-sh-command-wrapper
                                  secrets-specs
-                                 '("bin/bonfire start_iex"))
+                                 '("bin/bonfire" "start_iex"))
                               "'")))))
 
 (define (bonfire-utils-package config secrets-specs)
