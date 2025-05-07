@@ -322,7 +322,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
              (entrypoint "/bin/sh")
              (command
               `("-c" ,(sops-secrets-sh-command-wrapper
-                       (%boinfire-secrets-specs config)
+                       (%bonfire-secrets-specs config)
                        '("./bin/bonfire" "start"))))
              (environment
               (append
