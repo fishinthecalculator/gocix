@@ -363,11 +363,12 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
     (program-file
      "bonfire-iex"
      #~(execlp #$bash #$bash "-c"
-               (string-append "docker run -it --rm --name bonfire-iex "
+               (string-append "docker run -it --rm --name bonfire-iex --entrypoint /bin/sh"
                               (string-join (list #$@options #$image) " ")
                               " -c '"
-                              #$(oci-bonfire-sh-command secrets-specs
-                                                        "bin/bonfire start_iex")
+                              #$(sops-secrets-sh-command-wrapper
+                                 secrets-specs
+                                 '("bin/bonfire start_iex"))
                               "'")))))
 
 (define (bonfire-utils-package config secrets-specs)
