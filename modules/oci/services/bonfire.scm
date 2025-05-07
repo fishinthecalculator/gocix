@@ -17,6 +17,7 @@
   #:use-module ((guix licenses)
                 #:prefix license:)
   #:use-module (guix packages)
+  #:use-module (sops utils)
   #:use-module (sops secrets)
   #:use-module (sops services sops)
   #:use-module (oci self)
@@ -283,19 +284,6 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
           (mkdir-p upload-data-directory)
           (chmod upload-data-directory #o755)))))
 
-(define* (oci-bonfire-sh-command secrets-specs command)
-  "Exports each one of the SECRETS-SPECS as an environment variable
-and returns Bonfire's sh command."
-  (string-join
-   `("set -e"
-     ,@(map (match-lambda
-              ((variable secret)
-               (string-append
-                "export " variable "=\"$(cat " secret ")\"")))
-            secrets-specs)
-     ,(string-append "exec " command))
-   "; "))
-
 (define oci-bonfire-configuration->oci-container-configuration
   (lambda (config)
     (let* ((auto-start?
@@ -333,8 +321,9 @@ and returns Bonfire's sh command."
              (requirement requirement)
              (entrypoint "/bin/sh")
              (command
-              `("-c" ,(oci-bonfire-sh-command (%bonfire-secrets-specs config)
-                                              "./bin/bonfire start")))
+              `("-c" ,(sops-secrets-sh-command-wrapper
+                       (%boinfire-secrets-specs config)
+                       '("./bin/bonfire" "start"))))
              (environment
               (append
                environment

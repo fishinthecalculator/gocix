@@ -1,5 +1,5 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2024 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2024, 2025 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services pict-rs)
   #:use-module (gnu packages admin)
@@ -10,6 +10,7 @@
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (sops secrets)
+  #:use-module (sops utils)
   #:use-module (sops services sops)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1)
@@ -182,21 +183,6 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
   (zip %pict-rs-secrets-variables
        (%pict-rs-secrets-files config)))
 
-(define* (oci-pict-rs-sh-command secrets-specs command)
-  "Exports each one of the SECRETS-SPECS as an environment variable
-and returns pict-rs's sh command."
-  (if (> (length secrets-specs) 0)
-      (string-join
-       `("set -e"
-         ,@(map (match-lambda
-                  ((variable secret)
-                   (string-append
-                    "export " variable "=\"$(cat " secret ")\"")))
-                secrets-specs)
-         ,(string-append "exec " command))
-       "; ")
-      (string-append "exec " command)))
-
 (define (%pict-rs-activation config)
   "Return an activation gexp for pict-rs."
   (let ((datadir (oci-pict-rs-configuration-datadir config))
@@ -267,8 +253,9 @@ and returns pict-rs's sh command."
               "/sbin/tini")
              (command
               `("/bin/sh" "-c"
-                ,(oci-pict-rs-sh-command (%pict-rs-secrets-specs config)
-                                         "/usr/local/bin/pict-rs --config-file /pict-rs.toml run")))
+                ,(sops-secrets-sh-command-wrapper
+                  (%pict-rs-secrets-specs config)
+                  '("/usr/local/bin/pict-rs" "--config-file" "/pict-rs.toml" "run"))))
              (ports
               `((,port . ,port)))
              (volumes
