@@ -133,7 +133,7 @@ if it does not exist, otherwise it is appended to.  By default it is
    (string "8080")
    "This host port will be mapped onto the Tandoor configured port inside the container.")
   (requirement
-   (list '(postgresql sops-postgres-roles))
+   (list '(postgresql postgres-roles))
    "A list of Shepherd services that will be waited for before starting Tandoor.
 The @code{sops-secrets} service is always appended to this list.")
   (secrets-directory
