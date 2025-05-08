@@ -102,10 +102,15 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
     #~(begin
         (use-modules (guix build utils))
         (let* ((database-path #$database-path)
-               (datadir #$datadir))
+               (datadir #$datadir)
+               (user (getpwnam "oci-container"))
+               (uid (passwd:uid user))
+               (gid (passwd:gid user)))
           ;; Setup datadirs
-          (mkdir-p datadir)
-          (mkdir-p database-path)))))
+          (map (lambda (dir)
+                 (mkdir-p dir)
+                 (chown dir uid gid))
+               (list datadir database-path))))))
 
 (define oci-meilisearch-configuration->oci-container-configuration
   (lambda (config)

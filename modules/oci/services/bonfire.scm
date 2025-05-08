@@ -279,9 +279,13 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
          (oci-bonfire-upload-data-directory config)))
     #~(begin
         (use-modules (guix build utils))
-        (let ((upload-data-directory #$upload-data-directory))
+        (let* ((upload-data-directory #$upload-data-directory)
+               (user (getpwnam "oci-container"))
+               (uid (passwd:uid user))
+               (gid (passwd:gid user)))
           ;; Setup uploads directory.
           (mkdir-p upload-data-directory)
+          (chown upload-data-directory uid gid)
           (chmod upload-data-directory #o755)))))
 
 (define oci-bonfire-configuration->oci-container-configuration
