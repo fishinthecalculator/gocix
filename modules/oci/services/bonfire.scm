@@ -211,7 +211,7 @@ is @code{#f} Bonfire has to be started manually with @command{herd start}.")
    "MEILI_MASTER_KEY Bonfire secret.")
   (network
    (maybe-string)
-   "The docker network where the bonfire container will be attached. When equal
+   "The OCI network name where the bonfire container will be attached. When equal
 to \"host\" the @code{port} field will not be mapped into the container's one.")
   (extra-variables
    (list '())
