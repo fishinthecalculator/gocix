@@ -299,10 +299,10 @@ to \"host\" the @code{port} field will be ignored.")
              (log-file log-file)
              (entrypoint "/bin/sh")
              (command
-              `("-c" ,(sops-secrets-sh-command-wrapper
-                       (%tandoor-secrets-specs config)
-                       ;; https://hub.docker.com/layers/vabene1111/recipes/1.5-open-data-plugin/images/sha256-821dbb6047ead52f981b05f6ac3411702d2881a8fb6c8c532ce4f653426d31c6
-                       '("/opt/recipes/boot.sh"))))
+              `("-x" "-c" ,(sops-secrets-sh-command-wrapper
+                            (%tandoor-secrets-specs config)
+                            ;; https://hub.docker.com/layers/vabene1111/recipes/1.5-open-data-plugin/images/sha256-821dbb6047ead52f981b05f6ac3411702d2881a8fb6c8c532ce4f653426d31c6
+                            '("/opt/recipes/boot.sh"))))
              (environment
               (append
                environment
