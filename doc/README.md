@@ -339,7 +339,7 @@ The public port where Bonfire will be exposed.
 <span id="index-oci_002dbonfire_002dconfiguration"></span> Data Type: **oci-bonfire-configuration**  
 Available ` oci-bonfire-configuration ` fields are:
 
-` image ` (default: ` "docker.io/bonfirenetworks/bonfire:0.9.12-beta.24-classic-amd64" ` ) (type: string)  
+` image ` (default: ` "docker.io/bonfirenetworks/bonfire:0.9.12-beta.24-social-amd64" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` upload-data-directory ` (type: maybe-string-or-volume)  
@@ -352,7 +352,7 @@ system which will be mapped inside the container. By default it is
 ` configuration ` (type: bonfire-configuration)  
 A bonfire-configuration record used to configure the Bonfire instance.
 
-` requirement ` (default: ` (postgresql) ` ) (type: list)  
+` requirement ` (default: ` (user-processes postgresql postgres-roles sops-secrets) ` ) (type: list)  
 A list of Shepherd services that will be waited for before starting
 Bonfire.
 
@@ -378,8 +378,14 @@ SIGNING_SALT Bonfire secret.
 ` encryption-salt ` (type: sops-secret)  
 ENCRYPTION_SALT Bonfire secret.
 
-` mail-password ` (type: sops-secret)  
+` mail-key ` (type: maybe-sops-secret)  
 MAIL_KEY Bonfire secret.
+
+` mail-private-key ` (type: maybe-sops-secret)  
+MAIL_PRIVATE_KEY Bonfire secret.
+
+` mail-password ` (type: maybe-sops-secret)  
+MAIL_PASSWORD Bonfire secret.
 
 ` postgres-password ` (type: sops-secret)  
 POSTGRES_PASSWORD Bonfire secret.
@@ -388,7 +394,7 @@ POSTGRES_PASSWORD Bonfire secret.
 MEILI_MASTER_KEY Bonfire secret.
 
 ` network ` (type: maybe-string)  
-The docker network where the bonfire container will be attached. When
+The OCI network name where the bonfire container will be attached. When
 equal to "host" the ` port ` field will not be mapped into the
 container’s one.
 
@@ -593,6 +599,10 @@ The image to use for the OCI backed Shepherd service.
 This host port will be mapped onto the Grafana configured port inside
 the container.
 
+` auto-start? ` (default: ` #t ` ) (type: boolean)  
+Whether Grafana should be started automatically by the Shepherd. If it
+is ` #f ` Grafana has to be started manually with ` herd start ` .
+
 ` grafana.ini ` (type: grafana-configuration)  
 This field will be serialized as graphana.ini.
 
@@ -625,6 +635,9 @@ The directory where meilisearch writes state.
 
 ` database-path ` (default: ` "/var/lib/meilisearch/data.ms" ` ) (type: string)  
 The directory used by meilisearch database to store state.
+
+` secrets-directory ` (default: ` "/run/secrets" ` ) (type: string)  
+The directory where secrets are looked for.
 
 ` network ` (type: maybe-string)  
 The docker network where the meilisearch container will be attached.
@@ -855,7 +868,7 @@ The image to use for the OCI backed Shepherd service.
 This host port will be mapped onto the Tandoor configured port inside
 the container.
 
-` requirement ` (default: ` (postgresql sops-postgres-roles) ` ) (type: list)  
+` requirement ` (default: ` (postgresql postgres-roles) ` ) (type: list)  
 A list of Shepherd services that will be waited for before starting
 Tandoor. The ` sops-secrets ` service is always appended to this list.
 
@@ -978,5 +991,5 @@ labels for example.
 
 ------------------------------------------------------------------------
 
-This document was generated on *May 4, 2025* using [*texi2html
+This document was generated on *May 9, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

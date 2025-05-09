@@ -5,7 +5,7 @@
 Available @code{oci-bonfire-configuration} fields are:
 
 @table @asis
-@item @code{image} (default: @code{"docker.io/bonfirenetworks/bonfire:0.9.12-beta.24-classic-amd64"}) (type: string)
+@item @code{image} (default: @code{"docker.io/bonfirenetworks/bonfire:0.9.12-beta.24-social-amd64"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{upload-data-directory} (type: maybe-string-or-volume)
@@ -18,7 +18,7 @@ host system which will be mapped inside the container.  By default it is
 @item @code{configuration} (type: bonfire-configuration)
 A bonfire-configuration record used to configure the Bonfire instance.
 
-@item @code{requirement} (default: @code{(postgresql)}) (type: list)
+@item @code{requirement} (default: @code{(user-processes postgresql postgres-roles sops-secrets)}) (type: list)
 A list of Shepherd services that will be waited for before starting
 Bonfire.
 
@@ -45,8 +45,14 @@ SIGNING_SALT Bonfire secret.
 @item @code{encryption-salt} (type: sops-secret)
 ENCRYPTION_SALT Bonfire secret.
 
-@item @code{mail-password} (type: sops-secret)
+@item @code{mail-key} (type: maybe-sops-secret)
 MAIL_KEY Bonfire secret.
+
+@item @code{mail-private-key} (type: maybe-sops-secret)
+MAIL_PRIVATE_KEY Bonfire secret.
+
+@item @code{mail-password} (type: maybe-sops-secret)
+MAIL_PASSWORD Bonfire secret.
 
 @item @code{postgres-password} (type: sops-secret)
 POSTGRES_PASSWORD Bonfire secret.
@@ -55,7 +61,7 @@ POSTGRES_PASSWORD Bonfire secret.
 MEILI_MASTER_KEY Bonfire secret.
 
 @item @code{network} (type: maybe-string)
-The docker network where the bonfire container will be attached.  When
+The OCI network name where the bonfire container will be attached.  When
 equal to "host" the @code{port} field will not be mapped into the
 container's one.
 

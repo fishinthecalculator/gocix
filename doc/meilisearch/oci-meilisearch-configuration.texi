@@ -22,6 +22,9 @@ The directory where meilisearch writes state.
 @item @code{database-path} (default: @code{"/var/lib/meilisearch/data.ms"}) (type: string)
 The directory used by meilisearch database to store state.
 
+@item @code{secrets-directory} (default: @code{"/run/secrets"}) (type: string)
+The directory where secrets are looked for.
+
 @item @code{network} (type: maybe-string)
 The docker network where the meilisearch container will be attached.
 When equal to "host" the @code{port} field will not be mapped into the

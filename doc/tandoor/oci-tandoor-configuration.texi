@@ -43,7 +43,7 @@ The image to use for the OCI backed Shepherd service.
 This host port will be mapped onto the Tandoor configured port inside
 the container.
 
-@item @code{requirement} (default: @code{(postgresql sops-postgres-roles)}) (type: list)
+@item @code{requirement} (default: @code{(postgresql postgres-roles)}) (type: list)
 A list of Shepherd services that will be waited for before starting
 Tandoor.  The @code{sops-secrets} service is always appended to this
 list.

@@ -22,6 +22,11 @@ The image to use for the OCI backed Shepherd service.
 This host port will be mapped onto the Grafana configured port inside
 the container.
 
+@item @code{auto-start?} (default: @code{#t}) (type: boolean)
+Whether Grafana should be started automatically by the Shepherd.  If it
+is @code{#f} Grafana has to be started manually with @command{herd
+start}.
+
 @item @code{grafana.ini} (type: grafana-configuration)
 This field will be serialized as graphana.ini.
 
