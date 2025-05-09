@@ -21,6 +21,7 @@
             oci-grafana-configuration-datadir
             oci-grafana-configuration-image
             oci-grafana-configuration-port
+            oci-grafana-configuration-auto-start?
             oci-grafana-configuration-grafana.ini
             oci-grafana-configuration-network
             oci-grafana-configuration->oci-container-configuration
@@ -147,6 +148,10 @@ will be mapped inside the container.  By default it is @code{\"/var/lib/grafana\
   (port
    (string "3000")
    "This host port will be mapped onto the Grafana configured port inside the container.")
+  (auto-start?
+   (boolean #t)
+   "Whether Grafana should be started automatically by the Shepherd.  If it
+is @code{#f} Grafana has to be started manually with @command{herd start}.")
   (grafana.ini
    (grafana-configuration (grafana-configuration))
    "This field will be serialized as graphana.ini.")
@@ -208,7 +213,9 @@ to \"host\" the @code{port} field will be ignored."))
 
 (define oci-grafana-configuration->oci-container-configuration
   (lambda (config)
-    (let* ((datadir (oci-grafana-datadir config))
+    (let* ((auto-start?
+            (oci-grafana-configuration-auto-start? config))
+           (datadir (oci-grafana-datadir config))
            (grafana.ini (oci-grafana-grafana.ini config))
            (network
             (oci-grafana-configuration-network config))
@@ -218,6 +225,7 @@ to \"host\" the @code{port} field will be ignored."))
             (oci-grafana-configuration-port config))
            (container-config
             (mainline:oci-container-configuration
+             (auto-start? auto-start?)
              (image image)
              (ports
               `((,port . "3000")))
