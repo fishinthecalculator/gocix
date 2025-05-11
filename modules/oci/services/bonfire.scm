@@ -77,7 +77,7 @@
 (define (bonfire-image flavour system)
   (string-append "docker.io/bonfirenetworks/bonfire:" (bonfire-tag flavour system)))
 
-(define-maybe string)
+(define-maybe/no-serialization string)
 
 (define-configuration/no-serialization bonfire-configuration
   (flavour
