@@ -142,7 +142,7 @@ but ~a was found") %oci-supported-runtimes value)))
   value)
 
 (define oci-sanitize-mixed-list
-  (@@ (gnu services docker) oci-sanitize-mixed-list))
+  (@@ (gnu services containers) oci-sanitize-mixed-list))
 
 (define (oci-sanitize-labels value)
   ;; Expected spec format:
@@ -518,7 +518,7 @@ for the OCI runtime volume create command."
    (oci-volume-configuration-labels config)))
 
 (define lower-oci-image
-  (@@ (gnu services docker) lower-oci-image))
+  (@@ (gnu services containers) lower-oci-image))
 
 (define (oci-object-exists? runtime runtime-cli object verbose?)
   #~(lambda* (name #:key (format-string "{{.Name}}"))
