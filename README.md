@@ -22,7 +22,9 @@ This channel exposes at `(oci services)` a set of Guix System services for many 
 - [meilisearch](https://www.meilisearch.com/)
 - [Prometheus](https://prometheus.io/)
 - [Prometheus Blackbox Exporter](https://github.com/prometheus/blackbox_exporter)
+- [Tandoor](https://tandoor.dev/)
 - [Traefik whoami](https://traefik.io/)
+- [Vaultwarden](https://github.com/dani-garcia/vaultwarden)
 
 These services are supposed to feel like services backed by native Guix packages, please report any inconsistency you may find.
 

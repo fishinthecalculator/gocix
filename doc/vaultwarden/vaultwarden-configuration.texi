@@ -1,0 +1,23 @@
+
+@c %start of fragment
+
+@deftp {Data Type} vaultwarden-configuration
+Available @code{vaultwarden-configuration} fields are:
+
+@table @asis
+@item @code{signups-allowed?} (default: @code{#f}) (type: boolean)
+This should be set to @code{#t} for the first run, and then deactivated
+after you have created your account so that no strangers can register.
+
+@item @code{domain} (type: string)
+The domain name where Vaultwarden will be exposed.  Note that
+Vaultwarden needs to know whether it's https to work properly with
+attachments
+
+@end table
+
+@end deftp
+
+
+@c %end of fragment
+
