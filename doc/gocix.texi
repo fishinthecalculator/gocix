@@ -68,6 +68,7 @@ This channel exposes at @code{(oci services)} a set of Guix System services for 
 @item Prometheus Blackbox Exporter
 @item Tandoor
 @item Traefik whoami
+@item Vaultwarden
 @end itemize
 
 These services are supposed to feel like services backed by native Guix packages, please report any inconsistency you may find.
@@ -95,6 +96,7 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 * Prometheus Blackbox Exporter::
 * Tandoor::
 * Traefik whoami::
+* Vaultwarden::
 @end menu
 
 @node OCI Service
@@ -250,5 +252,11 @@ Upon reconfiguration this will yield the @code{podman-forgejo} OCI backed Shephe
 @section Traefik whoami
 
 @include traefik/oci-whoami-configuration.texi
+
+@node Vaultwarden
+@section Vaultwarden
+
+@include vaultwarden/oci-vaultwarden-configuration.texi
+@include vaultwarden/vaultwarden-configuration.texi
 
 @bye

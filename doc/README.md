@@ -45,6 +45,7 @@ for many useful applications, such as:
 - Prometheus Blackbox Exporter
 - Tandoor
 - Traefik whoami
+- Vaultwarden
 
 These services are supposed to feel like services backed by native Guix
 packages, please report any inconsistency you may find.
@@ -82,6 +83,7 @@ into Guix proper. To achieve this vision gocix services strive to:
 | [2.9 Prometheus Blackbox Exporter](#Prometheus-Blackbox-Exporter) |     |     |
 | [2.10 Tandoor](#Tandoor)                                          |     |     |
 | [2.11 Traefik whoami](#Traefik-whoami)                            |     |     |
+| [2.12 Vaultwarden](#Vaultwarden)                                  |     |     |
 
 ------------------------------------------------------------------------
 
@@ -339,7 +341,7 @@ The public port where Bonfire will be exposed.
 <span id="index-oci_002dbonfire_002dconfiguration"></span> Data Type: **oci-bonfire-configuration**  
 Available ` oci-bonfire-configuration ` fields are:
 
-` image ` (default: ` "docker.io/bonfirenetworks/bonfire:0.9.12-beta.24-social-amd64" ` ) (type: string)  
+` image ` (default: ` "docker.io/bonfirenetworks/bonfire:0.9.12-beta.30-social-amd64" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` upload-data-directory ` (type: maybe-string-or-volume)  
@@ -964,6 +966,73 @@ labels for example.
 
 ------------------------------------------------------------------------
 
+<span id="Vaultwarden"></span> <span id="Vaultwarden-1"></span>
+
+## 2.12 Vaultwarden
+
+<span id="index-oci_002dvaultwarden_002dconfiguration"></span> Data Type: **oci-vaultwarden-configuration**  
+Available ` oci-vaultwarden-configuration ` fields are:
+
+` image ` (default: ` "docker.io/vaultwarden/server:1.33.2" ` ) (type: string)  
+The image to use for the OCI backed Shepherd service.
+
+` data-directory ` (type: maybe-string-or-volume)  
+The directory where Vaultwarden writes uploaded files. It can be either
+an ` oci-volume-configuration ` representing the OCI volume where
+Vaultwarden will write, or a string representing a file system path in
+the host system which will be mapped inside the container. By default it
+is ` "/var/lib/vaultwarden" ` .
+
+` configuration ` (type: vaultwarden-configuration)  
+A ` vaultwarden-configuration ` record used to configure the Vaultwarden
+instance.
+
+` requirement ` (default: ` (user-processes sops-secrets) ` ) (type: list)  
+A list of Shepherd services that will be waited for before starting
+Vaultwarden.
+
+` port ` (default: ` "8080" ` ) (type: string)  
+This host port will be mapped onto the Vaultwarden configured port
+inside the container.
+
+` log-file ` (type: maybe-string)  
+When ` log-file ` is set, it names the file to which the service’s
+standard output and standard error are redirected. ` log-file ` is
+created if it does not exist, otherwise it is appended to. By default it
+is ` "/var/log/vaultwarden.log" ` .
+
+` auto-start? ` (default: ` #t ` ) (type: boolean)  
+Whether Vaultwarden should be started automatically by the Shepherd. If
+it is ` #f ` Vaultwarden has to be started manually with ` herd start `
+.
+
+` secrets-directory ` (default: ` "/run/secrets" ` ) (type: string)  
+The directory where secrets are looked for.
+
+` network ` (type: maybe-string)  
+The OCI network name where the vaultwarden container will be attached.
+When equal to "host" the ` port ` field will not be mapped into the
+container’s one.
+
+` extra-variables ` (default: ` () ` ) (type: list)  
+A list of pairs representing any extra environment variable that should
+be set inside the container.
+
+<!-- -->
+
+<span id="index-vaultwarden_002dconfiguration"></span> Data Type: **vaultwarden-configuration**  
+Available ` vaultwarden-configuration ` fields are:
+
+` signups-allowed? ` (default: ` #f ` ) (type: boolean)  
+This should be set to ` #t ` for the first run, and then deactivated
+after you have created your account so that no strangers can register.
+
+` domain ` (type: string)  
+The domain name where Vaultwarden will be exposed. Note that Vaultwarden
+needs to know whether it’s https to work properly with attachments
+
+------------------------------------------------------------------------
+
 <span id="SEC_Contents"></span>
 
 # Table of Contents
@@ -986,10 +1055,11 @@ labels for example.
   - <a href="#Tandoor" id="toc-Tandoor-1">2.10 Tandoor</a>
   - <a href="#Traefik-whoami" id="toc-Traefik-whoami-1">2.11 Traefik
     whoami</a>
+  - <a href="#Vaultwarden" id="toc-Vaultwarden-1">2.12 Vaultwarden</a>
 
 </div>
 
 ------------------------------------------------------------------------
 
-This document was generated on *May 9, 2025* using [*texi2html
+This document was generated on *May 22, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  
