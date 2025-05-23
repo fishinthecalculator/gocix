@@ -25,6 +25,13 @@
             tandoor-configuration-fields
             tandoor-configuration-create-database?
             tandoor-configuration-db-engine
+            tandoor-configuration-email-host
+            tandoor-configuration-email-port
+            tandoor-configuration-email-host-user
+            tandoor-configuration-email-host-password-file
+            tandoor-configuration-email-use-tls?
+            tandoor-configuration-email-use-ssl?
+            tandoor-configuration-default-from-email
             tandoor-configuration-postgres-db
             tandoor-configuration-postgres-host
             tandoor-configuration-postgres-user
@@ -41,6 +48,7 @@
             oci-tandoor-configuration-port
             oci-tandoor-configuration-secrets-directory
             oci-tandoor-configuration-postgres-password
+            oci-tandoor-configuration-email-host-password
             oci-tandoor-configuration-secret-key
             oci-tandoor-configuration-log-file
             oci-tandoor-configuration-network
@@ -71,6 +79,27 @@
 (define-maybe/no-serialization string-or-volume)
 
 (define-configuration/no-serialization tandoor-configuration
+  (email-host
+   (maybe-string)
+   "The SMTP server used by Tandoor to send emails.")
+  (email-port
+   (maybe-string)
+   "The SMTP port used by Tandoor to send emails.")
+  (email-host-user
+   (maybe-string)
+   "The SMTP user used by Tandoor to authenticate against the email host.")
+  (email-host-password-file
+   (maybe-string)
+   "The path of a the password file used by Tandoor to read the email password.")
+  (email-use-tls?
+   (boolean #f)
+   "Whether Tandoor should use TLS to connect to the email server.")
+  (email-use-ssl?
+   (boolean #f)
+   "Whether Tandoor should use SSL to connect to the email server.")
+  (default-from-email
+   (maybe-string)
+   "The email address used in the From field of emails sent by Tandoor.")
   (create-database?
    (boolean #t)
    "Whether to create a database with the same name as the role.")
@@ -95,6 +124,8 @@ database name and as an authentication user name.")
   (postgres-user
    (string "tandoor")
    "The user name that Tandoor will use to authenticate against the Postgres database."))
+
+(define-maybe/no-serialization sops-secret)
 
 (define-configuration/no-serialization oci-tandoor-configuration
   (runtime
@@ -142,6 +173,9 @@ The @code{sops-secrets} service is always appended to this list.")
   (postgres-password
    (sops-secret)
    "POSTGRES_PASSWORD Tandoor secret.")
+  (email-host-password
+   (maybe-sops-secret)
+   "EMAIL_HOST_PASSWORD Tandoor secret.")
   (secret-key
    (sops-secret)
    "SECRET_KEY Tandoor secret.")
@@ -170,15 +204,26 @@ to \"host\" the @code{port} field will be ignored.")
                                          #:excluded `(create-database?
                                                       ,@(if (tandoor-configuration-local-database? config)
                                                             '(postgres-user)
-                                                            '())))))
+                                                            '()))
+                                         #:true-value "1"
+                                         #:false-value "0")))
 
 (define (%tandoor-secrets config)
-  (list (oci-tandoor-configuration-postgres-password config)
-        (oci-tandoor-configuration-secret-key config)))
+  (let ((email-host-password
+         (oci-tandoor-configuration-email-host-password config)))
+    `(,(oci-tandoor-configuration-postgres-password config)
+      ,(oci-tandoor-configuration-secret-key config)
+      ,@(if (maybe-value-set? email-host-password)
+            (list email-host-password)
+            '()))))
 
-(define %tandoor-secrets-variables
-  '("POSTGRES_PASSWORD"
-    "SECRET_KEY"))
+(define (%tandoor-secrets-variables config)
+  `("POSTGRES_PASSWORD"
+    "SECRET_KEY"
+    ,@(if (maybe-value-set?
+           (oci-tandoor-configuration-email-host-password config))
+          '("EMAIL_HOST_PASSWORD")
+          '())))
 
 (define (%tandoor-secret-file config secret)
   (string-append (oci-tandoor-configuration-secrets-directory config)
@@ -193,7 +238,7 @@ to \"host\" the @code{port} field will be ignored.")
    config (oci-tandoor-configuration-postgres-password config)))
 
 (define (%tandoor-secrets-specs config)
-  (zip %tandoor-secrets-variables
+  (zip (%tandoor-secrets-variables config)
        (%tandoor-secrets-files config)))
 
 (define (oci-tandoor-provision config)

@@ -69,7 +69,11 @@
 (define (format-json-list values)
   (format-squared-list values))
 
-(define* (configuration->environment-variables config fields #:key (excluded '()))
+(define* (configuration->environment-variables config fields
+                                               #:key (excluded '())
+                                               (prefix #f)
+                                               (true-value "true")
+                                               (false-value "false"))
   (filter (lambda (variable)
             (and (not (null? variable))
                  (not (and (string? variable)
@@ -82,13 +86,18 @@
                             (not (member field-name excluded)))
                        (match type
                          ('string
-                          (serialize-environment-variable field-name value))
+                          (serialize-environment-variable field-name value
+                                                          #:prefix prefix))
                          ('maybe-string
                           (if (maybe-value-set? value)
-                              (serialize-environment-variable field-name value)
+                              (serialize-environment-variable field-name value
+                                                              #:prefix prefix)
                               '()))
                          ('boolean
-                          (serialize-boolean-environment-variable field-name value))
+                          (serialize-boolean-environment-variable field-name value
+                                                                  #:prefix prefix
+                                                                  #:true-value true-value
+                                                                  #:false-value false-value))
                          (_
                           (raise
                            (formatted-message
