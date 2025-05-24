@@ -13,23 +13,22 @@
   #:export (home-oci-service-type))
 
 (define home-oci-service-type
-  (service-type (inherit (system->home-service-type oci-service-type))
-                (extensions
-                 (list
-                  (service-extension home-profile-service-type
-                                     (oci-service-extension-wrap-validate
-                                      (lambda (config)
-                                        (let ((runtime-cli
-                                               (oci-configuration-runtime-cli config))
-                                              (runtime
-                                               (oci-configuration-runtime config)))
-                                          (oci-service-profile runtime runtime-cli)))))
-                  (service-extension home-shepherd-service-type
-                                     (oci-service-extension-wrap-validate
-                                      oci-configuration->shepherd-services))))
-                (extend
-                 (lambda (config extension)
-                   (for-home
-                    (oci-configuration
-                     (inherit (oci-configuration-extend config extension))))))
-                (default-value (for-home (oci-configuration)))))
+  (service-type
+   (inherit (system->home-service-type oci-service-type))
+   (extensions
+    (list
+     (service-extension home-profile-service-type
+                        (lambda (config)
+                          (let ((runtime-cli
+                                 (oci-configuration-runtime-cli config))
+                                (runtime
+                                 (oci-configuration-runtime config)))
+                            (oci-service-profile runtime runtime-cli))))
+     (service-extension home-shepherd-service-type
+                        oci-configuration->shepherd-services)))
+   (extend
+    (lambda (config extension)
+      (for-home
+       (oci-configuration
+        (inherit (oci-configuration-extend config extension))))))
+   (default-value (for-home (oci-configuration)))))
