@@ -880,6 +880,9 @@ The directory where secrets are looked for.
 ` postgres-password ` (type: sops-secret)  
 POSTGRES_PASSWORD Tandoor secret.
 
+` email-host-password ` (type: maybe-sops-secret)  
+EMAIL_HOST_PASSWORD Tandoor secret.
+
 ` secret-key ` (type: sops-secret)  
 SECRET_KEY Tandoor secret.
 
@@ -897,6 +900,28 @@ documentation for more details.
 
 <span id="index-tandoor_002dconfiguration"></span> Data Type: **tandoor-configuration**  
 Available ` tandoor-configuration ` fields are:
+
+` email-host ` (type: maybe-string)  
+The SMTP server used by Tandoor to send emails.
+
+` email-port ` (type: maybe-string)  
+The SMTP port used by Tandoor to send emails.
+
+` email-host-user ` (type: maybe-string)  
+The SMTP user used by Tandoor to authenticate against the email host.
+
+` email-host-password-file ` (type: maybe-string)  
+The path of a the password file used by Tandoor to read the email
+password.
+
+` email-use-tls? ` (default: ` #f ` ) (type: boolean)  
+Whether Tandoor should use TLS to connect to the email server.
+
+` email-use-ssl? ` (default: ` #f ` ) (type: boolean)  
+Whether Tandoor should use SSL to connect to the email server.
+
+` default-from-email ` (type: maybe-string)  
+The email address used in the From field of emails sent by Tandoor.
 
 ` create-database? ` (default: ` #t ` ) (type: boolean)  
 Whether to create a database with the same name as the role.
@@ -1061,5 +1086,5 @@ needs to know whether it’s https to work properly with attachments
 
 ------------------------------------------------------------------------
 
-This document was generated on *May 22, 2025* using [*texi2html
+This document was generated on *May 24, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

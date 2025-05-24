@@ -5,6 +5,28 @@
 Available @code{tandoor-configuration} fields are:
 
 @table @asis
+@item @code{email-host} (type: maybe-string)
+The SMTP server used by Tandoor to send emails.
+
+@item @code{email-port} (type: maybe-string)
+The SMTP port used by Tandoor to send emails.
+
+@item @code{email-host-user} (type: maybe-string)
+The SMTP user used by Tandoor to authenticate against the email host.
+
+@item @code{email-host-password-file} (type: maybe-string)
+The path of a the password file used by Tandoor to read the email
+password.
+
+@item @code{email-use-tls?} (default: @code{#f}) (type: boolean)
+Whether Tandoor should use TLS to connect to the email server.
+
+@item @code{email-use-ssl?} (default: @code{#f}) (type: boolean)
+Whether Tandoor should use SSL to connect to the email server.
+
+@item @code{default-from-email} (type: maybe-string)
+The email address used in the From field of emails sent by Tandoor.
+
 @item @code{create-database?} (default: @code{#t}) (type: boolean)
 Whether to create a database with the same name as the role.
 

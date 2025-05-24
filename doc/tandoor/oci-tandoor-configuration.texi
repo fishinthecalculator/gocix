@@ -54,6 +54,9 @@ The directory where secrets are looked for.
 @item @code{postgres-password} (type: sops-secret)
 POSTGRES_PASSWORD Tandoor secret.
 
+@item @code{email-host-password} (type: maybe-sops-secret)
+EMAIL_HOST_PASSWORD Tandoor secret.
+
 @item @code{secret-key} (type: sops-secret)
 SECRET_KEY Tandoor secret.
 

@@ -185,7 +185,10 @@ The @code{sops-secrets} service is always appended to this list.")
 to \"host\" the @code{port} field will be ignored.")
   (extra-variables
    (list '())
-   "A list of pairs representing any extra environment variable that should be set inside the container. Refer to the @uref{mainline, https://docs.tandoor.dev/install/docker/#docker} documentation for more details."))
+   "A list of pairs representing any extra environment variable that should be
+set inside the container. Refer to the
+@uref{mainline, https://docs.tandoor.dev/install/docker/#docker} documentation
+for more details."))
 
 (define (tandoor-configuration-local-database? config)
   (define host
