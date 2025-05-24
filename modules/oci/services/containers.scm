@@ -8,15 +8,17 @@
   #:use-module (gnu packages docker)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
-  #:use-module ((gnu services docker) #:prefix mainline:)
+  #:use-module ((gnu services containers) #:prefix mainline:)
   #:use-module (gnu services shepherd)
   #:use-module (gnu system accounts)
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
+  #:use-module (guix modules)
   #:use-module (guix packages)
   #:use-module (guix records)
+  #:use-module (oci self)
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 format)
   #:use-module (ice-9 match)
@@ -34,7 +36,6 @@
             oci-runtime-system-group
             oci-runtime-system-requirement
             oci-runtime-cli
-            oci-sanitize-runtime
             oci-runtime-system-cli
             oci-runtime-name
             oci-runtime-group
@@ -62,6 +63,7 @@
 
             oci-configuration
             oci-configuration?
+            oci-configuration-fields
             oci-configuration-runtime
             oci-configuration-runtime-cli
             oci-configuration-runtime-extra-arguments
@@ -100,7 +102,7 @@
 ;;; This is the development implementation of the Guix OCI container system service.
 ;;;
 ;;; You can find the mainline implementation at
-;;; https://git.savannah.gnu.org/cgit/guix.git/tree/gnu/services/docker.scm
+;;; https://git.guix.gnu.org/guix.git/src/branch/master/gnu/services/containers.scm
 ;;;
 
 
@@ -127,27 +129,101 @@ before it is able to run containers."
 (define (oci-runtime-group runtime maybe-group)
   "Implement the logic behind selection of the group that is to be used by
 Shepherd to execute OCI commands."
-  (if (eq? maybe-group #f)
+  (if (maybe-value-set? maybe-group)
+      maybe-group
       (if (eq? 'podman runtime)
           "cgroup"
-          "docker")
-      maybe-group))
+          "docker")))
 
-(define (oci-sanitize-runtime value)
+(define (oci-runtime? value)
   (unless (member value %oci-supported-runtimes)
     (raise
      (formatted-message
       (G_ "OCI runtime must be a symbol and one of ~a,
 but ~a was found") %oci-supported-runtimes value)))
-  value)
+  (symbol? value))
 
-(define oci-sanitize-mixed-list
-  (@@ (gnu services containers) oci-sanitize-mixed-list))
+(define (oci-sanitize-pair pair delimiter)
+  (define (valid? member)
+    (or (string? member)
+        (gexp? member)
+        (file-like? member)))
+  (match pair
+    (((? valid? key) . (? valid? value))
+     #~(string-append #$key #$delimiter #$value))
+    (_
+     (raise
+      (formatted-message
+       (G_ "pair members must contain only strings, gexps or file-like objects
+but ~a was found")
+       pair)))))
+
+(define (oci-sanitize-mixed-list name value delimiter)
+  (map
+   (lambda (el)
+     (cond ((string? el) el)
+           ((pair? el) (oci-sanitize-pair el delimiter))
+           (else
+            (raise
+             (formatted-message
+              (G_ "~a members must be either a string or a pair but ~a was
+found!")
+              name el)))))
+   value))
+
+(define (oci-sanitize-host-environment value)
+  ;; Expected spec format:
+  ;; '(("HOME" . "/home/nobody") "JAVA_HOME=/java")
+  (oci-sanitize-mixed-list "host-environment" value "="))
+
+(define (oci-container-host-environment? value)
+  (list? (oci-sanitize-host-environment value)))
+
+(define (oci-sanitize-environment value)
+  ;; Expected spec format:
+  ;; '(("HOME" . "/home/nobody") "JAVA_HOME=/java")
+  (oci-sanitize-mixed-list "environment" value "="))
+
+(define (oci-container-environment? value)
+  (list? (oci-sanitize-environment value)))
+
+(define (oci-sanitize-ports value)
+  ;; Expected spec format:
+  ;; '(("8088" . "80") "2022:22")
+  (oci-sanitize-mixed-list "ports" value ":"))
+
+(define (oci-container-ports? value)
+  (list? (oci-sanitize-ports value)))
+
+(define (oci-sanitize-volumes value)
+  ;; Expected spec format:
+  ;; '(("/mnt/dir" . "/dir") "/run/current-system/profile:/java")
+  (oci-sanitize-mixed-list "volumes" value ":"))
+
+(define (oci-container-volumes? value)
+  (list? (oci-sanitize-volumes value)))
 
 (define (oci-sanitize-labels value)
   ;; Expected spec format:
   ;; '(("foo" . "bar") "foo=bar")
   (oci-sanitize-mixed-list "labels" value "="))
+
+(define (oci-object-labels? value)
+  (list? (oci-sanitize-labels value)))
+
+(define (oci-sanitize-shepherd-actions value)
+  (map
+   (lambda (el)
+     (if (shepherd-action? el)
+         el
+         (raise
+          (formatted-message
+           (G_ "shepherd-actions may only be shepherd-action records
+but ~a was found") el))))
+   value))
+
+(define (oci-container-shepherd-actions? value)
+  (list? (oci-sanitize-shepherd-actions value)))
 
 (define (oci-sanitize-extra-arguments value)
   (define (valid? member)
@@ -164,6 +240,9 @@ but ~a was found") %oci-supported-runtimes value)))
 but ~a was found") el))))
    value))
 
+(define (oci-object-extra-arguments? value)
+  (list? (oci-sanitize-extra-arguments value)))
+
 (define (oci-image-reference image)
   "Return a string OCI image reference representing IMAGE."
   (define reference
@@ -174,6 +253,19 @@ but ~a was found") el))))
   (if (> (length (string-split reference #\/)) 1)
         reference
         (string-append "localhost/" reference)))
+
+(define (oci-lowerable-image? image)
+  (or (manifest? image)
+      (operating-system? image)
+      (gexp? image)
+      (file-like? image)))
+
+(define (string-or-oci-image? image)
+  (or (string? image)
+      (oci-image? image)))
+
+(define list-of-symbols?
+  (list-of symbol?))
 
 (define (list-of-oci-records? name predicate value)
   (map
@@ -197,11 +289,11 @@ but ~a was found") el))))
    (string)
    "The name of the OCI volume to provision.")
   (labels
-   (list '())
+   (oci-object-labels '())
    "The list of labels that will be used to tag the current volume."
    (sanitizer oci-sanitize-labels))
   (extra-arguments
-   (list '())
+   (oci-object-extra-arguments '())
    "A list of strings, gexps or file-like objects that will be directly passed
 to the @command{docker volume create} or @command{podman volume create}
 invocation."
@@ -236,11 +328,11 @@ invocation."
    (maybe-string)
    "Subnet in CIDR format that represents a network segment.")
   (labels
-   (list '())
+   (oci-object-labels '())
    "The list of labels that will be used to tag the current volume."
    (sanitizer oci-sanitize-labels))
   (extra-arguments
-   (list '())
+   (oci-object-extra-arguments '())
    "A list of strings, gexps or file-like objects that will be directly passed
 to the @command{docker network create} or @command{podman network create}
 invocation."
@@ -252,74 +344,65 @@ invocation."
 (define (package-or-string? value)
   (or (package? value) (string? value)))
 
-;; (for-home (oci-configuration ...)) is not able to replace for-home? with #t,
-;; pk prints #f. Once for-home will be able to work with (gnu services configuration) the
-;; record can be migrated back to define-configuration.
-(define-record-type* <oci-configuration>
-  oci-configuration
-  make-oci-configuration
-  oci-configuration?
-  this-oci-configuration
+(define-maybe/no-serialization package-or-string)
 
-  (runtime                  oci-configuration-runtime
-                            (default 'docker))
-  (runtime-cli              oci-configuration-runtime-cli
-                            (default #f))                               ; package or string
-  (runtime-extra-arguments  oci-configuration-runtime-extra-arguments   ; strings or gexps
-                            (default '()))                              ; or file-like objects
-  (user                     oci-configuration-user
-                            (default "oci-container"))
-  (group                    oci-configuration-group                     ; string
-                            (default #f))
-  (subuids-range            oci-configuration-subuids-range             ; subid-range
-                            (default #f))
-  (subgids-range            oci-configuration-subgids-range             ; subid-range
-                            (default #f))
-  (containers               oci-configuration-containers                ; oci-container-configurations
-                            (default '()))
-  (networks                 oci-configuration-networks                  ; oci-network-configurations
-                            (default '()))
-  (volumes                  oci-configuration-volumes                   ; oci-volume-configurations
-                            (default '()))
-  (verbose?                 oci-configuration-verbose?
-                            (default #f))
-  (home-service?            oci-configuration-home-service?
-                            (default for-home?) (innate)))
-
-;; TODO: This procedure can be dropped once we switch to define-configuration for
-;; oci-configuration.
-(define (oci-configuration-valid? config)
-  (define runtime-cli
-    (oci-configuration-runtime-cli config))
-  (define group
-    (oci-configuration-group config))
-  (define subuids-range
-    (oci-configuration-subuids-range config))
-  (define subgids-range
-    (oci-configuration-subgids-range config))
-  (and
-   (symbol?
-    (oci-sanitize-runtime (oci-configuration-runtime config)))
-   (or (eq? runtime-cli #f)
-       (package-or-string? runtime-cli))
-   (list? (oci-configuration-runtime-extra-arguments config))
-   (string? (oci-configuration-user config))
-   (or (eq? group #f)
-       (string? group))
-   (or (eq? subuids-range #f)
-       (subid-range? subuids-range))
-   (or (eq? subgids-range #f)
-       (subid-range? subgids-range))
-   (list-of-oci-containers?
-    (oci-configuration-containers config))
-   (list-of-oci-networks?
-    (oci-configuration-networks config))
-   (list-of-oci-volumes?
-    (oci-configuration-volumes config))
-   (boolean?
-    (oci-configuration-verbose? config))
-   (boolean?
-    (oci-configuration-home-service? config))))
+(define-configuration/no-serialization oci-configuration
+  (runtime
+   (oci-runtime 'docker)
+   "The OCI runtime to use to run commands.  It can be either @code{'docker} or
+@code{'podman}.")
+  (runtime-cli
+   (maybe-package-or-string)
+   "The OCI runtime command line to be installed in the system profile and used
+to provision OCI resources, it can be either a package or a string representing
+an absolute file name to the runtime binary entrypoint.  When unset it will default
+to @code{docker-cli} package for the @code{'docker} runtime or to @code{podman}
+package for the @code{'podman} runtime.")
+  (runtime-extra-arguments
+   (list '())
+   "A list of strings, gexps or file-like objects that will be placed
+after each @command{docker} or @command{podman} invokation.")
+  (user
+   (string "oci-container")
+   "The user name under whose authority OCI runtime commands will be run.")
+  (group
+   (maybe-string)
+   "The group name under whose authority OCI commands will be run.  When
+using the @code{'podman} OCI runtime, this field will be ignored and the
+default group of the user configured in the @code{user} field will be used.")
+  (subuids-range
+   (maybe-subid-range)
+   "An optional @code{subid-range} record allocating subuids for the user from
+the @code{user} field.  When unset, with the rootless Podman OCI runtime, it
+defaults to @code{(subid-range (name \"oci-container\"))}.")
+  (subgids-range
+   (maybe-subid-range)
+   "An optional @code{subid-range} record allocating subgids for the user from
+the @code{user} field.  When unset, with the rootless Podman OCI runtime, it
+defaults to @code{(subid-range (name \"oci-container\"))}.")
+  (containers
+   (list-of-oci-containers '())
+   "The list of @code{oci-container-configuration} records representing the
+containers to provision.  The use of the @code{oci-extension} record should
+be preferred for most cases.")
+  (networks
+   (list-of-oci-networks '())
+   "The list of @code{oci-network-configuration} records representing the
+networks to provision.  The use of the @code{oci-extension} record should
+be preferred for most cases.")
+  (volumes
+   (list-of-oci-volumes '())
+   "The list of @code{oci-volume-configuration} records representing the
+volumes to provision.  The use of the @code{oci-extension} record should
+be preferred for most cases.")
+  (verbose?
+   (boolean #f)
+   "When true, additional output will be printed, allowing to better follow the
+flow of execution.")
+  (home-service?
+   (boolean for-home?)
+   "This is an internal field denoting whether this configuration is used in a
+Guix Home context, as opposed to the default Guix System context."))
 
 (define (oci-runtime-system-environment runtime user)
   (if (eq? runtime 'podman)
@@ -328,26 +411,26 @@ invocation."
           "HOME=" (passwd:dir (getpwnam #$user))))
       #~()))
 
-(define (oci-runtime-cli runtime runtime-cli path)
-  "Return a gexp that, when lowered, evaluates to the file system path of the OCI
+(define (oci-runtime-cli runtime runtime-cli profile-directory)
+  "Return a gexp that, when lowered, evaluates to the  of the OCI
 runtime command requested by the user."
   (if (string? runtime-cli)
-      ;; It is a user defined absolute path
+      ;; It is a user defined absolute file name.
       runtime-cli
       #~(string-append
-         #$(if (eq? runtime-cli #f)
-               path
-               runtime-cli)
+         #$(if (maybe-value-set? runtime-cli)
+               runtime-cli
+               profile-directory)
          #$(if (eq? 'podman runtime)
                "/bin/podman"
                "/bin/docker"))))
 
-(define* (oci-runtime-system-cli config #:key (path "/run/current-system/profile"))
+(define* (oci-runtime-system-cli config #:key (profile-directory "/run/current-system/profile"))
   (let ((runtime-cli
          (oci-configuration-runtime-cli config))
         (runtime
          (oci-configuration-runtime config)))
-    (oci-runtime-cli runtime runtime-cli path)))
+    (oci-runtime-cli runtime runtime-cli profile-directory)))
 
 (define (oci-runtime-home-cli config)
   (let ((runtime-cli
@@ -379,7 +462,7 @@ volumes to add."))
        (first (string-split image #\:))
        (mainline:oci-image-repository image))))
 
-(define (oci-object-command-shepherd-action object-name invocation)
+(define (oci-command-line-shepherd-action object-name invocation entrypoint)
   "Return a Shepherd action printing a given INVOCATION of an OCI command for the
 given OBJECT-NAME."
   (shepherd-action
@@ -389,7 +472,8 @@ given OBJECT-NAME."
             object-name))
    (procedure
     #~(lambda _
-        (format #t "~a~%" #$invocation)))))
+        (format #t "Entrypoint:~%~a~%" #$entrypoint)
+        (format #t "Invocation:~%~a~%" #$invocation)))))
 
 (define (oci-container-shepherd-name runtime config)
   "Return the name of an OCI backed Shepherd service based on CONFIG.
@@ -520,255 +604,269 @@ for the OCI runtime volume create command."
 (define lower-oci-image
   (@@ (gnu services containers) lower-oci-image))
 
-(define (oci-object-exists? runtime runtime-cli object verbose?)
-  #~(lambda* (name #:key (format-string "{{.Name}}"))
-      (use-modules (ice-9 format)
-                   (ice-9 match)
-                   (ice-9 popen)
-                   (ice-9 rdelim)
-                   (srfi srfi-1))
+(define-record-type* <oci-runtime-state>
+  oci-runtime-state
+  make-oci-runtime-state
+  oci-runtime-state?
+  this-oci-runtime-state
 
-      (define (read-lines file-or-port)
-        (define (loop-lines port)
-          (let loop ((lines '()))
-            (match (read-line port)
-              ((? eof-object?)
-               (reverse lines))
-              (line
-               (loop (cons line lines))))))
+  (runtime                  oci-runtime-state-runtime
+                            (default 'docker))
+  (runtime-cli              oci-runtime-state-runtime-cli)
+  (user                     oci-runtime-state-user)
+  (group                    oci-runtime-state-group)
+  (runtime-environment      oci-runtime-state-runtime-environment
+                            (default #~()))
+  (runtime-requirement      oci-runtime-state-runtime-requirement
+                            (default '()))
+  (runtime-extra-arguments  oci-runtime-state-runtime-extra-arguments
+                            (default '())))
 
-        (if (port? file-or-port)
-            (loop-lines file-or-port)
-            (call-with-input-file file-or-port
-              loop-lines)))
+(define-record-type* <oci-state>
+  oci-state
+  make-oci-state
+  oci-state?
+  this-oci-state
 
-      #$(if (eq? runtime 'podman)
-            #~(let ((command
-                     (list #$runtime-cli
-                           #$object "exists" name)))
-                (when #$verbose?
-                  (format #t "Running~{ ~a~}~%" command))
-                (define exit-code (status:exit-val (apply system* command)))
-                (when #$verbose?
-                  (format #t "Exit code: ~a~%" exit-code))
-                (equal? EXIT_SUCCESS exit-code))
-            #~(let ((command
-                     (string-append #$runtime-cli
-                                    " " #$object " ls --format "
-                                    "\"" format-string "\"")))
-                (when #$verbose?
-                  (format #t "Running ~a~%" command))
-                (member name (read-lines (open-input-pipe command)))))))
+  (networks                 oci-state-networks)
+  (volumes                  oci-state-volumes)
+  (containers               oci-state-containers)
+  (networks-name            oci-state-networks-name
+                            (default #f))
+  (volumes-name             oci-state-volumes-name
+                            (default #f))
+  (networks-requirement     oci-state-networks-requirement
+                            (default '()))
+  (volumes-requirement      oci-state-volumes-requirement
+                            (default '()))
+  (containers-requirement   oci-state-containers-requirement
+                            (default '())))
 
-(define* (oci-image-loader runtime runtime-cli name image tag #:key (verbose? #f))
+(define-record-type* <oci-container-invocation>
+  oci-container-invocation
+  make-oci-container-invocation
+  oci-container-invocation?
+  this-oci-container-invocation
+
+  (runtime                  oci-container-invocation-runtime
+                            (default 'docker))
+  (runtime-cli              oci-container-invocation-runtime-cli)
+  (name                     oci-container-invocation-name)
+  (command                  oci-container-invocation-command
+                            (default '()))
+  (image-reference          oci-container-invocation-image-reference)
+  (options                  oci-container-invocation-options
+                            (default '()))
+  (run-extra-arguments      oci-container-invocation-run-extra-arguments
+                            (default '()))
+  (runtime-extra-arguments  oci-container-invocation-runtime-extra-arguments
+                            (default '())))
+
+(define (oci-container-configuration->oci-container-invocation runtime-state
+                                                               config)
+  (oci-container-invocation
+   (runtime (oci-runtime-state-runtime runtime-state))
+   (runtime-cli (oci-runtime-state-runtime-cli runtime-state))
+   (name
+    (oci-container-shepherd-name runtime config))
+   (command
+    (mainline:oci-container-configuration-command config))
+   (image-reference
+    (oci-image-reference (mainline:oci-container-configuration-image config)))
+   (options
+    (oci-container-configuration->options config))
+   (run-extra-arguments
+    (mainline:oci-container-configuration-extra-arguments config))
+   (runtime-extra-arguments
+    (oci-runtime-state-runtime-extra-arguments runtime-state))))
+
+(define* (oci-image-loader runtime-state name image tag #:key verbose?)
   "Return a file-like object that, once lowered, will evaluate to a program able
 to load IMAGE through RUNTIME-CLI and to tag it with TAG afterwards."
   (let ((tarball (lower-oci-image name image)))
-    (with-imported-modules '((guix build utils))
+    (with-imported-modules (source-module-closure
+                            '((oci build oci-containers))
+                            #:select? oci-module-name?)
       (program-file
        (format #f "~a-image-loader" name)
        #~(begin
-           (use-modules (guix build utils)
-                        (ice-9 match)
-                        (ice-9 popen)
-                        (ice-9 rdelim)
-                        (srfi srfi-1))
-           (define object-exists?
-             #$(oci-object-exists? runtime runtime-cli "image" verbose?))
-           (define load-command
-             (string-append #$runtime-cli
-                            " load -i " #$tarball))
+           (use-modules (oci build oci-containers))
+           (oci-image-load '#$(oci-runtime-state-runtime runtime-state)
+                           #$(oci-runtime-state-runtime-cli runtime-state)
+                           #$tarball #$name #$tag
+                           #:verbose? #$verbose?))))))
 
-           (if (object-exists? #$tag #:format-string "{{.Repository}}:{{.Tag}}")
-               (format #t "~a image already exists, skipping.~%" #$tag)
-               (begin
-                 (format #t "Loading image for ~a from ~a...~%" #$name #$tarball)
-                 (when #$verbose?
-                   (format #t "Running ~a~%" load-command))
-                 (let ((line (read-line
-                              (open-input-pipe load-command))))
-                   (unless (or (eof-object? line)
-                               (string-null? line))
-                     (format #t "~a~%" line)
-                     (let* ((repository&tag
-                             (string-drop line
-                                          (string-length
-                                           "Loaded image: ")))
-                            (tag-command
-                             (list #$runtime-cli "tag" repository&tag #$tag))
-                            (drop-old-tag-command
-                             (list #$runtime-cli "image" "rm" "-f" repository&tag)))
-
-                       (unless (string=? repository&tag #$tag)
-                         (when #$verbose?
-                           (format #t "Running~{ ~a~}~%" tag-command))
-
-                         (let ((exit-code
-                                (status:exit-val (apply system* tag-command))))
-                           (format #t "Tagged ~a with ~a...~%" #$tarball #$tag)
-
-                           (when #$verbose?
-                             (format #t "Exit code: ~a~%" exit-code))
-
-                           (when (equal? EXIT_SUCCESS exit-code)
-                             (when #$verbose?
-                               (format #t "Running~{ ~a~}~%" drop-old-tag-command))
-                             (let ((drop-exit-code
-                                    (status:exit-val (apply system* drop-old-tag-command))))
-                               (when #$verbose?
-                                 (format #t "Exit code: ~a~%" drop-exit-code))))))))))))))))
-
-(define (oci-container-run-invocation runtime runtime-cli name command image-reference
-                                      options runtime-extra-arguments run-extra-arguments)
+(define (oci-container-run-invocation container-invocation)
   "Return a list representing the OCI runtime
 invocation for running containers."
   ;; run [OPTIONS] IMAGE [COMMAND] [ARG...]
-  `(,runtime-cli ,@runtime-extra-arguments "run" "--rm"
-    ,@(if (eq? runtime 'podman)
+  `(,(oci-container-invocation-runtime-cli container-invocation)
+    ,@(oci-container-invocation-runtime-extra-arguments container-invocation)
+    "run" "--rm"
+    ,@(if (eq? (oci-container-invocation-runtime container-invocation)
+               'podman)
           ;; This is because podman takes some time to
           ;; release container names.  --replace seems
           ;; to be required to be able to restart services.
           '("--replace")
           '())
-    "--name" ,name
-    ,@options ,@run-extra-arguments
-    ,image-reference ,@command))
+    "--name" ,(oci-container-invocation-name container-invocation)
+    ,@(oci-container-invocation-options container-invocation)
+    ,@(oci-container-invocation-run-extra-arguments container-invocation)
+    ,(oci-container-invocation-image-reference container-invocation)
+    ,@(oci-container-invocation-command container-invocation)))
 
-(define* (oci-container-entrypoint runtime runtime-cli name image image-reference
-                                   invocation #:key (verbose? #f) (pre-script #~()))
+(define* (oci-container-entrypoint name invocation
+                                   #:key verbose?
+                                   (pre-script #~()))
   "Return a file-like object that, once lowered, will evaluate to the entrypoint
-for the Shepherd service that will run IMAGE through RUNTIME-CLI."
+for the Shepherd service that will run INVOCATION."
   (program-file
    (string-append "oci-entrypoint-" name)
-   #~(begin
-       (use-modules (ice-9 format)
-                    (srfi srfi-1))
-       (when #$verbose?
-         (format #t "Running in verbose mode...~%")
-         (format #t "Current user: ~a ~a~%"
-                 (getuid) (passwd:name (getpwuid (getuid))))
-         (format #t "Current group: ~a ~a~%"
-                 (getgid) (group:name (getgrgid (getgid))))
-         (format #t "Current directory ~a~%" (getcwd)))
-       (define invocation (list #$@invocation))
-       #$@pre-script
-       (when #$verbose?
-         (format #t "Running~{ ~a~}~%" invocation))
-       (apply execlp `(,(first invocation) ,@invocation)))))
+   (with-imported-modules (source-module-closure
+                           '((oci build oci-containers))
+                           #:select? oci-module-name?)
+     #~(begin
+         (use-modules (oci build oci-containers)
+                      (srfi srfi-1))
+         (oci-container-execlp
+          (list #$@invocation)
+          #:verbose? #$verbose?
+          #:pre-script
+          (lambda _
+            (when (and #$verbose?
+                       (zero? (length '(#$@pre-script))))
+              (format #t "No pre script to run..."))
+            #$@pre-script))))))
 
-(define* (oci-container-shepherd-service runtime runtime-cli config
-                                         #:key
-                                         (runtime-environment #~())
-                                         (runtime-extra-arguments '())
-                                         (oci-requirement '())
-                                         (user #f)
-                                         (group #f)
-                                         (verbose? #f))
+(define* (oci-container-shepherd-service state runtime-state config
+                                         #:key verbose?
+                                         networks?
+                                         volumes?)
   "Return a Shepherd service object that will run the OCI container represented
 by CONFIG through RUNTIME-CLI."
-  (let* ((actions (mainline:oci-container-configuration-shepherd-actions config))
-         (auto-start?
-          (mainline:oci-container-configuration-auto-start? config))
-         (host-environment
-          (mainline:oci-container-configuration-host-environment config))
-         (command (mainline:oci-container-configuration-command config))
-         (log-file (mainline:oci-container-configuration-log-file config))
-         (requirement (mainline:oci-container-configuration-requirement config))
-         (respawn?
-          (mainline:oci-container-configuration-respawn? config))
-         (image (mainline:oci-container-configuration-image config))
-         (image-reference (oci-image-reference image))
-         (options (oci-container-configuration->options config))
-         (name
-          (oci-container-shepherd-name runtime config))
-         (extra-arguments
-          (mainline:oci-container-configuration-extra-arguments config))
-         (invocation
-          (oci-container-run-invocation
-           runtime runtime-cli name command image-reference
-           options runtime-extra-arguments extra-arguments))
-         (container-action
-          (lambda* (command #:key (environment-variables #f))
-            #~(lambda _
-                (fork+exec-command
-                 (list #$@command)
-                 #$@(if user (list #:user user) '())
-                 #$@(if group (list #:group group) '())
-                 #$@(if (maybe-value-set? log-file)
-                        (list #:log-file log-file)
-                        '())
-                 #$@(if (and user (eq? runtime 'podman))
-                        (list #:directory
-                              #~(passwd:dir (getpwnam #$user)))
-                        '())
-                 #$@(if environment-variables
-                        (list #:environment-variables
-                              environment-variables)
-                        '()))))))
 
-    (shepherd-service (provision `(,(string->symbol name)))
-                      (requirement `(,@oci-requirement
-                                     ,@requirement))
+  (define shepherd-actions
+    (mainline:oci-container-configuration-shepherd-actions config))
+  (define auto-start?
+    (mainline:oci-container-configuration-auto-start? config))
+  (define oci-container-user
+    (oci-runtime-state-user runtime-state))
+  (define oci-container-group
+    (oci-runtime-state-group runtime-state))
+  (define host-environment
+    (mainline:oci-container-configuration-host-environment config))
+  (define log-file
+    (mainline:oci-container-configuration-log-file config))
+  (define requirement
+    (mainline:oci-container-configuration-requirement config))
+  (define respawn?
+    (mainline:oci-container-configuration-respawn? config))
+  (define image
+    (mainline:oci-container-configuration-image config))
+
+    (define runtime (oci-runtime-state-runtime runtime-state))
+    (define runtime-cli (oci-runtime-state-runtime-cli runtime-state))
+    (define image-reference (oci-image-reference image))
+    (define shepherd-name (oci-container-shepherd-name runtime config))
+    (define networks-service
+      (if networks?
+          (list
+           (string->symbol
+            (oci-state-networks-name state)))
+          '()))
+    (define volumes-service
+     (if volumes?
+         (list
+          (string->symbol
+           (oci-state-volumes-name state)))
+         '()))
+    (define oci-container-requirement
+      (append requirement
+              (oci-state-containers-requirement state)
+              (oci-runtime-state-runtime-requirement runtime-state)
+              networks-service
+              volumes-service))
+    (define environment-variables
+      #~(append
+         (list #$@host-environment)
+         (list #$@(oci-runtime-state-runtime-environment runtime-state))))
+    (define invocation
+      (oci-container-run-invocation
+       (oci-container-configuration->oci-container-invocation
+        runtime-state config)))
+    (define* (container-action command)
+      #~(lambda _
+          (fork+exec-command
+           (list #$@command)
+           #$@(if oci-container-user
+                  (list #:user oci-container-user)
+                  '())
+           #$@(if oci-container-group
+                  (list #:group oci-container-group)
+                  '())
+           #$@(if (maybe-value-set? log-file)
+                  (list #:log-file log-file)
+                  '())
+           #$@(if (and oci-container-user (eq? runtime 'podman))
+                  (list #:directory
+                        #~(passwd:dir
+                           (getpwnam #$oci-container-user)))
+                  '())
+           #:environment-variables
+           #$environment-variables)))
+    (define start-entrypoint
+      (oci-container-entrypoint
+       shepherd-name invocation
+       #:verbose? verbose?
+       #:pre-script
+       (if (mainline:oci-image? image)
+           #~((system*
+               #$(oci-image-loader
+                  runtime-state shepherd-name image
+                  image-reference
+                  #:verbose? verbose?)))
+           #~())))
+
+    (shepherd-service (provision `(,(string->symbol shepherd-name)))
+                      (requirement oci-container-requirement)
                       (respawn? respawn?)
                       (auto-start? auto-start?)
                       (documentation
                        (string-append
-                        (oci-runtime-name runtime) " backed Shepherd service for "
-                        (if (mainline:oci-image? image) name image) "."))
+                        (oci-runtime-name runtime)
+                        " backed Shepherd service for "
+                        (if (mainline:oci-image? image) shepherd-name image) "."))
                       (start
                        (container-action
-                        (list (oci-container-entrypoint
-                               runtime runtime-cli name image image-reference
-                               invocation #:verbose? verbose?
-                               #:pre-script
-                               (if (mainline:oci-image? image)
-                                   #~((system*
-                                       #$(oci-image-loader
-                                          runtime runtime-cli name image
-                                          image-reference #:verbose? verbose?)))
-                                   #~())))
-                        #:environment-variables
-                        #~(append
-                           (list #$@host-environment)
-                           (list #$@runtime-environment))))
+                        (list start-entrypoint)))
                       (stop
                        (container-action
                         (list
                          (oci-container-entrypoint
-                          runtime runtime-cli name image image-reference
-                          (list runtime-cli "rm" "-f" name)
-                          #:verbose? verbose?))
-                        #:environment-variables
-                        #~(append
-                           (list #$@host-environment)
-                           (list #$@runtime-environment))))
+                          shepherd-name (list runtime-cli "rm" "-f" shepherd-name)
+                          #:verbose? verbose?))))
                       (actions
                        (append
                         (list
-                         (oci-object-command-shepherd-action
-                          name #~(string-join (list #$@invocation) " ")))
+                         (oci-command-line-shepherd-action
+                          shepherd-name #~(string-join (list #$@invocation) " ")
+                          start-entrypoint))
                         (if (mainline:oci-image? image)
                             '()
                             (list
-                             (let ((service-name name))
-                               (shepherd-action
-                                (name 'pull)
-                                (documentation
-                                 (format #f "Pull ~a's image (~a)."
-                                         service-name image))
-                                (procedure
-                                 (container-action
-                                  (list
-                                   (oci-container-entrypoint
-                                    runtime runtime-cli service-name image
-                                    image-reference
-                                    (list runtime-cli "pull" image)
-                                    #:verbose? verbose?))
-                                  #:environment-variables
-                                  #~(append
-                                     (list #$@host-environment)
-                                     (list #$@runtime-environment))))))))
-                        actions)))))
+                             (shepherd-action
+                              (name 'pull)
+                              (documentation
+                               (format #f "Pull ~a's image (~a)."
+                                       shepherd-name image))
+                              (procedure
+                               (container-action
+                                (list
+                                 (oci-container-entrypoint
+                                  shepherd-name (list runtime-cli "pull" image)
+                                  #:verbose? verbose?)))))))
+                        shepherd-actions))))
 
 (define (oci-object-create-invocation object runtime-cli name options
                                       runtime-extra-arguments
@@ -788,114 +886,101 @@ networks or volumes."
                  "\n"))
 
 (define* (oci-object-create-script object runtime runtime-cli invocations
-                                   #:key (verbose? #f))
+                                   #:key verbose?)
   "Return a file-like object that, once lowered, will evaluate to a program able
 to create OCI networks and volumes through RUNTIME-CLI."
   (define runtime-string (symbol->string runtime))
-  (program-file
-   (string-append runtime-string "-" object "s-create.scm")
-   #~(begin
-       (use-modules (ice-9 format)
-                    (ice-9 match)
-                    (ice-9 popen)
-                    (ice-9 rdelim)
-                    (srfi srfi-1))
+  (define runtime-name (oci-runtime-name runtime))
+  (with-imported-modules (source-module-closure
+                          '((oci build oci-containers))
+                          #:select? oci-module-name?)
 
-       (define object-exists?
-         #$(oci-object-exists? runtime runtime-cli object verbose?))
+    (program-file
+     (string-append runtime-string "-" object "s-create.scm")
+     #~(begin
+         (use-modules (oci build oci-containers))
+         (oci-object-create '#$runtime #$runtime-cli #$runtime-name
+                            #$object (list #$@invocations)
+                            #:verbose? #$verbose?)))))
 
-       (for-each
-        (lambda (invocation)
-          (define name (last invocation))
-          (if (object-exists? name)
-              (format #t "~a ~a ~a already exists, skipping creation.~%"
-                      #$(oci-runtime-name runtime) name #$object)
-              (begin
-                (when #$verbose?
-                  (format #t "Running~{ ~a~}~%" invocation))
-                (let ((exit-code (status:exit-val (apply system* invocation))))
-                  (when #$verbose?
-                    (format #t "Exit code: ~a~%" exit-code))))))
-        (list #$@invocations)))))
+(define* (oci-object-shepherd-service object runtime-state name
+                                      oci-state-requirement invocations
+                                      #:key verbose?)
+  "Return a Shepherd service object that will provision the OBJECTs represented
+by INVOCATIONS through RUNTIME-STATE."
+  (match-record runtime-state <oci-runtime-state>
+                (runtime runtime-cli runtime-requirement user group
+                 runtime-environment)
+    (define entrypoint
+      (oci-object-create-script
+       object runtime runtime-cli invocations #:verbose? verbose?))
+    (define requirement
+      (append runtime-requirement oci-state-requirement))
 
-(define* (oci-object-shepherd-service object runtime runtime-cli name requirement invocations
-                                      #:key
-                                      (runtime-environment #~())
-                                      (user #f)
-                                      (group #f)
-                                      (verbose? #f))
-  "Return a Shepherd service object that will create the OBJECTs represented
-by INVOCATIONS through RUNTIME-CLI."
-  (shepherd-service (provision `(,(string->symbol name)))
-                    (requirement requirement)
-                    (one-shot? #t)
-                    (documentation
-                     (string-append
-                      (oci-runtime-name runtime) " " object
-                      " provisioning service"))
-                    (start
-                     #~(lambda _
-                         (fork+exec-command
-                          (list
-                           #$(oci-object-create-script
-                              object runtime runtime-cli
-                              invocations
-                              #:verbose? verbose?))
-                          #$@(if user (list #:user user) '())
-                          #$@(if group (list #:group group) '())
-                          #:environment-variables
-                          (list #$@runtime-environment))))
-                    (actions
-                     (list
-                      (oci-object-command-shepherd-action
-                       name (format-oci-invocations invocations))))))
+    (shepherd-service (provision (list (string->symbol name)))
+                      (requirement requirement)
+                      (one-shot? #t)
+                      (documentation
+                       (string-append
+                        (oci-runtime-name runtime) " " object
+                        " provisioning service"))
+                      (start
+                       #~(lambda _
+                           (fork+exec-command
+                            (list #$entrypoint)
+                            #$@(if user (list #:user user) '())
+                            #$@(if group (list #:group group) '())
+                            #:environment-variables
+                            (list #$@runtime-environment))))
+                      (actions
+                       (list
+                        (oci-command-line-shepherd-action
+                         name (format-oci-invocations invocations)
+                         entrypoint))))))
 
-(define* (oci-networks-shepherd-service runtime runtime-cli name networks
-                                        #:key (user #f) (group #f) (verbose? #f)
-                                        (runtime-extra-arguments '())
-                                        (runtime-environment #~())
-                                        (runtime-requirement '()))
+(define* (oci-networks-shepherd-service state runtime-state
+                                        #:key verbose?)
   "Return a Shepherd service object that will create the networks represented
-in CONFIG."
-  (let ((invocations
-         (map
-          (lambda (network)
-            (oci-object-create-invocation
-             "network" runtime-cli
-             (oci-network-configuration-name network)
-             (oci-network-configuration->options network)
-             runtime-extra-arguments
-             (oci-network-configuration-extra-arguments network)))
-          networks)))
+in STATE."
+  (define runtime-cli
+    (oci-runtime-state-runtime-cli runtime-state))
+  (define invocations
+    (map
+     (lambda (network)
+       (oci-object-create-invocation
+        "network" runtime-cli
+        (oci-network-configuration-name network)
+        (oci-network-configuration->options network)
+        (oci-runtime-state-runtime-extra-arguments runtime-state)
+        (oci-network-configuration-extra-arguments network)))
+     (oci-state-networks state)))
 
-    (oci-object-shepherd-service
-     "network" runtime runtime-cli name
-     runtime-requirement invocations
-     #:user user #:group group #:runtime-environment runtime-environment
-     #:verbose? verbose?)))
+  (oci-object-shepherd-service
+   "network" runtime-state (oci-state-networks-name state)
+   (oci-state-networks-requirement state)
+   invocations #:verbose? verbose?))
 
-(define* (oci-volumes-shepherd-service runtime runtime-cli name volumes
-                                       #:key (user #f) (group #f) (verbose? #f)
-                                       (runtime-extra-arguments '())
-                                       (runtime-environment #~())
-                                       (runtime-requirement '()))
+(define* (oci-volumes-shepherd-service state runtime-state
+                                       #:key verbose?)
   "Return a Shepherd service object that will create the volumes represented
-in CONFIG."
-  (let ((invocations
-         (map
-          (lambda (volume)
-            (oci-object-create-invocation
-             "volume" runtime-cli
-             (oci-volume-configuration-name volume)
-             (oci-volume-configuration->options volume)
-             runtime-extra-arguments
-             (oci-volume-configuration-extra-arguments volume)))
-          volumes)))
+in STATE."
+  (define runtime-cli
+    (oci-runtime-state-runtime-cli runtime-state))
+  (define invocations
+    (map
+     (lambda (volume)
+       (oci-object-create-invocation
+        "volume" runtime-cli
+        (oci-volume-configuration-name volume)
+        (oci-volume-configuration->options volume)
+        (oci-runtime-state-runtime-extra-arguments runtime-state)
+        (oci-volume-configuration-extra-arguments volume)))
+     (oci-state-volumes state)))
 
-    (oci-object-shepherd-service
-     "volume" runtime runtime-cli name runtime-requirement invocations
-     #:user user #:group group #:runtime-environment runtime-environment
-     #:verbose? verbose?)))
+  (oci-object-shepherd-service
+   "volume" runtime-state (oci-state-volumes-name state)
+   (oci-state-volumes-requirement state)
+   invocations #:verbose? verbose?))
 
 (define (oci-service-accounts config)
   (define user (oci-configuration-user config))
@@ -914,132 +999,137 @@ in CONFIG."
          (create-home-directory? (eq? 'podman runtime))
          (shell (file-append shadow "/sbin/nologin")))))
 
-(define* (oci-state->shepherd-services runtime runtime-cli containers networks volumes
-                                       #:key (user #f) (group #f) (verbose? #f)
-                                       (networks-name #f) (volumes-name #f)
-                                       (runtime-extra-arguments '())
-                                       (runtime-environment #~())
-                                       (runtime-requirement '())
-                                       (containers-requirement '())
-                                       (networks-requirement '())
-                                       (volumes-requirement '()))
+(define* (oci-state->shepherd-services state runtime-state #:key verbose?)
   "Returns a list of Shepherd services based on the input OCI state."
-  (let* ((networks-name
-          (if (string? networks-name)
-              networks-name
-              (oci-networks-shepherd-name runtime)))
-         (networks?
-          (> (length networks) 0))
-         (networks-service
-          (if networks?
-              (list
-               (string->symbol networks-name))
-              '()))
-         (volumes-name
-          (if (string? volumes-name)
-              volumes-name
-              (oci-volumes-shepherd-name runtime)))
-         (volumes?
-          (> (length volumes) 0))
-         (volumes-service
-          (if volumes?
-              (list (string->symbol volumes-name))
-              '())))
-    (append
-     (map
-      (lambda (c)
-        (oci-container-shepherd-service
-         runtime runtime-cli c
-         #:user user
-         #:group group
-         #:runtime-environment runtime-environment
-         #:runtime-extra-arguments runtime-extra-arguments
-         #:oci-requirement
-         (append containers-requirement
-                 runtime-requirement
-                 networks-service
-                 volumes-service)
+  (define networks?
+    (> (length (oci-state-networks state)) 0))
+  (define volumes?
+    (> (length (oci-state-volumes state)) 0))
+  (append
+   (map
+    (lambda (c)
+      (oci-container-shepherd-service
+       state runtime-state c
+       #:verbose? verbose?
+       #:volumes? volumes?
+       #:networks? networks?))
+    (oci-state-containers state))
+   (if networks?
+       (list
+        (oci-networks-shepherd-service
+         state runtime-state
          #:verbose? verbose?))
-      containers)
-     (if networks?
-         (list
-          (oci-networks-shepherd-service
-           runtime runtime-cli
-           networks-name networks
-           #:user user #:group group
-           #:runtime-extra-arguments runtime-extra-arguments
-           #:runtime-environment runtime-environment
-           #:runtime-requirement (append networks-requirement
-                                         runtime-requirement)
-           #:verbose? verbose?))
-         '())
-     (if volumes?
-         (list
-          (oci-volumes-shepherd-service
-           runtime runtime-cli
-           volumes-name volumes
-           #:user user #:group group
-           #:runtime-extra-arguments runtime-extra-arguments
-           #:runtime-environment runtime-environment
-           #:runtime-requirement (append runtime-requirement
-                                         volumes-requirement)
-           #:verbose? verbose?))
-         '()))))
+       '())
+   (if volumes?
+       (list
+        (oci-volumes-shepherd-service
+         state runtime-state
+         #:verbose? verbose?))
+       '())))
+
+(define* (oci-configuration->oci-runtime-state config #:key verbose?)
+  (define runtime
+    (oci-configuration-runtime config))
+  (define home-service?
+    (oci-configuration-home-service? config))
+  (when verbose?
+    (format #t "Home service: ~a~%" home-service?))
+  (define runtime-cli
+    (if home-service?
+        (oci-runtime-home-cli config)
+        (oci-runtime-system-cli config)))
+  (define user
+    (if home-service?
+        #f
+        (oci-configuration-user config)))
+  (define group
+    (if home-service?
+        #f
+        (if (eq? runtime 'podman)
+            #~(group:name
+               (getgrgid
+                (passwd:gid
+                 (getpwnam #$user))))
+            (oci-runtime-group config (oci-configuration-group config)))))
+  (define runtime-requirement
+    (if home-service?
+        '()
+        (oci-runtime-system-requirement runtime)))
+  (define runtime-environment
+    (if home-service?
+        #~()
+        (oci-runtime-system-environment runtime user)))
+  (oci-runtime-state
+   (runtime runtime)
+   (runtime-cli runtime-cli)
+   (user user)
+   (group group)
+   (runtime-extra-arguments
+    (oci-configuration-runtime-extra-arguments config))
+   (runtime-environment runtime-environment)
+   (runtime-requirement runtime-requirement)))
+
+(define (oci-configuration->oci-state config)
+  (define runtime
+    (oci-configuration-runtime config))
+  (define home-service?
+    (oci-configuration-home-service? config))
+  (define networks-name
+    (if home-service?
+        (oci-networks-home-shepherd-name runtime)
+        (oci-networks-shepherd-name runtime)))
+  (define volumes-name
+    (if home-service?
+        (oci-volumes-home-shepherd-name runtime)
+        (oci-volumes-shepherd-name runtime)))
+  (define networks-requirement
+    (if home-service?
+        '()
+        '(networking)))
+  (oci-state
+   (containers (oci-configuration-containers config))
+   (networks (oci-configuration-networks config))
+   (volumes (oci-configuration-volumes config))
+   (networks-name networks-name)
+   (volumes-name volumes-name)
+   (networks-requirement networks-requirement)))
 
 (define (oci-configuration->shepherd-services config)
-  (let* ((runtime (oci-configuration-runtime config))
-         (system-runtime-cli
-          (oci-runtime-system-cli config))
-         (home-runtime-cli
-          (oci-runtime-home-cli config))
-         (runtime-extra-arguments
-          (oci-configuration-runtime-extra-arguments config))
-         (containers (oci-configuration-containers config))
-         (networks (oci-configuration-networks config))
-         (volumes (oci-configuration-volumes config))
-         (user (oci-configuration-user config))
-         (group
-          (if (eq? runtime 'podman)
-              #~(group:name
-                 (getgrgid
-                  (passwd:gid
-                   (getpwnam #$user))))
-              (oci-runtime-group config (oci-configuration-group config))))
-         (verbose? (oci-configuration-verbose? config))
-         (home-service?
-          (oci-configuration-home-service? config)))
-    (if home-service?
-        (oci-state->shepherd-services runtime home-runtime-cli containers networks volumes
-                                      #:verbose? verbose?
-                                      #:networks-name
-                                      (oci-networks-home-shepherd-name runtime)
-                                      #:volumes-name
-                                      (oci-volumes-home-shepherd-name runtime))
-        (oci-state->shepherd-services runtime system-runtime-cli containers networks volumes
-                                      #:user user
-                                      #:group group
-                                      #:verbose? verbose?
-                                      #:runtime-extra-arguments
-                                      runtime-extra-arguments
-                                      #:runtime-environment
-                                      (oci-runtime-system-environment runtime user)
-                                      #:runtime-requirement
-                                      (oci-runtime-system-requirement runtime)
-                                      #:networks-requirement '(networking)))))
+  (let* ((verbose? (oci-configuration-verbose? config))
+         (state (oci-configuration->oci-state config))
+         (runtime-state
+          (oci-configuration->oci-runtime-state config #:verbose? verbose?)))
+    (oci-state->shepherd-services state runtime-state #:verbose? verbose?)))
 
 (define (oci-service-subids config)
   "Return a subids-extension record representing subuids and subgids required by
 the rootless Podman backend."
-  (define (delete-duplicate-ranges ranges)
-    (delete-duplicates ranges
-                       (lambda args
-                         (apply string=? (map subid-range-name ranges)))))
+  (define (find-duplicates subids)
+    (let loop ((names '())
+               (subids subids))
+      (if (null? names)
+          names
+          (loop
+           (let ((name (subid-range-name (car subids))))
+             (if (member name names)
+                 (raise
+                  (formatted-message
+                   (G_ "Duplicated subid-range: ~a. subid-ranges names should be
+unique, please remove the duplicate.") name))
+                 (cons name names)))
+           (cdr subids)))))
+
   (define runtime
     (oci-configuration-runtime config))
   (define user
     (oci-configuration-user config))
+
   (define subgids (oci-configuration-subgids-range config))
+  (find-duplicates subgids)
+
   (define subuids (oci-configuration-subuids-range config))
+  (find-duplicates subgids)
+
   (define container-users
     (filter (lambda (range) (not (string=? (subid-range-name range) user)))
             (map (lambda (container)
@@ -1048,19 +1138,17 @@ the rootless Podman backend."
                      (mainline:oci-container-configuration-user container))))
                  (oci-configuration-containers config))))
   (define subgid-ranges
-    (delete-duplicate-ranges
-     (cons
-      (if (eq? subgids #f)
-          (subid-range (name user))
-          subgids)
-      container-users)))
+    (cons
+     (if (maybe-value-set? subgids)
+         subgids
+         (subid-range (name user)))
+     container-users))
   (define subuid-ranges
-    (delete-duplicate-ranges
-     (cons
-      (if (eq? subuids #f)
-          (subid-range (name user))
-          subuids)
-      container-users)))
+    (cons
+     (if (maybe-value-set? subuids)
+         subuids
+         (subid-range (name user)))
+     container-users))
 
   (if (eq? 'podman runtime)
       (subids-extension
@@ -1082,7 +1170,7 @@ the rootless Podman backend."
            (when (contains? element merged)
              (raise
               (formatted-message
-               (G_ "Duplicated ~a: ~a. ~as names should be unique, please
+               (G_ "Duplicated ~a: ~a. Names of ~a should be unique, please
 remove the duplicate.") object (get-name element) object)))
            (cons element merged))
          (cdr lst)))))
@@ -1094,7 +1182,8 @@ remove the duplicate.") object (get-name element) object)))
                 (oci-extension-containers b)
                 "container"
                 (lambda (config)
-                  (define maybe-name (mainline:oci-container-configuration-provision config))
+                  (define maybe-name
+                    (mainline:oci-container-configuration-provision config))
                   (if (maybe-value-set? maybe-name)
                       maybe-name
                       (oci-image->container-name
@@ -1116,20 +1205,12 @@ remove the duplicate.") object (get-name element) object)))
           '()
           (list
            (cond
-            ((not (eq? runtime-cli #f))
+            ((maybe-value-set? runtime-cli)
              runtime-cli)
             ((eq? 'podman runtime)
              podman)
             (else
              docker-cli))))))
-
-(define (oci-service-extension-wrap-validate extension)
-  (lambda (config)
-    (if (oci-configuration-valid? config)
-        (extension config)
-        (raise
-         (formatted-message
-          (G_ "Invalide oci-configuration ~a.") config)))))
 
 (define (oci-configuration-extend config extension)
   (oci-configuration
@@ -1155,35 +1236,32 @@ remove the duplicate.") object (get-name element) object)))
              oci-volume-configuration-name))))
 
 (define oci-service-type
-  (service-type (name 'oci)
-                (extensions
-                 (list
-                  (service-extension profile-service-type
-                                     (oci-service-extension-wrap-validate
-                                      (lambda (config)
-                                        (let ((runtime-cli
-                                               (oci-configuration-runtime-cli config))
-                                              (runtime
-                                               (oci-configuration-runtime config)))
-                                          (oci-service-profile runtime runtime-cli)))))
-                  (service-extension subids-service-type
-                                     (oci-service-extension-wrap-validate
-                                      oci-service-subids))
-                  (service-extension account-service-type
-                                     (oci-service-extension-wrap-validate
-                                      oci-service-accounts))
-                  (service-extension shepherd-root-service-type
-                                     (oci-service-extension-wrap-validate
-                                      oci-configuration->shepherd-services))))
-                ;; Concatenate OCI object lists.
-                (compose (lambda (args)
-                           (fold oci-extension-merge
-                                 (oci-extension)
-                                 args)))
-                (extend oci-configuration-extend)
-                (default-value (oci-configuration))
-                (description
-                 "This service implements the provisioning of OCI object such
+  (service-type
+   (name 'oci)
+   (extensions
+    (list
+     (service-extension profile-service-type
+                        (lambda (config)
+                          (let ((runtime-cli
+                                 (oci-configuration-runtime-cli config))
+                                (runtime
+                                 (oci-configuration-runtime config)))
+                            (oci-service-profile runtime runtime-cli))))
+     (service-extension subids-service-type
+                        oci-service-subids)
+     (service-extension account-service-type
+                        oci-service-accounts)
+     (service-extension shepherd-root-service-type
+                        oci-configuration->shepherd-services)))
+   ;; Concatenate OCI object lists.
+   (compose (lambda (args)
+              (fold oci-extension-merge
+                    (oci-extension)
+                    args)))
+   (extend oci-configuration-extend)
+   (default-value (oci-configuration))
+   (description
+    "This service implements the provisioning of OCI objects such
 as containers, networks and volumes.")))
 
 (define oci-container-service-type
