@@ -602,47 +602,6 @@ for the OCI runtime volume create command."
   (@@ (gnu services containers) lower-oci-image))
 
 ;; TODO: delete
-(define (oci-object-exists? runtime runtime-cli object verbose?)
-  #~(lambda* (name #:key (format-string "{{.Name}}"))
-      (use-modules (ice-9 format)
-                   (ice-9 match)
-                   (ice-9 popen)
-                   (ice-9 rdelim)
-                   (srfi srfi-1))
-
-      (define (read-lines file-or-port)
-        (define (loop-lines port)
-          (let loop ((lines '()))
-            (match (read-line port)
-              ((? eof-object?)
-               (reverse lines))
-              (line
-               (loop (cons line lines))))))
-
-        (if (port? file-or-port)
-            (loop-lines file-or-port)
-            (call-with-input-file file-or-port
-              loop-lines)))
-
-      #$(if (eq? runtime 'podman)
-            #~(let ((command
-                     (list #$runtime-cli
-                           #$object "exists" name)))
-                (when #$verbose?
-                  (format #t "Running~{ ~a~}~%" command))
-                (define exit-code (status:exit-val (apply system* command)))
-                (when #$verbose?
-                  (format #t "Exit code: ~a~%" exit-code))
-                (equal? EXIT_SUCCESS exit-code))
-            #~(let ((command
-                     (string-append #$runtime-cli
-                                    " " #$object " ls --format "
-                                    "\"" format-string "\"")))
-                (when #$verbose?
-                  (format #t "Running ~a~%" command))
-                (member name (read-lines (open-input-pipe command)))))))
-
-;; TODO: delete
 (define* (oci-image-loader runtime runtime-cli name image tag #:key verbose?)
   "Return a file-like object that, once lowered, will evaluate to a program able
 to load IMAGE through RUNTIME-CLI and to tag it with TAG afterwards."
@@ -723,7 +682,7 @@ invocation for running containers."
 
 (define* (oci-container-entrypoint name invocation
                                    #:key verbose?
-                                   (pre-script #~((begin))))
+                                   (pre-script #~()))
   "Return a file-like object that, once lowered, will evaluate to the entrypoint
 for the Shepherd service that will run INVOCATION."
   (program-file
@@ -738,6 +697,9 @@ for the Shepherd service that will run INVOCATION."
                                 #:verbose? #$verbose?
                                 #:pre-script
                                 (lambda _
+                                  (when (and #$verbose?
+                                             (zero? (length '(#$@pre-script))))
+                                    (format #t "No pre script to run..."))
                                   #$@pre-script))))))
 
 (define* (oci-container-shepherd-service runtime runtime-cli config
