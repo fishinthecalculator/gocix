@@ -1,5 +1,5 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2024 Giacomo Leidi <goodoldpaul@autistici.org>
+;;; Copyright © 2024, 2025 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci services configuration)
   #:use-module (gnu services configuration)
@@ -9,7 +9,9 @@
   #:use-module (ice-9 match)
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
-  #:export (field-name->environment-variable
+  #:export (positive?
+
+            field-name->environment-variable
             serialize-environment-variable
             serialize-boolean-environment-variable
             configuration->environment-variables
@@ -27,6 +29,9 @@
 
             serialize-hjson-string
             configuration->hjson-block))
+
+(define (positive? value)
+  (and (integer? value) (> value 0)))
 
 ;; Common
 
@@ -66,6 +71,12 @@
 (define* (serialize-boolean-environment-variable field-name value #:key (prefix #f) (true-value "true") (false-value "false"))
   (serialize-environment-variable field-name (if value true-value false-value) #:prefix prefix))
 
+(define* (serialize-number-environment-variable field-name value #:key (prefix #f))
+  (if (maybe-value-set? value)
+      (cons (field-name->environment-variable field-name #:prefix prefix)
+            (number->string value))
+      '()))
+
 (define (format-json-list values)
   (format-squared-list values))
 
@@ -93,6 +104,18 @@
                               (serialize-environment-variable field-name value
                                                               #:prefix prefix)
                               '()))
+                         ('number
+                          (serialize-number-environment-variable field-name value
+                                                                 #:prefix prefix))
+                         ('maybe-number
+                          (serialize-number-environment-variable field-name value
+                                                                 #:prefix prefix))
+                         ('positive
+                          (serialize-number-environment-variable field-name value
+                                                                 #:prefix prefix))
+                         ('maybe-positive
+                          (serialize-number-environment-variable field-name value
+                                                                 #:prefix prefix))
                          ('boolean
                           (serialize-boolean-environment-variable field-name value
                                                                   #:prefix prefix
@@ -116,7 +139,6 @@
 
 (define (serialize-ini-boolean field-name value)
   (serialize-ini-string field-name (if value "true" "false")))
-
 
 ;; Yaml
 
