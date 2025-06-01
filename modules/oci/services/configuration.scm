@@ -93,9 +93,9 @@
                  (let ((field-name (configuration-field-name f))
                        (type (configuration-field-type f))
                        (value ((configuration-field-getter f) config)))
-                   (if (and (not (eq? field-name 'image))
+                   (if (and (not (eq? (pk 'field-name field-name) 'image))
                             (not (member field-name excluded)))
-                       (match type
+                       (match (pk 'type type)
                          ('string
                           (serialize-environment-variable field-name value
                                                           #:prefix prefix))
@@ -127,7 +127,7 @@
                             (G_ "Unknown environment-variable field type: ~a")
                             type))))
                        '())))
-               fields)))
+               (pk 'fields fields))))
 
 ;; INI
 
