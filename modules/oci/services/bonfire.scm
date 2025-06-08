@@ -72,7 +72,7 @@
             oci-bonfire-service-type))
 
 (define %bonfire-version
-  "1.0.0-rc.1.4")
+  "1.0.0-rc.1.5")
 
 (define (bonfire-tag flavour system)
   (string-join (list %bonfire-version flavour system) "-"))
