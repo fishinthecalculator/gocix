@@ -41,7 +41,7 @@
   (string-append "docker.io/getmeili/meilisearch:" meilisearch-tag))
 
 (define (serialize-string field-name value)
-  (serialize-environment-variable field-name value #:prefix "MEILISEARCH_"))
+  (serialize-string-environment-variable field-name value #:prefix "MEILISEARCH_"))
 
 (define serialize-maybe-string serialize-string)
 

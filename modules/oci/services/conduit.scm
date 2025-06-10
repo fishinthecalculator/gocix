@@ -44,7 +44,7 @@
   (string-append "docker.io/matrixconduit/matrix-conduit:" conduit-tag))
 
 (define (serialize-string field-name value)
-  (serialize-environment-variable field-name value #:prefix "CONDUIT_"))
+  (serialize-string-environment-variable field-name value #:prefix "CONDUIT_"))
 
 (define serialize-maybe-string serialize-string)
 

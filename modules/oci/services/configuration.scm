@@ -12,7 +12,7 @@
   #:export (positive?
 
             field-name->environment-variable
-            serialize-environment-variable
+            serialize-string-environment-variable
             serialize-boolean-environment-variable
             configuration->environment-variables
 
@@ -36,6 +36,12 @@
 ;; Common
 
 (define* (format-squared-list values #:key (quoter "\"") (delimiter ", "))
+  "Serializes VALUES, a list of strings, into a structured format where the
+resulting serialization starts with @code{[} and ends with @code{]}.  DELIMITER
+is interleaved between elements and each element is wrapped with QUOTER.
+
+This procedure can be used, for example, to serialize list of strings to JSON
+or YAML lists."
   (string-append "["
                (string-join
                 (map (lambda (s) (string-append quoter s quoter))
@@ -44,6 +50,11 @@
                "]"))
 
 (define (uglify-snake-case field-name)
+  "Serializes FIELD-NAME, a field name from @code{(gnu services configuration)},
+to a snake case string representation of the field name.  Trailing @code{?} in
+the name are dropped and @code{-} get replaced by @code{_}.
+
+For example the procedure would convert @code{'A-Field?} to @code{\"a_field\"}."
   (define str (symbol->string field-name))
   (string-downcase
    (string-replace-substring
@@ -55,40 +66,51 @@
 ;; Environment variables
 
 (define* (field-name->environment-variable field-name #:key (prefix #f))
-  (let ((variable
-         ;; a-field? -> ${PREFIX}A_FIELD
-         (string-upcase
-          (uglify-snake-case field-name))))
-    (if (and prefix (string? prefix) (not (string-null? prefix)))
+  "Serializes FIELD-NAME, a field name from @code{(gnu services configuration)},
+to a snake case upper case string representation of the field name.  Trailing
+@code{?} in the name are dropped and @code{-} get replaced by @code{_}.  When
+PREFIX is a string, it is prepended to the result.
+
+For example the procedure would convert @code{'A-Field?} to @code{\"A_FIELD\"}."
+  (let ((variable (string-upcase
+                   (uglify-snake-case field-name))))
+    (if (string? prefix)
         (string-append prefix variable)
         variable)))
 
-(define* (serialize-environment-variable field-name value #:key (prefix #f))
-  (if (maybe-value-set? value)
-      (cons (field-name->environment-variable field-name #:prefix prefix) value)
-      '()))
+(define* (serialize-string-environment-variable field-name value
+                                                #:key (prefix #f))
+  #~(cons #$(field-name->environment-variable field-name #:prefix prefix)
+          #$value))
 
-(define* (serialize-boolean-environment-variable field-name value #:key (prefix #f) (true-value "true") (false-value "false"))
-  (serialize-environment-variable field-name (if value true-value false-value) #:prefix prefix))
+(define* (serialize-boolean-environment-variable field-name value
+                                                 #:key (prefix #f)
+                                                 (true-value "true")
+                                                 (false-value "false"))
+  (serialize-string-environment-variable
+   field-name
+   (if value true-value false-value)
+   #:prefix prefix))
 
-(define* (serialize-number-environment-variable field-name value #:key (prefix #f))
-  (if (maybe-value-set? value)
-      (cons (field-name->environment-variable field-name #:prefix prefix)
-            (number->string value))
-      '()))
-
-(define (format-json-list values)
-  (format-squared-list values))
+(define* (serialize-number-environment-variable field-name value
+                                                #:key (prefix #f))
+  #~(cons #$(field-name->environment-variable field-name #:prefix prefix)
+          #$(number->string value)))
 
 (define* (configuration->environment-variables config fields
                                                #:key (excluded '())
                                                (prefix #f)
                                                (true-value "true")
                                                (false-value "false"))
-  (filter (lambda (variable)
-            (and (not (null? variable))
-                 (not (and (string? variable)
-                           (string-null? variable)))))
+  "Serializes CONFIG, a configuration from @code{(gnu services configuration)},
+and its FIELDS to a list of gexps.  Each gexp will evaluate to a pair
+representing an environment variable.  The first element of each pair is the
+variable name, the second is the value.  When PREFIX is a string it is prepended
+to the variable name.  If any of FIELDS' names are a member of EXCLUDED they
+won't be serialized.  TRUE-VALUE and FALSE-VALUE will be used as a
+representation for respectfully @code{#t} and @code{#f}."
+  ;; Filter out unset maybe-types.
+  (filter (compose not null?)
           (map (lambda (f)
                  (let ((field-name (configuration-field-name f))
                        (type (configuration-field-type f))
@@ -97,30 +119,40 @@
                             (not (member field-name excluded)))
                        (match type
                          ('string
-                          (serialize-environment-variable field-name value
-                                                          #:prefix prefix))
+                          (serialize-string-environment-variable
+                           field-name value #:prefix prefix))
                          ('maybe-string
                           (if (maybe-value-set? value)
-                              (serialize-environment-variable field-name value
-                                                              #:prefix prefix)
+                              (serialize-string-environment-variable
+                               field-name value #:prefix prefix)
                               '()))
                          ('number
-                          (serialize-number-environment-variable field-name value
-                                                                 #:prefix prefix))
+                          (serialize-number-environment-variable
+                           field-name value #:prefix prefix))
                          ('maybe-number
-                          (serialize-number-environment-variable field-name value
-                                                                 #:prefix prefix))
+                          (if (maybe-value-set? value)
+                              (serialize-number-environment-variable
+                               field-name value #:prefix prefix)
+                              '()))
                          ('positive
-                          (serialize-number-environment-variable field-name value
-                                                                 #:prefix prefix))
+                          (serialize-number-environment-variable
+                           field-name value #:prefix prefix))
                          ('maybe-positive
-                          (serialize-number-environment-variable field-name value
-                                                                 #:prefix prefix))
+                          (if (maybe-value-set? value)
+                              (serialize-number-environment-variable
+                               field-name value #:prefix prefix)
+                              '()))
                          ('boolean
-                          (serialize-boolean-environment-variable field-name value
-                                                                  #:prefix prefix
-                                                                  #:true-value true-value
-                                                                  #:false-value false-value))
+                          (serialize-boolean-environment-variable
+                           field-name value #:prefix prefix
+                           #:true-value true-value #:false-value false-value))
+                         ('maybe-boolean
+                          (if (maybe-value-set? value)
+                              (serialize-boolean-environment-variable
+                               field-name value #:prefix prefix
+                               #:true-value true-value
+                               #:false-value false-value)
+                              '()))
                          (_
                           (raise
                            (formatted-message
