@@ -80,8 +80,8 @@ For example the procedure would convert @code{'A-Field?} to @code{\"A_FIELD\"}."
 
 (define* (serialize-string-environment-variable field-name value
                                                 #:key (prefix #f))
-  #~(cons #$(field-name->environment-variable field-name #:prefix prefix)
-          #$value))
+  (cons (field-name->environment-variable field-name #:prefix prefix)
+        value))
 
 (define* (serialize-boolean-environment-variable field-name value
                                                  #:key (prefix #f)
@@ -94,8 +94,8 @@ For example the procedure would convert @code{'A-Field?} to @code{\"A_FIELD\"}."
 
 (define* (serialize-number-environment-variable field-name value
                                                 #:key (prefix #f))
-  #~(cons #$(field-name->environment-variable field-name #:prefix prefix)
-          #$(number->string value)))
+  (cons (field-name->environment-variable field-name #:prefix prefix)
+        (number->string value)))
 
 (define* (configuration->environment-variables config fields
                                                #:key (excluded '())
@@ -103,12 +103,12 @@ For example the procedure would convert @code{'A-Field?} to @code{\"A_FIELD\"}."
                                                (true-value "true")
                                                (false-value "false"))
   "Serializes CONFIG, a configuration from @code{(gnu services configuration)},
-and its FIELDS to a list of gexps.  Each gexp will evaluate to a pair
-representing an environment variable.  The first element of each pair is the
-variable name, the second is the value.  When PREFIX is a string it is prepended
-to the variable name.  If any of FIELDS' names are a member of EXCLUDED they
-won't be serialized.  TRUE-VALUE and FALSE-VALUE will be used as a
-representation for respectfully @code{#t} and @code{#f}."
+and its FIELDS to a list of pairs.  Each  pair represents an environment
+variable.  The first element of each pair is the variable name, the second is
+the value.  When PREFIX is a string it is prepended to the variable name.  If
+any of FIELDS' names are a member of EXCLUDED they won't be serialized.
+TRUE-VALUE and FALSE-VALUE will be used as a representation for respectfully
+@code{#t} and @code{#f}."
   ;; Filter out unset maybe-types.
   (filter (compose not null?)
           (map (lambda (f)

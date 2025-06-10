@@ -141,15 +141,16 @@ database name and as an authentication user name.")
   (or (string=? "localhost" host) (file-exists? db)))
 
 (define (bonfire-configuration->oci-container-environment config)
-  `(,@(if (bonfire-configuration-local-database? config)
-          (list (string-append "POSTGRES_USER="
-                               (bonfire-configuration-postgres-db config)))
-          '())
-    ,@(configuration->environment-variables config bonfire-configuration-fields
-                                            #:excluded `(create-database?
-                                                         ,@(if (bonfire-configuration-local-database? config)
-                                                               '(postgres-user)
-                                                               '())))))
+  (append
+   (if (bonfire-configuration-local-database? config)
+       (list (string-append "POSTGRES_USER="
+                            (bonfire-configuration-postgres-db config)))
+       '())
+   (configuration->environment-variables config bonfire-configuration-fields
+                                         #:excluded `(create-database?
+                                                      ,@(if (bonfire-configuration-local-database? config)
+                                                            '(postgres-user)
+                                                            '())))))
 
 (define (string-or-volume? value)
   (or (string? value)
