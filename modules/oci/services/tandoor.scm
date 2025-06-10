@@ -198,18 +198,17 @@ for more details."))
   (or (string=? "localhost" host) (file-exists? db)))
 
 (define (tandoor-configuration->oci-container-environment config)
-  (append
-   (if (tandoor-configuration-local-database? config)
-       (list (string-append "POSTGRES_USER="
-                            (tandoor-configuration-postgres-db config)))
-       '())
-   (configuration->environment-variables config tandoor-configuration-fields
-                                         #:excluded `(create-database?
-                                                      ,@(if (tandoor-configuration-local-database? config)
-                                                            '(postgres-user)
-                                                            '()))
-                                         #:true-value "1"
-                                         #:false-value "0")))
+  `(,@(if (tandoor-configuration-local-database? config)
+          (list (string-append "POSTGRES_USER="
+                               (tandoor-configuration-postgres-db config)))
+          '())
+    ,@(configuration->environment-variables config tandoor-configuration-fields
+                                            #:excluded `(create-database?
+                                                         ,@(if (tandoor-configuration-local-database? config)
+                                                               '(postgres-user)
+                                                               '()))
+                                            #:true-value "1"
+                                            #:false-value "0")))
 
 (define (%tandoor-secrets config)
   (let ((email-host-password

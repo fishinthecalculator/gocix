@@ -143,7 +143,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
            (network
             (oci-vaultwarden-configuration-network config))
            (port
-            (oci-vaultwarden-configuration-port vaultwarden-config))
+            (oci-vaultwarden-configuration-port config))
            (image
             (oci-vaultwarden-configuration-image config))
            (requirement
