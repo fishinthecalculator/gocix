@@ -45,6 +45,8 @@
             prometheus-configuration-fields
             prometheus-configuration-global
             prometheus-configuration-scrape-configs
+            prometheus-configuration-retention-time
+            prometheus-configuration-retention-size
             prometheus-configuration-extra-content
 
             oci-prometheus-service-type
@@ -196,6 +198,16 @@ scrape_configs:
   (scrape-configs
    (list-of-prometheus-scrape-configurations '())
    "Prometheus' @code{scrape_configs} section.")
+  (retention-time
+   (string "15d")
+   "How long to retain samples in storage."
+   (serializer empty-serializer))
+  (retention-size
+   (maybe-string)
+   "The maximum number of bytes of storage blocks to retain.  The oldest data
+will be removed first.  Units supported: B, KB, MB, GB, TB, PB, EB.
+Based on powers-of-2, so 1KB is 1024B."
+   (serializer empty-serializer))
   (extra-content
    (string "")
    "Everything you want to manually append to the configuration file."
@@ -319,21 +331,34 @@ port inside the container.")
             (oci-prometheus-configuration-port config))
            (metrics-port
             (oci-prometheus-configuration-metrics-port config))
+           (file (oci-prometheus-configuration-file config))
+           (record (oci-prometheus-configuration-record config))
+           (retention-time
+            (if (maybe-value-set? record)
+                (prometheus-configuration-retention-time record)
+                "15d"))
+           (retention-size
+            (and (maybe-value-set? record)
+                 (prometheus-configuration-retention-size record)))
            (prometheus.yml
-            (let ((file (oci-prometheus-configuration-file config))
-                  (record (oci-prometheus-configuration-record config)))
-              (if (maybe-value-set? file)
-                  file
-                  (if (maybe-value-set? record)
-                   (pt-serialize-prometheus-configuration 'record record)
-                   (raise
-                    (G_ "oci-prometheus-configuration: You must set either the file or the record field but both are unset!"))))))
+            (if (maybe-value-set? file)
+                file
+                (if (maybe-value-set? record)
+                    (pt-serialize-prometheus-configuration 'record record)
+                    (raise
+                     (G_ "oci-prometheus-configuration: You must set either the file or the record field but both are unset!")))))
            (container-config
             (mainline:oci-container-configuration
              (command
-              '("--web.enable-lifecycle"
+              `("--web.enable-lifecycle"
                 "--config.file=/etc/prometheus/prometheus.yml"
-                "--web.enable-admin-api"))
+                "--web.enable-admin-api"
+                ,(string-append "--storage.tsdb.retention.time="
+                                retention-time)
+                ,@(if (and retention-size (maybe-value-set? retention-size))
+                      (string-append "--storage.tsdb.retention.size="
+                                     retention-size)
+                      '())))
              (image image)
              (log-file log-file)
              (ports
