@@ -9,6 +9,7 @@
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
+  #:use-module (oci build utils)
   #:use-module (sops secrets)
   #:use-module (sops utils)
   #:use-module (sops services sops)
@@ -234,12 +235,8 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
            (port
             (oci-pict-rs-configuration-port config))
            (secrets-directories
-            (delete-duplicates
-             (map (lambda (secret-file)
-                    (define secret-directory (dirname secret-file))
-                    (string-append secret-directory ":"
-                                   secret-directory ":ro"))
-                  (%pict-rs-secrets-files config))))
+            (secrets-volume-mappings
+             (%pict-rs-secrets-files config)))
            (container-config
             (oci-container-configuration
              (image image)

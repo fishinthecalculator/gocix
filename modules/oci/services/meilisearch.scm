@@ -10,14 +10,15 @@
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
-  #:use-module (guix i18n)
-  #:use-module (ice-9 match)
   #:use-module (sops secrets)
   #:use-module (sops utils)
   #:use-module (sops services sops)
+  #:use-module (oci build utils)
   #:use-module (oci services configuration)
   #:use-module (oci services containers)
   #:use-module (srfi srfi-1)
+  #:use-module (guix i18n)
+  #:use-module (ice-9 match)
   #:export (oci-meilisearch-configuration
             oci-meilisearch-configuration?
             oci-meilisearch-configuration-fields
@@ -127,10 +128,8 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
            (port
             (oci-meilisearch-configuration-port config))
            (secrets
-            (delete-duplicates
-             (map (lambda (secret-file)
-                    (string-append secret-file ":" secret-file ":ro"))
-                  (%meilisearch-secrets-files config))))
+            (secrets-volume-mappings
+             (%meilisearch-secrets-files config)))
            (container-config
             (mainline:oci-container-configuration
              (image image)

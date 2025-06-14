@@ -20,6 +20,7 @@
   #:use-module (sops utils)
   #:use-module (sops secrets)
   #:use-module (sops services sops)
+  #:use-module (oci build utils)
   #:use-module (oci self)
   #:use-module (oci services configuration)
   #:use-module (oci services containers)
@@ -315,12 +316,8 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
            (requirement
             (oci-bonfire-configuration-requirement config))
            (secrets-directories
-            (delete-duplicates
-             (map (lambda (secret-file)
-                    (define secret-directory (dirname secret-file))
-                    (string-append secret-directory ":"
-                                   secret-directory ":ro"))
-                  (%bonfire-secrets-files config))))
+            (secrets-volume-mappings
+             (%bonfire-secrets-files config)))
            (container-config
             (mainline:oci-container-configuration
              (image image)

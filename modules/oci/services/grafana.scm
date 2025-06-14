@@ -7,12 +7,16 @@
   #:use-module (gnu services configuration)
   #:use-module ((gnu services docker) #:prefix mainline:)
   #:use-module (gnu system shadow)
+  #:use-module (guix diagnostics)
   #:use-module (guix gexp)
-  #:use-module (srfi srfi-1)
-  #:use-module (srfi srfi-26)
-  #:use-module (ice-9 string-fun)
+  #:use-module (guix i18n)
   #:use-module (oci services configuration)
   #:use-module (oci services containers)
+  #:use-module (sops secrets)
+  #:use-module (ice-9 match)
+  #:use-module (ice-9 string-fun)
+  #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-26)
   #:export (oci-grafana-service-type
             oci-grafana-configuration
             oci-grafana-configuration?

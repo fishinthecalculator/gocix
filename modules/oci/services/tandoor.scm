@@ -9,15 +9,16 @@
   #:use-module ((gnu services docker) #:prefix mainline:)
   #:use-module (gnu system shadow)
   #:use-module (guix gexp)
+  #:use-module (sops secrets)
+  #:use-module (sops utils)
+  #:use-module (sops services sops)
+  #:use-module (oci build utils)
+  #:use-module (oci services configuration)
+  #:use-module (oci services containers)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match)
   #:use-module (ice-9 string-fun)
-  #:use-module (sops secrets)
-  #:use-module (sops utils)
-  #:use-module (sops services sops)
-  #:use-module (oci services configuration)
-  #:use-module (oci services containers)
   #:export (oci-tandoor-service-type
 
             tandoor-configuration
@@ -335,10 +336,8 @@ for more details."))
            (port
             (oci-tandoor-configuration-port config))
            (secrets
-            (delete-duplicates
-             (map (lambda (secret-file)
-                    (string-append secret-file ":" secret-file ":ro"))
-                  (%tandoor-secrets-files config))))
+            (secrets-volume-mappings
+             (%tandoor-secrets-files config)))
            (container-config
             (mainline:oci-container-configuration
              (provision provision)
