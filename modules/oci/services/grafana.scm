@@ -10,8 +10,10 @@
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
+  #:use-module (oci build utils)
   #:use-module (oci services configuration)
   #:use-module (oci services containers)
+  #:use-module (sops services sops)
   #:use-module (sops secrets)
   #:use-module (ice-9 match)
   #:use-module (ice-9 string-fun)
@@ -53,10 +55,15 @@
             grafana-smtp-configuration-host
             grafana-smtp-configuration-user
             grafana-smtp-configuration-password
+            grafana-smtp-configuration-password-file
             grafana-smtp-configuration-from-address))
 
 ;; Some of this code comes from the Guix manual.
 ;; Check it out! It's pretty cool.
+
+;; FIXME: Drop this and make this configurable.
+(define %grafana-secrets-directory
+  "/run/secrets")
 
 (define grafana-tag
   "11.5.3")
@@ -85,11 +92,36 @@
    (boolean #f)
    "The image to use for the OCI backed Shepherd service."))
 
+(define (serialize-sops-secret field-name value)
+  (lambda (secrets-directory)
+    #~(string-append
+       #$secrets-directory
+       #$(sops-secret->file-name value))))
+
+(define (serialize-maybe-sops-secret field-name value)
+  (if (maybe-value-set? value)
+      (serialize-sops-secret field-name value)
+      ""))
+
 (define (gf-serialize-grafana-smtp-configuration field-name value)
+  (define password-file (grafana-smtp-configuration-password-file value))
+  (define password (grafana-smtp-configuration-password value))
   #~(string-append
      "[smtp]\n"
      #$(serialize-configuration
-        value grafana-smtp-configuration-fields)))
+        value grafana-smtp-configuration-fields)
+     "\n"
+     (if (maybe-value-set? password-file?)
+         #~(string-append "password = $__file{"
+                          #$((serialize-sops-secret
+                              'password-file password-file)
+                             %grafana-secrets-directory)
+                          "}")
+         (if (string-null? password)
+             ""
+             (string-append "password = " password)))))
+
+(define-maybe sops-secret)
 
 (define-configuration grafana-smtp-configuration
   (enabled?
@@ -103,7 +135,13 @@
    "The email used to authenticate with the SMTP server.")
   (password
    (string "")
-   "The password used to authenticate with the SMTP server.")
+   "The password used to authenticate with the SMTP server."
+   (serializer empty-serializer))
+  (password-file
+   (maybe-sops-secret)
+   "An optional field representing a file from which Grafana
+will read the SMTP password."
+   (serializer empty-serializer))
   (from-address
    (string "alert@example.org")
    "The sender of the email alerts Grafana will send."))
@@ -163,6 +201,24 @@ is @code{#f} Grafana has to be started manually with @command{herd start}.")
    (maybe-string)
    "The docker network where the grafana container will be attached. When equal
 to \"host\" the @code{port} field will be ignored."))
+
+(define (%grafana-secrets config)
+  (define record (oci-grafana-configuration-grafana.ini config))
+  (if (grafana-configuration? record)
+   (let ((secret (grafana-smtp-configuration-password-file
+                  (grafana-configuration-smtp record))))
+     (if (sops-secret? secret)
+         (list secret)
+         '()))
+   '()))
+
+(define (%grafana-secret-file config secret)
+  (string-append %grafana-secrets-directory
+                 "/" (sops-secret->file-name secret)))
+
+(define (%grafana-secrets-files config)
+  (map (lambda (s) (%grafana-secret-file config s))
+       (%grafana-secrets config)))
 
 (define (oci-grafana-datadir config)
   (define maybe-datadir
@@ -227,6 +283,9 @@ to \"host\" the @code{port} field will be ignored."))
             (oci-grafana-configuration-image config))
            (port
             (oci-grafana-configuration-port config))
+           (secrets-directories
+            (secrets-volume-mappings
+             (%grafana-secrets-files config)))
            (container-config
             (mainline:oci-container-configuration
              (auto-start? auto-start?)
@@ -238,6 +297,7 @@ to \"host\" the @code{port} field will be ignored."))
                       datadir
                       (oci-volume-configuration-name datadir))
                  . "/var/lib/grafana")
+                ,@secrets-directories
                 (,grafana.ini . "/opt/bitnami/grafana/conf/grafana.ini"))))))
       (list
        (if (maybe-value-set? network)
@@ -259,6 +319,9 @@ to \"host\" the @code{port} field will be ignored."))
                                                          (oci-grafana-configuration->oci-container-configuration config)))))
                                   (service-extension account-service-type
                                                      grafana-accounts)
+                                  (service-extension sops-secrets-service-type
+                                                     (lambda (config)
+                                                       (%grafana-secrets config)))
                                   (service-extension activation-service-type
                                                      grafana-activation)))
                 (default-value (oci-grafana-configuration))
