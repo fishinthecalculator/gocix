@@ -5,7 +5,7 @@
   #:use-module (srfi srfi-1)
   #:export (secrets-volume-mappings))
 
-(define* (secrets-volume-mappings secret-files #:key "ro")
+(define* (secrets-volume-mappings secret-files #:key (mode "ro"))
   (delete-duplicates
    (map (lambda (secret-file)
           (define secret-directory (dirname secret-file))
