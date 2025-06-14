@@ -1032,8 +1032,6 @@ in STATE."
     (oci-configuration-runtime config))
   (define home-service?
     (oci-configuration-home-service? config))
-  (when verbose?
-    (format #t "Home service: ~a~%" home-service?))
   (define runtime-cli
     (if home-service?
         (oci-runtime-home-cli config)
