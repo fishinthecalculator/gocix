@@ -2,7 +2,8 @@
 ;;; Copyright © 2025 Giacomo Leidi <goodoldpaul@autistici.org>
 
 (define-module (oci build utils)
-  #:use-module (srfi srfi-1))
+  #:use-module (srfi srfi-1)
+  #:export (secrets-volume-mappings))
 
 (define* (secrets-volume-mappings secret-files #:key "ro")
   (delete-duplicates
