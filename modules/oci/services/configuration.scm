@@ -30,6 +30,9 @@
             serialize-hjson-string
             configuration->hjson-block))
 
+(define (positive? value)
+  (and (integer? value) (> value 0)))
+
 ;; Common
 
 (define* (format-squared-list values #:key (quoter "\"") (delimiter ", "))
