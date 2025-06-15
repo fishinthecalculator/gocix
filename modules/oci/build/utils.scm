@@ -6,9 +6,12 @@
   #:export (secrets-volume-mappings))
 
 (define* (secrets-volume-mappings secret-files #:key (mode "ro"))
-  (delete-duplicates
-   (map (lambda (secret-file)
-          (define secret-directory (dirname secret-file))
-          (string-append secret-directory ":"
-                         secret-directory ":" mode))
-        secret-files)))
+  (define (secret->mapping secret)
+    (string-append secret ":" secret ":" mode))
+  (if (= 1 (length secret-files))
+      (map secret->mapping secret-files)
+      (delete-duplicates
+       (map (lambda (secret-file)
+              (define secret (dirname secret-file))
+              (secret->mapping secret))
+            secret-files))))
