@@ -462,7 +462,19 @@ volumes to add."))
        (first (string-split image #\:))
        (mainline:oci-image-repository image))))
 
-(define (oci-command-line-shepherd-action object-name invocation entrypoint)
+(define (oci-entrypoint-shepherd-action object-name entrypoint)
+  "Return a Shepherd action printing a given ENTRYPOINT of an OCI object
+for the given OBJECT-NAME."
+  (shepherd-action
+   (name 'entrypoint)
+   (documentation
+    (format #f "Prints ~a's OCI runtime entrypoint."
+            object-name))
+   (procedure
+    #~(lambda _
+        (format #t "~a~%" #$entrypoint)))))
+
+(define (oci-command-line-shepherd-action object-name invocation)
   "Return a Shepherd action printing a given INVOCATION of an OCI command for the
 given OBJECT-NAME."
   (shepherd-action
@@ -472,8 +484,7 @@ given OBJECT-NAME."
             object-name))
    (procedure
     #~(lambda _
-        (format #t "Entrypoint:~%~a~%" #$entrypoint)
-        (format #t "Invocation:~%~a~%" #$invocation)))))
+        (format #t "~a~%" #$invocation)))))
 
 (define (oci-container-shepherd-name runtime config)
   "Return the name of an OCI backed Shepherd service based on CONFIG.
@@ -851,8 +862,10 @@ by CONFIG through RUNTIME-CLI."
                        (append
                         (list
                          (oci-command-line-shepherd-action
-                          shepherd-name #~(string-join (list #$@invocation) " ")
-                          start-entrypoint))
+                          shepherd-name
+                          #~(string-join (list #$@invocation) " "))
+                         (oci-entrypoint-shepherd-action
+                          shepherd-name start-entrypoint))
                         (if (mainline:oci-image? image)
                             '()
                             (list
@@ -935,9 +948,10 @@ by INVOCATIONS through RUNTIME-STATE."
                             (list #$@runtime-environment))))
                       (actions
                        (list
+                        (oci-entrypoint-shepherd-action
+                         name entrypoint)
                         (oci-command-line-shepherd-action
-                         name (format-oci-invocations invocations)
-                         entrypoint))))))
+                         name (format-oci-invocations invocations)))))))
 
 (define* (oci-networks-shepherd-service state runtime-state
                                         #:key verbose?)
