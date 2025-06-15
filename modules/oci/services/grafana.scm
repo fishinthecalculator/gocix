@@ -69,7 +69,7 @@
   "/run/secrets")
 
 (define grafana-tag
-  "11.5.3")
+  "12.0.1")
 
 (define grafana-image
   (string-append "docker.io/bitnami/grafana:" grafana-tag))
