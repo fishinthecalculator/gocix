@@ -235,15 +235,17 @@ to \"host\" the @code{port} field will be ignored."))
 
 (define (grafana-accounts config)
   (let ((runtime (oci-grafana-configuration-runtime config)))
-    (list (user-account
-           (name "grafana")
-           (comment "Grafana's Service Account")
-           (uid 1001)
-           (group (if (eq? 'podman runtime) "users" "root"))
-           (supplementary-groups '("tty"))
-           (system? (eq? 'docker runtime))
-           (home-directory "/var/empty")
-           (shell (file-append shadow "/sbin/nologin"))))))
+    (if (eq? runtime 'podman)
+        '()
+        (list (user-account
+               (name "grafana")
+               (comment "Grafana's Service Account")
+               (uid 1001)
+               (group "root")
+               (supplementary-groups '("tty"))
+               (system? #t)
+               (home-directory "/var/empty")
+               (shell (file-append shadow "/sbin/nologin")))))))
 
 (define (grafana-activation config)
   "Return an activation gexp for Grafana."
