@@ -95,7 +95,7 @@
 (define (serialize-sops-secret field-name value)
   (lambda (secrets-directory)
     #~(string-append
-       #$secrets-directory
+       #$secrets-directory "/"
        #$(sops-secret->file-name value))))
 
 (define (serialize-maybe-sops-secret field-name value)
