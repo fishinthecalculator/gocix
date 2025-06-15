@@ -277,6 +277,12 @@ to \"host\" the @code{port} field will be ignored."))
             (oci-grafana-configuration-auto-start? config))
            (datadir (oci-grafana-datadir config))
            (grafana.ini (oci-grafana-grafana.ini config))
+           (password-file
+            (let ((maybe-record
+                   (oci-grafana-configuration-grafana.ini config)))
+              (and (grafana-configuration? maybe-record)
+                   (grafana-smtp-configuration-password-file
+                    (grafana-configuration-smtp maybe-record)))))
            (network
             (oci-grafana-configuration-network config))
            (image
@@ -289,6 +295,10 @@ to \"host\" the @code{port} field will be ignored."))
            (container-config
             (mainline:oci-container-configuration
              (auto-start? auto-start?)
+             (requirement
+              (if (and password-file (maybe-value-set? password-file))
+                  '(sops-secrets)
+                  '()))
              (image image)
              (ports
               `((,port . "3000")))
