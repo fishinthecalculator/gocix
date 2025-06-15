@@ -27,10 +27,13 @@
             oci-grafana-configuration-datadir
             oci-grafana-configuration-image
             oci-grafana-configuration-port
+            oci-grafana-configuration-log-file
             oci-grafana-configuration-auto-start?
             oci-grafana-configuration-grafana.ini
             oci-grafana-configuration-network
             oci-grafana-configuration->oci-container-configuration
+
+            oci-grafana-log-file
 
             grafana-accounts
             grafana-activation
@@ -196,10 +199,23 @@ is @code{#f} Grafana has to be started manually with @command{herd start}.")
   (grafana.ini
    (grafana-configuration (grafana-configuration))
    "This field will be serialized as graphana.ini.")
+  (log-file
+   (maybe-string)
+   "When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is created
+if it does not exist, otherwise it is appended to.  By default it is
+@code{\"/var/log/grafana.log\"}.")
   (network
    (maybe-string)
    "The docker network where the grafana container will be attached. When equal
 to \"host\" the @code{port} field will be ignored."))
+
+(define (oci-grafana-log-file config)
+  (define maybe-log-file
+    (oci-grafana-configuration-log-file config))
+  (if (maybe-value-set? maybe-log-file)
+      maybe-log-file
+      "/var/log/grafana.log"))
 
 (define (%grafana-secrets config)
   (define record (oci-grafana-configuration-grafana.ini config))
@@ -290,12 +306,14 @@ to \"host\" the @code{port} field will be ignored."))
             (oci-grafana-configuration-image config))
            (port
             (oci-grafana-configuration-port config))
+           (log-file (oci-grafana-log-file config))
            (secrets-directories
             (secrets-volume-mappings
              (%grafana-secrets-files config)))
            (container-config
             (mainline:oci-container-configuration
              (auto-start? auto-start?)
+             (log-file log-file)
              (requirement
               (if (and password-file (maybe-value-set? password-file))
                   '(sops-secrets)
