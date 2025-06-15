@@ -307,9 +307,11 @@ to \"host\" the @code{port} field will be ignored."))
            (port
             (oci-grafana-configuration-port config))
            (log-file (oci-grafana-log-file config))
+           (runtime (oci-grafana-configuration-runtime config))
            (secrets-directories
             (secrets-volume-mappings
-             (%grafana-secrets-files config)))
+             (%grafana-secrets-files config)
+             #:mode (if (eq? 'podman runtime) "U" "ro")))
            (container-config
             (mainline:oci-container-configuration
              (auto-start? auto-start?)
