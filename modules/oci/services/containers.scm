@@ -844,7 +844,8 @@ by CONFIG through RUNTIME-CLI."
                        (container-action
                         (list
                          (oci-container-entrypoint
-                          shepherd-name (list runtime-cli "rm" "-f" shepherd-name)
+                          shepherd-name
+                          (list runtime-cli "rm" "-f" shepherd-name)
                           #:verbose? verbose?))))
                       (actions
                        (append
