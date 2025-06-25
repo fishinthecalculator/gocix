@@ -317,7 +317,7 @@ to \"host\" the @code{port} field will be ignored."))
              (auto-start? auto-start?)
              (log-file log-file)
              (requirement
-              (if (and password-file (maybe-value-set? password-file))
+              (if (and (pk 'shepherd-password-file password-file) (maybe-value-set? password-file))
                   '(sops-secrets)
                   '()))
              (image image)
