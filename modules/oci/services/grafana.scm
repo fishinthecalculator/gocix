@@ -352,7 +352,15 @@ to \"host\" the @code{port} field will be ignored."))
                                                      grafana-accounts)
                                   (service-extension sops-secrets-service-type
                                                      (lambda (config)
-                                                       (%grafana-secrets config)))
+                                                       (define password-file
+                                                         (let ((maybe-record
+                                                                (oci-grafana-configuration-grafana.ini config)))
+                                                           (and (grafana-configuration? maybe-record)
+                                                                (grafana-smtp-configuration-password-file
+                                                                 (grafana-configuration-smtp maybe-record)))))
+                                                       (if (and password-file (maybe-value-set? password-file))
+                                                           (%grafana-secrets config)
+                                                           '())))
                                   (service-extension activation-service-type
                                                      grafana-activation)))
                 (default-value (oci-grafana-configuration))
