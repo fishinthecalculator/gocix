@@ -358,7 +358,7 @@ to \"host\" the @code{port} field will be ignored."))
                                                            (and (grafana-configuration? maybe-record)
                                                                 (grafana-smtp-configuration-password-file
                                                                  (grafana-configuration-smtp maybe-record)))))
-                                                       (if (and password-file (maybe-value-set? password-file))
+                                                       (if (and (pk 'password-file password-file) (maybe-value-set? password-file))
                                                            (%grafana-secrets config)
                                                            '())))
                                   (service-extension activation-service-type
