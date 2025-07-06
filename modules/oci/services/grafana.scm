@@ -113,15 +113,15 @@
      "[smtp]\n"
      #$(serialize-configuration
         value grafana-smtp-configuration-fields)
-     (if #$(maybe-value-set? password-file)
-         (string-append "password = $__file{"
-                        #$((serialize-sops-secret
+     #$(if (maybe-value-set? password-file)
+           (string-append "password = $__file{"
+                          ((serialize-sops-secret
                             'password-file password-file)
                            %grafana-secrets-directory)
-                        "}\n")
-         (if #$(string-null? password)
-             ""
-             (string-append "password = " #$password "\n")))))
+                          "}\n")
+           (if (string-null? password)
+               ""
+               (string-append "password = " password "\n")))))
 
 (define-maybe sops-secret)
 
