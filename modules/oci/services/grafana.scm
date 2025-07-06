@@ -106,23 +106,6 @@
       (serialize-sops-secret field-name value)
       ""))
 
-(define (gf-serialize-grafana-smtp-configuration field-name value)
-  (define password-file (grafana-smtp-configuration-password-file value))
-  (define password (grafana-smtp-configuration-password value))
-  #~(string-append
-     "[smtp]\n"
-     #$(serialize-configuration
-        value grafana-smtp-configuration-fields)
-     (if #$(maybe-value-set? password-file)
-         (string-append "password = $__file{"
-                        #$((serialize-sops-secret
-                            'password-file password-file)
-                           %grafana-secrets-directory)
-                        "}\n")
-         (if #$(string-null? password)
-             ""
-             (string-append "password = " #$password "\n")))))
-
 (define-maybe sops-secret)
 
 (define-configuration grafana-smtp-configuration
@@ -147,6 +130,23 @@ will read the SMTP password."
   (from-address
    (string "alert@example.org")
    "The sender of the email alerts Grafana will send."))
+
+(define (gf-serialize-grafana-smtp-configuration field-name value)
+  (define password-file (grafana-smtp-configuration-password-file value))
+  (define password (grafana-smtp-configuration-password value))
+  #~(string-append
+     "[smtp]\n"
+     #$(serialize-configuration
+        value grafana-smtp-configuration-fields)
+     #$(if (maybe-value-set? password-file)
+           (string-append "password = $__file{"
+                          ((serialize-sops-secret
+                            'password-file password-file)
+                           %grafana-secrets-directory)
+                          "}\n")
+           (if (string-null? password)
+               ""
+               (string-append "password = " password "\n")))))
 
 (define (gf-serialize-grafana-configuration configuration)
   (mixed-text-file
