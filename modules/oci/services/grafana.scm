@@ -106,23 +106,6 @@
       (serialize-sops-secret field-name value)
       ""))
 
-(define (gf-serialize-grafana-smtp-configuration field-name value)
-  (define password-file (grafana-smtp-configuration-password-file value))
-  (define password (grafana-smtp-configuration-password value))
-  #~(string-append
-     "[smtp]\n"
-     #$(serialize-configuration
-        value grafana-smtp-configuration-fields)
-     (if #$(maybe-value-set? password-file)
-         (string-append "password = $__file{"
-                        #$((serialize-sops-secret
-                            'password-file password-file)
-                           %grafana-secrets-directory)
-                        "}\n")
-         (if #$(string-null? password)
-             ""
-             (string-append "password = " #$password "\n")))))
-
 (define-maybe sops-secret)
 
 (define-configuration grafana-smtp-configuration
@@ -147,6 +130,23 @@ will read the SMTP password."
   (from-address
    (string "alert@example.org")
    "The sender of the email alerts Grafana will send."))
+
+(define (gf-serialize-grafana-smtp-configuration field-name value)
+  (define password-file (grafana-smtp-configuration-password-file value))
+  (define password (grafana-smtp-configuration-password value))
+  #~(string-append
+     "[smtp]\n"
+     #$(serialize-configuration
+        value grafana-smtp-configuration-fields)
+     #$(if (maybe-value-set? password-file)
+           (string-append "password = $__file{"
+                          ((serialize-sops-secret
+                            'password-file password-file)
+                           %grafana-secrets-directory)
+                          "}\n")
+           (if (string-null? password)
+               ""
+               (string-append "password = " password "\n")))))
 
 (define (gf-serialize-grafana-configuration configuration)
   (mixed-text-file
@@ -280,7 +280,7 @@ to \"host\" the @code{port} field will be ignored."))
                   (mkdir-p datadir)
                   (chown datadir uid gid)
                   (if #$(eq? 'podman runtime)
-                      (chmod datadir #o660)
+                      (chmod datadir #o700)
                       (chmod datadir #o755)))
               #~(begin))
         ;; Activate configuration
@@ -300,6 +300,7 @@ to \"host\" the @code{port} field will be ignored."))
               (and (grafana-configuration? maybe-record)
                    (grafana-smtp-configuration-password-file
                     (grafana-configuration-smtp maybe-record)))))
+           (uid (number->string (passwd:uid (getpwnam "oci-container"))))
            (network
             (oci-grafana-configuration-network config))
            (image
@@ -320,6 +321,15 @@ to \"host\" the @code{port} field will be ignored."))
               (if (and password-file (maybe-value-set? password-file))
                   '(sops-secrets)
                   '()))
+             (container-user (if (eq? 'podman runtime)
+                                 uid
+                                 ;; FIXME: is the empty string the same as a
+                                 ;; non-initialized `maybe-string'?
+                                 ""))
+             ;; HACK: required to map container user to `oci-container' host
+             ;; user.
+             (extra-arguments (list "--userns"
+                                    (string-append "keep-id:uid=" uid)))
              (image image)
              (ports
               `((,port . "3000")))
