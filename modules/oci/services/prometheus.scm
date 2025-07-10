@@ -314,15 +314,14 @@ port inside the container.")
                   ;; Setup datadir
                   (mkdir-p datadir)
                   (chown datadir uid gid)
-                  (if #$(eq? 'podman runtime)
-                      (chmod datadir #o660)
-                      (chmod datadir #o755)))
+                  (chmod datadir #o755))
               #~(begin)))))
 
 (define oci-prometheus-configuration->oci-container-configuration
   (lambda (config)
     (let* ((datadir (oci-prometheus-datadir config))
            (log-file (oci-prometheus-log-file config))
+           (runtime (oci-prometheus-configuration-runtime config))
            (network
             (oci-prometheus-configuration-network config))
            (image
@@ -359,6 +358,9 @@ port inside the container.")
                       (string-append "--storage.tsdb.retention.size="
                                      retention-size)
                       '())))
+             (container-user (if (eq? 'podman runtime)
+                                 "root"
+                                 %unset-value))
              (image image)
              (log-file log-file)
              (ports
