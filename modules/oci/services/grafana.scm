@@ -95,33 +95,23 @@
    (boolean #f)
    "The image to use for the OCI backed Shepherd service."))
 
-(define (serialize-sops-secret field-name value)
-  (lambda (secrets-directory)
-    #~(string-append
-       #$secrets-directory "/"
-       #$(sops-secret->file-name value))))
-
-(define (serialize-maybe-sops-secret field-name value)
-  (if (maybe-value-set? value)
-      (serialize-sops-secret field-name value)
-      ""))
-
 (define (gf-serialize-grafana-smtp-configuration field-name value)
   (define password-file (grafana-smtp-configuration-password-file value))
   (define password (grafana-smtp-configuration-password value))
+  (define serialized-secret
+    (if (maybe-value-set? password-file)
+        (string-append "password = $__file{"
+                       %grafana-secrets-directory "/"
+                       (sops-secret->file-name password-file)
+                       "}\n")
+        (if (string-null? password)
+            ""
+            (string-append "password = " password "\n"))))
   #~(string-append
      "[smtp]\n"
      #$(serialize-configuration
         value grafana-smtp-configuration-fields)
-     (if #$(maybe-value-set? password-file)
-         (string-append "password = $__file{"
-                        #$((serialize-sops-secret
-                            'password-file password-file)
-                           %grafana-secrets-directory)
-                        "}\n")
-         (if #$(string-null? password)
-             ""
-             (string-append "password = " #$password "\n")))))
+     #$serialized-secret))
 
 (define-maybe sops-secret)
 
