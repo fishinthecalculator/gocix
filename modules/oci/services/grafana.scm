@@ -290,7 +290,6 @@ to \"host\" the @code{port} field will be ignored."))
               (and (grafana-configuration? maybe-record)
                    (grafana-smtp-configuration-password-file
                     (grafana-configuration-smtp maybe-record)))))
-           (uid (number->string (passwd:uid (getpwnam "oci-container"))))
            (network
             (oci-grafana-configuration-network config))
            (image
@@ -311,13 +310,9 @@ to \"host\" the @code{port} field will be ignored."))
               (if (and password-file (maybe-value-set? password-file))
                   '(sops-secrets)
                   '()))
-             (container-user (if (eq? 'podman runtime)
-                                 uid
-                                 %unset-value))
              ;; HACK: required to map container user to `oci-container' host
              ;; user.
-             (extra-arguments (list "--userns"
-                                    (string-append "keep-id:uid=" uid)))
+             (extra-arguments '("--userns=keep-id:uid=1001"))
              (image image)
              (ports
               `((,port . "3000")))
