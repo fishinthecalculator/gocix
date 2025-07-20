@@ -95,24 +95,6 @@
    (boolean #f)
    "The image to use for the OCI backed Shepherd service."))
 
-(define (gf-serialize-grafana-smtp-configuration field-name value)
-  (define password-file (grafana-smtp-configuration-password-file value))
-  (define password (grafana-smtp-configuration-password value))
-  (define serialized-secret
-    (if (maybe-value-set? password-file)
-        (string-append "password = $__file{"
-                       %grafana-secrets-directory "/"
-                       (sops-secret->file-name password-file)
-                       "}\n")
-        (if (string-null? password)
-            ""
-            (string-append "password = " password "\n"))))
-  #~(string-append
-     "[smtp]\n"
-     #$(serialize-configuration
-        value grafana-smtp-configuration-fields)
-     #$serialized-secret))
-
 (define-maybe sops-secret)
 
 (define-configuration grafana-smtp-configuration
@@ -137,6 +119,24 @@ will read the SMTP password."
   (from-address
    (string "alert@example.org")
    "The sender of the email alerts Grafana will send."))
+
+(define (gf-serialize-grafana-smtp-configuration field-name value)
+  (define password-file (grafana-smtp-configuration-password-file value))
+  (define password (grafana-smtp-configuration-password value))
+  (define serialized-secret
+    (if (maybe-value-set? password-file)
+        (string-append "password = $__file{"
+                       %grafana-secrets-directory "/"
+                       (sops-secret->file-name password-file)
+                       "}\n")
+        (if (string-null? password)
+            ""
+            (string-append "password = " password "\n"))))
+  #~(string-append
+     "[smtp]\n"
+     #$(serialize-configuration
+        value grafana-smtp-configuration-fields)
+     #$serialized-secret))
 
 (define (gf-serialize-grafana-configuration configuration)
   (mixed-text-file
