@@ -310,9 +310,13 @@ to \"host\" the @code{port} field will be ignored."))
               (if (and password-file (maybe-value-set? password-file))
                   '(sops-secrets)
                   '()))
-             ;; HACK: required to map container user to `oci-container' host
-             ;; user.
-             (extra-arguments '("--userns=keep-id:uid=1001"))
+             (extra-arguments (if (oci-volume-configuration? datadir)
+                                  '()
+                                  ;; NOTE: map container user to host user. This
+                                  ;; ensures that the container user has the
+                                  ;; correct permisions to operate on the
+                                  ;; volume.
+                                  '("--userns=keep-id:uid=1001")))
              (image image)
              (ports
               `((,port . "3000")))
