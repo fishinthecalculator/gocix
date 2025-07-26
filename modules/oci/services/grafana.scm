@@ -95,34 +95,6 @@
    (boolean #f)
    "The image to use for the OCI backed Shepherd service."))
 
-(define (serialize-sops-secret field-name value)
-  (lambda (secrets-directory)
-    #~(string-append
-       #$secrets-directory "/"
-       #$(sops-secret->file-name value))))
-
-(define (serialize-maybe-sops-secret field-name value)
-  (if (maybe-value-set? value)
-      (serialize-sops-secret field-name value)
-      ""))
-
-(define (gf-serialize-grafana-smtp-configuration field-name value)
-  (define password-file (grafana-smtp-configuration-password-file value))
-  (define password (grafana-smtp-configuration-password value))
-  #~(string-append
-     "[smtp]\n"
-     #$(serialize-configuration
-        value grafana-smtp-configuration-fields)
-     (if #$(maybe-value-set? password-file)
-         (string-append "password = $__file{"
-                        #$((serialize-sops-secret
-                            'password-file password-file)
-                           %grafana-secrets-directory)
-                        "}\n")
-         (if #$(string-null? password)
-             ""
-             (string-append "password = " #$password "\n")))))
-
 (define-maybe sops-secret)
 
 (define-configuration grafana-smtp-configuration
@@ -147,6 +119,24 @@ will read the SMTP password."
   (from-address
    (string "alert@example.org")
    "The sender of the email alerts Grafana will send."))
+
+(define (gf-serialize-grafana-smtp-configuration field-name value)
+  (define password-file (grafana-smtp-configuration-password-file value))
+  (define password (grafana-smtp-configuration-password value))
+  (define serialized-secret
+    (if (maybe-value-set? password-file)
+        (string-append "password = $__file{"
+                       %grafana-secrets-directory "/"
+                       (sops-secret->file-name password-file)
+                       "}\n")
+        (if (string-null? password)
+            ""
+            (string-append "password = " password "\n"))))
+  #~(string-append
+     "[smtp]\n"
+     #$(serialize-configuration
+        value grafana-smtp-configuration-fields)
+     #$serialized-secret))
 
 (define (gf-serialize-grafana-configuration configuration)
   (mixed-text-file
@@ -300,7 +290,6 @@ to \"host\" the @code{port} field will be ignored."))
               (and (grafana-configuration? maybe-record)
                    (grafana-smtp-configuration-password-file
                     (grafana-configuration-smtp maybe-record)))))
-           (uid (number->string (passwd:uid (getpwnam "oci-container"))))
            (network
             (oci-grafana-configuration-network config))
            (image
@@ -321,13 +310,13 @@ to \"host\" the @code{port} field will be ignored."))
               (if (and password-file (maybe-value-set? password-file))
                   '(sops-secrets)
                   '()))
-             (container-user (if (eq? 'podman runtime)
-                                 uid
-                                 %unset-value))
-             ;; HACK: required to map container user to `oci-container' host
-             ;; user.
-             (extra-arguments (list "--userns"
-                                    (string-append "keep-id:uid=" uid)))
+             (extra-arguments (if (oci-volume-configuration? datadir)
+                                  '()
+                                  ;; NOTE: map container user to host user. This
+                                  ;; ensures that the container user has the
+                                  ;; correct permisions to operate on the
+                                  ;; volume.
+                                  '("--userns=keep-id:uid=1001")))
              (image image)
              (ports
               `((,port . "3000")))
