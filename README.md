@@ -157,7 +157,7 @@ The `gocix` manual [lives in this repository](https://github.com/fishinthecalcul
 
 ## What is a Guix channel?
 
-A [channel](https://guix.gnu.org/en/manual/devel/en/guix.html#Channels) is roughly the Guix equivalent of Ubuntu's PPAs or container registries. It's a software repository providing Guix package and service definitions.
+A [channel](https://guix.gnu.org/manual/devel/en/guix.html#Channels) is roughly the Guix equivalent of Ubuntu's PPAs or container registries. It's a software repository providing Guix package and service definitions.
 
 You can search for package and service definitions from this channel and many others at [toys.whereis.social](https://toys.whereis.social).
 
