@@ -307,9 +307,10 @@ to \"host\" the @code{port} field will be ignored."))
              (auto-start? auto-start?)
              (log-file log-file)
              (requirement
-              (if (and password-file (maybe-value-set? password-file))
-                  '(sops-secrets)
-                  '()))
+              (pk 'grafana-requirement
+                  (if (and password-file (maybe-value-set? password-file))
+                      '(sops-secrets)
+                      '())))
              (extra-arguments (if (oci-volume-configuration? datadir)
                                   '()
                                   ;; NOTE: map container user to host user. This
