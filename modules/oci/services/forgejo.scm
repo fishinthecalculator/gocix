@@ -5,12 +5,11 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
-  #:use-module ((gnu services docker) #:prefix mainline:)
+  #:use-module (gnu services containers)
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
-  #:use-module (oci services containers)
   #:use-module (ice-9 match)
   #:use-module (ice-9 string-fun)
   #:export (oci-forgejo-configuration
@@ -173,7 +172,7 @@ to \"host\" the @code{port} field will be ignored.")
             (oci-forgejo-configuration-uid config))
            (runtime (oci-forgejo-configuration-runtime config))
            (container-config
-            (mainline:oci-container-configuration
+            (oci-container-configuration
              (image image)
              (log-file log-file)
              (environment
@@ -199,7 +198,7 @@ to \"host\" the @code{port} field will be ignored.")
                 ("/etc/localtime" . "/etc/localtime:ro"))))))
       (list
        (if (maybe-value-set? network)
-           (mainline:oci-container-configuration
+           (oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))

@@ -6,8 +6,8 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module (gnu services containers)
   #:use-module (gnu services databases)
-  #:use-module ((gnu services docker) #:prefix mainline:)
   #:use-module (gnu services shepherd) ;for shepherd-action
   #:use-module (gnu system shadow)
   #:use-module (guix build-system copy)
@@ -23,7 +23,6 @@
   #:use-module (oci build utils)
   #:use-module (oci self)
   #:use-module (oci services configuration)
-  #:use-module (oci services containers)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1)
   #:export (bonfire-configuration
@@ -319,7 +318,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
             (secrets-volume-mappings
              (%bonfire-secrets-files config)))
            (container-config
-            (mainline:oci-container-configuration
+            (oci-container-configuration
              (image image)
              (auto-start? auto-start?)
              (requirement requirement)
@@ -349,7 +348,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
              (log-file log-file))))
       (list
        (if (maybe-value-set? network)
-           (mainline:oci-container-configuration
+           (oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))
@@ -361,7 +360,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
           (first
            (oci-bonfire-configuration->oci-container-configuration
             bonfire-config)))
-         (image (mainline:oci-container-configuration-image config))
+         (image (oci-container-configuration-image config))
          (options (oci-container-configuration->options
                    config)))
     (program-file

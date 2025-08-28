@@ -5,11 +5,11 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module (gnu services containers)
   #:use-module (gnu services docker)
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
-  #:use-module ((oci services containers) #:prefix oci:)
   #:use-module (sops secrets)
   #:use-module (sops services sops)
   #:use-module (ice-9 match)
@@ -150,7 +150,7 @@ to the OCI runtime invokation.  You can use this field to set labels for example
 
 (define oci-whoami-service-type
   (service-type (name 'whoami)
-                (extensions (list (service-extension oci:oci-container-service-type
+                (extensions (list (service-extension oci-container-service-type
                                                      oci-whoami-configuration->oci-container-configuration)
                                   (service-extension activation-service-type
                                                      %whoami-activation)))

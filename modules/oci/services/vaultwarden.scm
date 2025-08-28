@@ -4,14 +4,13 @@
 (define-module (oci services vaultwarden)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
-  #:use-module ((gnu services docker) #:prefix mainline:)
+  #:use-module (gnu services containers)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
   #:use-module (sops secrets)
   #:use-module (sops services sops)
   #:use-module (oci services configuration)
-  #:use-module (oci services containers)
   #:use-module (srfi srfi-1)
   #:export (vaultwarden-configuration
             vaultwarden-configuration?
@@ -149,7 +148,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
            (requirement
             (oci-vaultwarden-configuration-requirement config))
            (container-config
-            (mainline:oci-container-configuration
+            (oci-container-configuration
              (image image)
              (auto-start? auto-start?)
              (requirement requirement)
@@ -167,7 +166,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
              (log-file log-file))))
       (list
        (if (string=? network "host")
-           (mainline:oci-container-configuration
+           (oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))

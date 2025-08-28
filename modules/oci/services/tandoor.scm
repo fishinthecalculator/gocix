@@ -5,8 +5,8 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module (gnu services containers)
   #:use-module (gnu services databases)
-  #:use-module ((gnu services docker) #:prefix mainline:)
   #:use-module (gnu system shadow)
   #:use-module (guix gexp)
   #:use-module (sops secrets)
@@ -14,7 +14,6 @@
   #:use-module (sops services sops)
   #:use-module (oci build utils)
   #:use-module (oci services configuration)
-  #:use-module (oci services containers)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
   #:use-module (ice-9 match)
@@ -339,7 +338,7 @@ for more details."))
             (secrets-volume-mappings
              (%tandoor-secrets-files config)))
            (container-config
-            (mainline:oci-container-configuration
+            (oci-container-configuration
              (provision provision)
              (image image)
              (requirement `(,@requirement sops-secrets))
@@ -369,7 +368,7 @@ for more details."))
                  . "/opt/recipes/mediafiles"))))))
       (list
        (if (maybe-value-set? network)
-           (mainline:oci-container-configuration
+           (oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))

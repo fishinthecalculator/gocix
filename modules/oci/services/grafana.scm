@@ -5,14 +5,13 @@
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
-  #:use-module ((gnu services docker) #:prefix mainline:)
+  #:use-module (gnu services containers)
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix i18n)
   #:use-module (oci build utils)
   #:use-module (oci services configuration)
-  #:use-module (oci services containers)
   #:use-module (sops services sops)
   #:use-module (sops secrets)
   #:use-module (ice-9 match)
@@ -303,7 +302,7 @@ to \"host\" the @code{port} field will be ignored."))
              (%grafana-secrets-files config)
              #:mode (if (eq? 'podman runtime) "U" "ro")))
            (container-config
-            (mainline:oci-container-configuration
+            (oci-container-configuration
              (auto-start? auto-start?)
              (log-file log-file)
              (requirement
@@ -329,7 +328,7 @@ to \"host\" the @code{port} field will be ignored."))
                 (,grafana.ini . "/opt/bitnami/grafana/conf/grafana.ini"))))))
       (list
        (if (maybe-value-set? network)
-           (mainline:oci-container-configuration
+           (oci-container-configuration
             (inherit container-config)
             (ports '())
             (network network))

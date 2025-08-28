@@ -1,6 +1,6 @@
 # gocix
 
- 🌿 Welcome to gocix! This project aims at providing a community managed library of Guix services. Code from this channel implements a Guix native experience for services that are not yet guixable, through [OCI backed Shepherd Services](https://guix.gnu.org/manual/devel/en/guix.html#index-oci_002dcontainer_002dservice_002dtype).
+ 🌿 Welcome to gocix! This project aims at providing a community managed library of Guix services. Code from this channel implements a Guix native experience for services that are not yet guixable, through [OCI backed Shepherd Services](https://guix.gnu.org/manual/devel/en/guix.html#index-OCI_002dbacked_002c-Shepherd-services).
 
 ## Motivation
 

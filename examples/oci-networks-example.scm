@@ -3,16 +3,12 @@
   #:use-module (gnu bootloader grub)
   #:use-module (gnu services)
   #:use-module (gnu services base)
+  #:use-module (gnu services container)
   #:use-module (gnu services dbus)
   #:use-module (gnu services desktop)
-  #:use-module ((gnu services docker)
-                ;; This prefix avoids mainline oci-container-configuration
-                ;; namespace leaks.
-                #:prefix mainline:)
   #:use-module (gnu services networking)
   #:use-module (gnu system)
   #:use-module (gnu system file-systems)
-  #:use-module (oci services containers)
   #:use-module (oci services grafana)
   #:use-module (oci services prometheus))
 
@@ -28,11 +24,11 @@
  (services
   (append
    (list
-    (service dhcp-client-service-type)
+    (service dhcpcd-client-service-type)
     (service elogind-service-type)
     (service dbus-root-service-type)
-    (service mainline:containerd-service-type)
-    (service mainline:docker-service-type)
+    (service containerd-service-type)
+    (service docker-service-type)
     (simple-service 'oci-networks
                     oci-service-type
                     (oci-extension
