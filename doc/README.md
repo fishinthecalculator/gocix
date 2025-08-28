@@ -34,7 +34,6 @@ This document describes gocix version 0.1.
 This channel exposes at ` (oci services) ` a set of Guix System services
 for many useful applications, such as:
 
-- OCI Service
 - Bonfire
 - Forgejo
 - Grafana
@@ -72,215 +71,23 @@ into Guix proper. To achieve this vision gocix services strive to:
 
 |                                                                   |     |     |
 |:------------------------------------------------------------------|-----|:----|
-| [2.1 OCI Service](#OCI-Service)                                   |     |     |
-| [2.2 Bonfire](#Bonfire)                                           |     |     |
-| [2.3 Conduit](#Conduit)                                           |     |     |
-| [2.4 Forgejo](#Forgejo)                                           |     |     |
-| [2.5 Grafana](#Grafana)                                           |     |     |
-| [2.6 Meilisearch](#Meilisearch)                                   |     |     |
-| [2.7 pict-rs](#pict_002drs)                                       |     |     |
-| [2.8 Prometheus](#Prometheus)                                     |     |     |
-| [2.9 Prometheus Blackbox Exporter](#Prometheus-Blackbox-Exporter) |     |     |
-| [2.10 Tandoor](#Tandoor)                                          |     |     |
-| [2.11 Traefik whoami](#Traefik-whoami)                            |     |     |
-| [2.12 Vaultwarden](#Vaultwarden)                                  |     |     |
-
-------------------------------------------------------------------------
-
-<span id="OCI-Service"></span> <span id="OCI-Service-1"></span>
-
-## 2.1 OCI Service
-
-Should you wish to manage your Open Container Initiative (OCI)
-containers with the same consistent interface you use for your other
-Shepherd services, ` oci-service-type ` is the tool to use: given an OCI
-container image, it will run it in a Shepherd service. One example where
-this is useful: it lets you run services that are available as OCI
-images but not yet packaged for Guix.
-
-<span id="index-oci_002dservice_002dtype"></span> Variable: **oci-service-type**  
-This is a thin wrapper around Docker’s or Podman’s CLI that executes OCI
-images backed processes as Shepherd Services.
-
-<div class="lisp">
-
-``` lisp
-(simple-service 'oci-provisioning
-                oci-service-type
-                (oci-extension
-                  (networks
-                    (list
-                      (oci-network-configuration (name "monitoring"))))
-                  (containers
-                   (list
-                    (oci-container-configuration
-                     (network "monitoring")
-                     (image
-                      (oci-image
-                        (repository "guile")
-                        (tag "3")
-                        (value (specifications->manifest '("guile")))
-                        (pack-options '(#:symlinks (("/bin/guile" -> "bin/guile"))
-                                        #:max-layers 2))))
-                     (entrypoint "/bin/guile")
-                     (command
-                      '("-c" "(display \"hello!\n\")")))
-                    (oci-container-configuration
-                      (image "prom/prometheus")
-                      (network "host")
-                      (ports
-                       '(("9000" . "9000")
-                         ("9090" . "9090"))))
-                    (oci-container-configuration
-                      (image "grafana/grafana:10.0.1")
-                      (network "host")
-                      (volumes
-                       '("/var/lib/grafana:/var/lib/grafana")))))))
-```
-
-</div>
-
-In this example three different Shepherd services are going to be added
-to the system. Each ` oci-container-configuration ` record translates to
-a ` docker run ` or ` podman run ` invocation and its fields directly
-map to options. You can refer to the
-[Docker](https://docs.docker.com/engine/reference/commandline/run) or
-[Podman](https://docs.podman.io/en/stable/markdown/podman-run.1.html)
-upstream documentation for semantics of each value. If the images are
-not found, they will be pulled. You can refer to the
-[Docker](https://docs.docker.com/engine/reference/commandline/pull/) or
-[Podman](https://docs.podman.io/en/stable/markdown/podman-pull.1.html)
-upstream documentation for semantics. The services with
-` (network "host") ` are going to be attached to the host network and
-are supposed to behave like native processes with regard to networking.
-
-<!-- -->
-
-<span id="index-oci_002dnetwork_002dconfiguration"></span> Data Type: **oci-network-configuration**  
-Available ` oci-network-configuration ` fields are:
-
-` name ` (type: string)  
-The name of the OCI network to provision.
-
-` driver ` (type: maybe-string)  
-The driver to manage the network.
-
-` gateway ` (type: maybe-string)  
-IPv4 or IPv6 gateway for the subnet.
-
-` internal? ` (default: ` #f ` ) (type: boolean)  
-Restrict external access to the network
-
-` ip-range ` (type: maybe-string)  
-Allocate container ip from a sub-range in CIDR format.
-
-` ipam-driver ` (type: maybe-string)  
-IP Address Management Driver.
-
-` ipv6? ` (default: ` #f ` ) (type: boolean)  
-Enable IPv6 networking.
-
-` subnet ` (type: maybe-string)  
-Subnet in CIDR format that represents a network segment.
-
-` labels ` (default: ` () ` ) (type: list)  
-The list of labels that will be used to tag the current volume.
-
-` extra-arguments ` (default: ` () ` ) (type: list)  
-A list of strings, gexps or file-like objects that will be directly
-passed to the ` docker network create ` or ` podman network create `
-invocation.
-
-<!-- -->
-
-<span id="index-oci_002dvolume_002dconfiguration"></span> Data Type: **oci-volume-configuration**  
-Available ` oci-volume-configuration ` fields are:
-
-` name ` (type: string)  
-The name of the OCI volume to provision.
-
-` labels ` (default: ` () ` ) (type: list)  
-The list of labels that will be used to tag the current volume.
-
-` extra-arguments ` (default: ` () ` ) (type: list)  
-A list of strings, gexps or file-like objects that will be directly
-passed to the ` docker volume create ` or ` podman volume create `
-invocation.
-
-<!-- -->
-
-<span id="index-oci_002dconfiguration"></span> Data Type: **oci-configuration**  
-Available ` oci-configuration ` fields are:
-
-` runtime ` (default: ` docker ` ) (type: symbol)  
-The OCI runtime to use to run commands. It can be either ` 'docker ` or
-` 'podman ` .
-
-` runtime-cli ` (type: maybe-package)  
-The OCI runtime command line to be installed in the system profile and
-used to provision OCI resources. When unset it will default to
-` docker-cli ` package for the ` 'docker ` runtime or to ` podman `
-package for the ` 'podman ` runtime.
-
-` user ` (default: ` "oci-container" ` ) (type: string)  
-The user name under whose authority OCI runtime commands will be run.
-
-` group ` (type: maybe-string)  
-The group name under whose authority OCI commands will be run. When
-using the ` 'podman ` OCI runtime, this field will be ignored and the
-default group of the user configured in the ` user ` field will be used.
-
-` subuids-range ` (type: maybe-subid-range)  
-An optional ` subid-range ` record allocating subuids for the user from
-the ` user ` field. When unset, with the rootless Podman OCI runtime, it
-defaults to ` (subid-range (name "oci-container")) ` .
-
-` subgids-range ` (type: maybe-subid-range)  
-An optional ` subid-range ` record allocating subgids for the user from
-the ` user ` field. When unset, with the rootless Podman OCI runtime, it
-defaults to ` (subid-range (name "oci-container")) ` .
-
-` containers ` (default: ` () ` ) (type: list-of-oci-containers)  
-The list of ` oci-container-configuration ` records representing the
-containers to provision. Most users are supposed not to use this field
-and use the ` oci-extension ` record instead.
-
-` networks ` (default: ` () ` ) (type: list-of-oci-networks)  
-The list of ` oci-network-configuration ` records representing the
-networks to provision. Most users are supposed not to use this field and
-use the ` oci-extension ` record instead.
-
-` volumes ` (default: ` () ` ) (type: list-of-oci-volumes)  
-The list of ` oci-volume-configuration ` records representing the
-volumes to provision. Most users are supposed not to use this field and
-use the ` oci-extension ` record instead.
-
-` verbose? ` (default: ` #f ` ) (type: boolean)  
-When true, additional output will be printed, allowing to better follow
-the flow of execution.
-
-<!-- -->
-
-<span id="index-oci_002dextension"></span> Data Type: **oci-extension**  
-Available ` oci-extension ` fields are:
-
-` containers ` (default: ` () ` ) (type: list-of-oci-containers)  
-The list of ` oci-container-configuration ` records representing the
-containers to add.
-
-` networks ` (default: ` () ` ) (type: list-of-oci-networks)  
-The list of ` oci-network-configuration ` records representing the
-networks to add.
-
-` volumes ` (default: ` () ` ) (type: list-of-oci-volumes)  
-The list of ` oci-volume-configuration ` records representing the
-volumes to add.
+| [2.1 Bonfire](#Bonfire)                                           |     |     |
+| [2.2 Conduit](#Conduit)                                           |     |     |
+| [2.3 Forgejo](#Forgejo)                                           |     |     |
+| [2.4 Grafana](#Grafana)                                           |     |     |
+| [2.5 Meilisearch](#Meilisearch)                                   |     |     |
+| [2.6 pict-rs](#pict_002drs)                                       |     |     |
+| [2.7 Prometheus](#Prometheus)                                     |     |     |
+| [2.8 Prometheus Blackbox Exporter](#Prometheus-Blackbox-Exporter) |     |     |
+| [2.9 Tandoor](#Tandoor)                                           |     |     |
+| [2.10 Traefik whoami](#Traefik-whoami)                            |     |     |
+| [2.11 Vaultwarden](#Vaultwarden)                                  |     |     |
 
 ------------------------------------------------------------------------
 
 <span id="Bonfire"></span> <span id="Bonfire-1"></span>
 
-## 2.2 Bonfire
+## 2.1 Bonfire
 
 <span id="index-bonfire_002dconfiguration"></span> Data Type: **bonfire-configuration**  
 Available ` bonfire-configuration ` fields are:
@@ -341,7 +148,7 @@ The public port where Bonfire will be exposed.
 <span id="index-oci_002dbonfire_002dconfiguration"></span> Data Type: **oci-bonfire-configuration**  
 Available ` oci-bonfire-configuration ` fields are:
 
-` image ` (default: ` "docker.io/bonfirenetworks/bonfire:0.9.12-beta.30-social-amd64" ` ) (type: string)  
+` image ` (default: ` "docker.io/bonfirenetworks/bonfire:1.0.0-rc.2.3-social-amd64" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` upload-data-directory ` (type: maybe-string-or-volume)  
@@ -410,7 +217,7 @@ more details.
 
 <span id="Conduit"></span> <span id="Conduit-1"></span>
 
-## 2.3 Conduit
+## 2.2 Conduit
 
 <span id="index-conduit_002dconfiguration"></span> Data Type: **conduit-configuration**  
 Available ` conduit-configuration ` fields are:
@@ -460,7 +267,7 @@ The logging configuration for conduit.
 
 <span id="Forgejo"></span> <span id="Forgejo-1"></span>
 
-## 2.4 Forgejo
+## 2.3 Forgejo
 
 <span id="index-oci_002dforgejo_002dservice_002dtype"></span> Variable: **oci-forgejo-service-type**  
 This service allows hosting a Forgejo instance on the Guix System. A
@@ -504,7 +311,7 @@ is ` "/var/log/forgejo.log" ` .
 ` runtime ` (default: ` docker ` ) (type: symbol)  
 The OCI runtime to be used for this service
 
-` image ` (default: ` "codeberg.org/forgejo/forgejo:10.0.1-rootless" ` ) (type: string)  
+` image ` (default: ` "codeberg.org/forgejo/forgejo:11.0.2-rootless" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "3000" ` ) (type: string)  
@@ -531,7 +338,7 @@ The ` app.ini ` configuration passed to Forgejo.
 
 <span id="Grafana"></span> <span id="Grafana-1"></span>
 
-## 2.5 Grafana
+## 2.4 Grafana
 
 <span id="index-grafana_002dconfiguration"></span> Data Type: **grafana-configuration**  
 Available ` grafana-configuration ` fields are:
@@ -576,6 +383,10 @@ The email used to authenticate with the SMTP server.
 ` password ` (default: ` "" ` ) (type: string)  
 The password used to authenticate with the SMTP server.
 
+` password-file ` (type: maybe-sops-secret)  
+An optional field representing a file from which Grafana will read the
+SMTP password.
+
 ` from-address ` (default: ` "alert@example.org" ` ) (type: string)  
 The sender of the email alerts Grafana will send.
 
@@ -594,7 +405,7 @@ will write state, or a string representing a file system path in the
 host system which will be mapped inside the container. By default it is
 ` "/var/lib/grafana" ` .
 
-` image ` (default: ` "docker.io/bitnami/grafana:11.5.3" ` ) (type: string)  
+` image ` (default: ` "docker.io/bitnami/grafana:12.0.1" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "3000" ` ) (type: string)  
@@ -608,6 +419,12 @@ is ` #f ` Grafana has to be started manually with ` herd start ` .
 ` grafana.ini ` (type: grafana-configuration)  
 This field will be serialized as graphana.ini.
 
+` log-file ` (type: maybe-string)  
+When ` log-file ` is set, it names the file to which the service’s
+standard output and standard error are redirected. ` log-file ` is
+created if it does not exist, otherwise it is appended to. By default it
+is ` "/var/log/grafana.log" ` .
+
 ` network ` (type: maybe-string)  
 The docker network where the grafana container will be attached. When
 equal to "host" the ` port ` field will be ignored.
@@ -616,7 +433,7 @@ equal to "host" the ` port ` field will be ignored.
 
 <span id="Meilisearch"></span> <span id="Meilisearch-1"></span>
 
-## 2.6 Meilisearch
+## 2.5 Meilisearch
 
 <span id="index-oci_002dmeilisearch_002dconfiguration"></span> Data Type: **oci-meilisearch-configuration**  
 Available ` oci-meilisearch-configuration ` fields are:
@@ -656,7 +473,7 @@ documentation for more details.
 
 <span id="pict_002drs"></span> <span id="pict_002drs-1"></span>
 
-## 2.7 pict-rs
+## 2.6 pict-rs
 
 <span id="index-oci_002dpict_002drs_002dconfiguration"></span> Data Type: **oci-pict-rs-configuration**  
 Available ` oci-pict-rs-configuration ` fields are:
@@ -697,7 +514,7 @@ details.
 
 <span id="Prometheus"></span> <span id="Prometheus-1"></span>
 
-## 2.8 Prometheus
+## 2.7 Prometheus
 
 <span id="index-oci_002dprometheus_002dconfiguration"></span> Data Type: **oci-prometheus-configuration**  
 Available ` oci-prometheus-configuration ` fields are:
@@ -751,6 +568,14 @@ Prometheus’ ` global ` section.
 ` scrape-configs ` (default: ` () ` ) (type: list-of-prometheus-scrape-configurations)  
 Prometheus’ ` scrape_configs ` section.
 
+` retention-time ` (default: ` "15d" ` ) (type: string)  
+How long to retain samples in storage.
+
+` retention-size ` (type: maybe-string)  
+The maximum number of bytes of storage blocks to retain. The oldest data
+will be removed first. Units supported: B, KB, MB, GB, TB, PB, EB. Based
+on powers-of-2, so 1KB is 1024B.
+
 ` extra-content ` (default: ` "" ` ) (type: string)  
 Everything you want to manually append to the configuration file.
 
@@ -801,7 +626,7 @@ Everything you want to manually append to this ` static_config ` field.
 <span id="Prometheus-Blackbox-Exporter"></span> <span
 id="Prometheus-Blackbox-Exporter-1"></span>
 
-## 2.9 Prometheus Blackbox Exporter
+## 2.8 Prometheus Blackbox Exporter
 
 <span id="index-oci_002dblackbox_002dexporter_002dconfiguration"></span> Data Type: **oci-blackbox-exporter-configuration**  
 Available ` oci-blackbox-exporter-configuration ` fields are:
@@ -827,7 +652,7 @@ If ` network ` is set this field will be ignored.
 
 <span id="Tandoor"></span> <span id="Tandoor-1"></span>
 
-## 2.10 Tandoor
+## 2.9 Tandoor
 
 <span id="index-oci_002dtandoor_002dconfiguration"></span> Data Type: **oci-tandoor-configuration**  
 Available ` oci-tandoor-configuration ` fields are:
@@ -952,7 +777,7 @@ database.
 
 <span id="Traefik-whoami"></span> <span id="Traefik-whoami-1"></span>
 
-## 2.11 Traefik whoami
+## 2.10 Traefik whoami
 
 <span id="index-oci_002dwhoami_002dconfiguration"></span> Data Type: **oci-whoami-configuration**  
 Available ` oci-whoami-configuration ` fields are:
@@ -993,7 +818,7 @@ labels for example.
 
 <span id="Vaultwarden"></span> <span id="Vaultwarden-1"></span>
 
-## 2.12 Vaultwarden
+## 2.11 Vaultwarden
 
 <span id="index-oci_002dvaultwarden_002dconfiguration"></span> Data Type: **oci-vaultwarden-configuration**  
 Available ` oci-vaultwarden-configuration ` fields are:
@@ -1066,25 +891,24 @@ needs to know whether it’s https to work properly with attachments
 
 - <a href="#Introduction" id="toc-Introduction-1">1 Introduction</a>
 - <a href="#Services" id="toc-Services-1">2 Services</a>
-  - <a href="#OCI-Service" id="toc-OCI-Service-1">2.1 OCI Service</a>
-  - <a href="#Bonfire" id="toc-Bonfire-1">2.2 Bonfire</a>
-  - <a href="#Conduit" id="toc-Conduit-1">2.3 Conduit</a>
-  - <a href="#Forgejo" id="toc-Forgejo-1">2.4 Forgejo</a>
-  - <a href="#Grafana" id="toc-Grafana-1">2.5 Grafana</a>
-  - <a href="#Meilisearch" id="toc-Meilisearch-1">2.6 Meilisearch</a>
-  - <a href="#pict_002drs" id="toc-pict_002drs-1">2.7 pict-rs</a>
-  - <a href="#Prometheus" id="toc-Prometheus-1">2.8 Prometheus</a>
+  - <a href="#Bonfire" id="toc-Bonfire-1">2.1 Bonfire</a>
+  - <a href="#Conduit" id="toc-Conduit-1">2.2 Conduit</a>
+  - <a href="#Forgejo" id="toc-Forgejo-1">2.3 Forgejo</a>
+  - <a href="#Grafana" id="toc-Grafana-1">2.4 Grafana</a>
+  - <a href="#Meilisearch" id="toc-Meilisearch-1">2.5 Meilisearch</a>
+  - <a href="#pict_002drs" id="toc-pict_002drs-1">2.6 pict-rs</a>
+  - <a href="#Prometheus" id="toc-Prometheus-1">2.7 Prometheus</a>
   - <a href="#Prometheus-Blackbox-Exporter"
-    id="toc-Prometheus-Blackbox-Exporter-1">2.9 Prometheus Blackbox
+    id="toc-Prometheus-Blackbox-Exporter-1">2.8 Prometheus Blackbox
     Exporter</a>
-  - <a href="#Tandoor" id="toc-Tandoor-1">2.10 Tandoor</a>
-  - <a href="#Traefik-whoami" id="toc-Traefik-whoami-1">2.11 Traefik
+  - <a href="#Tandoor" id="toc-Tandoor-1">2.9 Tandoor</a>
+  - <a href="#Traefik-whoami" id="toc-Traefik-whoami-1">2.10 Traefik
     whoami</a>
-  - <a href="#Vaultwarden" id="toc-Vaultwarden-1">2.12 Vaultwarden</a>
+  - <a href="#Vaultwarden" id="toc-Vaultwarden-1">2.11 Vaultwarden</a>
 
 </div>
 
 ------------------------------------------------------------------------
 
-This document was generated on *May 24, 2025* using [*texi2html
+This document was generated on *August 28, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

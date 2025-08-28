@@ -17,6 +17,10 @@ The email used to authenticate with the SMTP server.
 @item @code{password} (default: @code{""}) (type: string)
 The password used to authenticate with the SMTP server.
 
+@item @code{password-file} (type: maybe-sops-secret)
+An optional field representing a file from which Grafana will read the
+SMTP password.
+
 @item @code{from-address} (default: @code{"alert@@example.org"}) (type: string)
 The sender of the email alerts Grafana will send.
 

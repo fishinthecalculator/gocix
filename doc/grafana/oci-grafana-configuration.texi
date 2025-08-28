@@ -15,7 +15,7 @@ Grafana will write state, or a string representing a file system path in
 the host system which will be mapped inside the container.  By default
 it is @code{"/var/lib/grafana"}.
 
-@item @code{image} (default: @code{"docker.io/bitnami/grafana:11.5.3"}) (type: string)
+@item @code{image} (default: @code{"docker.io/bitnami/grafana:12.0.1"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{port} (default: @code{"3000"}) (type: string)
@@ -29,6 +29,12 @@ start}.
 
 @item @code{grafana.ini} (type: grafana-configuration)
 This field will be serialized as graphana.ini.
+
+@item @code{log-file} (type: maybe-string)
+When @code{log-file} is set, it names the file to which the service’s
+standard output and standard error are redirected.  @code{log-file} is
+created if it does not exist, otherwise it is appended to.  By default
+it is @code{"/var/log/grafana.log"}.
 
 @item @code{network} (type: maybe-string)
 The docker network where the grafana container will be attached.  When

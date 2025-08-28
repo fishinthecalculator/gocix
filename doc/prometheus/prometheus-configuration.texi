@@ -11,6 +11,14 @@ Prometheus' @code{global} section.
 @item @code{scrape-configs} (default: @code{()}) (type: list-of-prometheus-scrape-configurations)
 Prometheus' @code{scrape_configs} section.
 
+@item @code{retention-time} (default: @code{"15d"}) (type: string)
+How long to retain samples in storage.
+
+@item @code{retention-size} (type: maybe-string)
+The maximum number of bytes of storage blocks to retain.  The oldest
+data will be removed first.  Units supported: B, KB, MB, GB, TB, PB, EB.
+Based on powers-of-2, so 1KB is 1024B.
+
 @item @code{extra-content} (default: @code{""}) (type: string)
 Everything you want to manually append to the configuration file.
 
