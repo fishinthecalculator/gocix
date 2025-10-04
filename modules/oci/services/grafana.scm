@@ -188,6 +188,10 @@ is @code{#f} Grafana has to be started manually with @command{herd start}.")
   (grafana.ini
    (grafana-configuration (grafana-configuration))
    "This field will be serialized as graphana.ini.")
+  (grafana.ini-mount-point
+   (string "/opt/bitnami/grafana/conf/grafana.ini")
+   "The container path where Grafana's configuration will be mounted.  This is
+useful especially for using images different from the Gocix default.")
   (log-file
    (maybe-string)
    "When @code{log-file} is set, it names the file to which the service’s
@@ -283,6 +287,8 @@ to \"host\" the @code{port} field will be ignored."))
             (oci-grafana-configuration-auto-start? config))
            (datadir (oci-grafana-datadir config))
            (grafana.ini (oci-grafana-grafana.ini config))
+           (grafana.ini-mount-point
+            (oci-grafana-configuration-grafana.ini-mount-point config))
            (password-file
             (let ((maybe-record
                    (oci-grafana-configuration-grafana.ini config)))
@@ -325,7 +331,7 @@ to \"host\" the @code{port} field will be ignored."))
                       (oci-volume-configuration-name datadir))
                  . "/var/lib/grafana")
                 ,@secrets-directories
-                (,grafana.ini . "/opt/bitnami/grafana/conf/grafana.ini"))))))
+                (,grafana.ini . ,grafana.ini-mount-point))))))
       (list
        (if (maybe-value-set? network)
            (oci-container-configuration
