@@ -289,6 +289,9 @@ to \"host\" the @code{port} field will be ignored."))
            (grafana.ini (oci-grafana-grafana.ini config))
            (grafana.ini-mount-point
             (oci-grafana-configuration-grafana.ini-mount-point config))
+           (grafana-user-uid
+            (number->string
+             (user-account-uid (first (grafana-accounts config)))))
            (password-file
             (let ((maybe-record
                    (oci-grafana-configuration-grafana.ini config)))
@@ -321,7 +324,13 @@ to \"host\" the @code{port} field will be ignored."))
                                   ;; ensures that the container user has the
                                   ;; correct permisions to operate on the
                                   ;; volume.
-                                  '("--userns=keep-id:uid=1001")))
+                                  (if (eq? runtime 'podman)
+                                      (string-append
+                                       "--userns=keep-id:uid="
+                                       grafana-user-uid)
+                                      (string-append
+                                       "--user="
+                                       grafana-user-uid))))
              (image image)
              (ports
               `((,port . "3000")))
