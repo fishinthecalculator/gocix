@@ -286,12 +286,15 @@ to \"host\" the @code{port} field will be ignored."))
     (let* ((auto-start?
             (oci-grafana-configuration-auto-start? config))
            (datadir (oci-grafana-datadir config))
+           (runtime (oci-grafana-configuration-runtime config))
            (grafana.ini (oci-grafana-grafana.ini config))
            (grafana.ini-mount-point
             (oci-grafana-configuration-grafana.ini-mount-point config))
            (grafana-user-uid
-            (number->string
-             (user-account-uid (first (grafana-accounts config)))))
+            (if (eq? runtime 'podman)
+                "1001" ;the UID of Grafana's user inside the container.
+                (number->string
+                 (user-account-uid (first (grafana-accounts config))))))
            (password-file
             (let ((maybe-record
                    (oci-grafana-configuration-grafana.ini config)))
@@ -305,7 +308,6 @@ to \"host\" the @code{port} field will be ignored."))
            (port
             (oci-grafana-configuration-port config))
            (log-file (oci-grafana-log-file config))
-           (runtime (oci-grafana-configuration-runtime config))
            (secrets-directories
             (secrets-volume-mappings
              (%grafana-secrets-files config)
