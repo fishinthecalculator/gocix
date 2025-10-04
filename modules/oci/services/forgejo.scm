@@ -175,6 +175,10 @@ to \"host\" the @code{port} field will be ignored.")
             (oci-container-configuration
              (image image)
              (log-file log-file)
+             (entrypoint "/usr/bin/dumb-init")
+             (command
+              '("--" "/bin/sh" "-c"
+                "cp -v /etc/forgejo/app.ini $GITEA_APP_INI; chmod -v +w $GITEA_APP_INI; exec -a /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh"))
              (environment
               `(("USER_UID" . ,(number->string uid))
                 ("USER_GID" . ,(number->string gid))))
