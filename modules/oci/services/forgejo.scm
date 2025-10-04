@@ -149,7 +149,7 @@ to \"host\" the @code{port} field will be ignored.")
                   (mkdir-p datadir)
                   (chown datadir uid gid)
                   (if #$(eq? 'podman runtime)
-                      (chmod datadir #o660)
+                      (chmod datadir #o700)
                       (chmod datadir #o750)))
               #~(begin)))))
 
