@@ -36,7 +36,7 @@ standard output and standard error are redirected.  @code{log-file} is
 created if it does not exist, otherwise it is appended to.  By default
 it is @code{"/var/log/tandoor.log"}.
 
-@item @code{image} (default: @code{"docker.io/vabene1111/recipes:1.5.34-open-data-plugin"}) (type: string)
+@item @code{image} (default: @code{"docker.io/vabene1111/recipes:2.1.2"}) (type: string)
 The image to use for the OCI backed Shepherd service.
 
 @item @code{port} (default: @code{"8080"}) (type: string)

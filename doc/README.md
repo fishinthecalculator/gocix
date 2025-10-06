@@ -148,7 +148,7 @@ The public port where Bonfire will be exposed.
 <span id="index-oci_002dbonfire_002dconfiguration"></span> Data Type: **oci-bonfire-configuration**  
 Available ` oci-bonfire-configuration ` fields are:
 
-` image ` (default: ` "docker.io/bonfirenetworks/bonfire:1.0.0-rc.2.3-social-amd64" ` ) (type: string)  
+` image ` (default: ` "docker.io/bonfirenetworks/bonfire:1.0.0-rc.3-social-amd64" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` upload-data-directory ` (type: maybe-string-or-volume)  
@@ -311,7 +311,7 @@ is ` "/var/log/forgejo.log" ` .
 ` runtime ` (default: ` docker ` ) (type: symbol)  
 The OCI runtime to be used for this service
 
-` image ` (default: ` "codeberg.org/forgejo/forgejo:11.0.2-rootless" ` ) (type: string)  
+` image ` (default: ` "codeberg.org/forgejo/forgejo:12.0.4-rootless" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "3000" ` ) (type: string)  
@@ -418,6 +418,10 @@ is ` #f ` Grafana has to be started manually with ` herd start ` .
 
 ` grafana.ini ` (type: grafana-configuration)  
 This field will be serialized as graphana.ini.
+
+` grafana.ini-mount-point ` (default: ` "/opt/bitnami/grafana/conf/grafana.ini" ` ) (type: string)  
+The container path where Grafana’s configuration will be mounted. This
+is useful especially for using images different from the Gocix default.
 
 ` log-file ` (type: maybe-string)  
 When ` log-file ` is set, it names the file to which the service’s
@@ -688,7 +692,7 @@ standard output and standard error are redirected. ` log-file ` is
 created if it does not exist, otherwise it is appended to. By default it
 is ` "/var/log/tandoor.log" ` .
 
-` image ` (default: ` "docker.io/vabene1111/recipes:1.5.34-open-data-plugin" ` ) (type: string)  
+` image ` (default: ` "docker.io/vabene1111/recipes:2.1.2" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "8080" ` ) (type: string)  
@@ -910,5 +914,5 @@ needs to know whether it’s https to work properly with attachments
 
 ------------------------------------------------------------------------
 
-This document was generated on *August 28, 2025* using [*texi2html
+This document was generated on *October 6, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  

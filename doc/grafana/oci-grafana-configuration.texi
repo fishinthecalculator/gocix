@@ -30,6 +30,10 @@ start}.
 @item @code{grafana.ini} (type: grafana-configuration)
 This field will be serialized as graphana.ini.
 
+@item @code{grafana.ini-mount-point} (default: @code{"/opt/bitnami/grafana/conf/grafana.ini"}) (type: string)
+The container path where Grafana's configuration will be mounted.  This
+is useful especially for using images different from the Gocix default.
+
 @item @code{log-file} (type: maybe-string)
 When @code{log-file} is set, it names the file to which the service’s
 standard output and standard error are redirected.  @code{log-file} is
