@@ -1,5 +1,24 @@
 (channel-news
   (version 0)
+  (entry (commit "5442ee99a6e3fb5da0749f0f2425b949a3593be8")
+         (title (en "Breaking changes to the @code{oci-bonfire-service-type}.")
+                (it "Cambiamenti incompatibili nell'@code{oci-bonfire-service-type}."))
+         (body (en "The @code{oci-bonfire-service-type} drops hard requirement on @code{sops-guix}.  For users this means that:
+@itemize
+@item The @code{secrets-directory} field of @code{oci-bonfire-configuration} has been dropped and must be removed from your code.
+@item All @code{sops-secret}s field types of @code{oci-bonfire-configuration} have been replaced with @code{string} types. To migrate the fields it is sufficient to move @code{sops-secret}s records from the @code{oci-bonfire-service-type} configuration record to the @code{sops-secrets-service-type} configuration record, and set the fields values with the file names on the filesystem where secrets files are stored.
+@item The @code{requirement} field of @code{oci-bonfire-configuration} dropped the @code{sops-secrets} symbol from its default value. This means you have to explicitly add it in your configuration.
+@end itemize
+
+This change was done to support other means of providing secrets to the Bonfire service without forcing users to use @code{sops-guix}, while retaining the ability to use it for those users who'd like to.")
+               (it "L'@code{oci-bonfire-service-type} revoca il requisito forte nei confronti di @code{sops-guix}.  Per l'utenza questo implica che:
+@itemize
+@item Il campo @code{secrets-directory} di @code{oci-bonfire-configuration} è stato rimosso e va cancellato dalle vostre configurazioni.
+@item Tutti i campi di tipo @code{sops-secret}s di @code{oci-bonfire-configuration} sono stati sostituiti da campi di tipo @code{string}. Per migrarli è sufficiente spostare i record di tipo @code{sops-secret} dal record di configurazione del @code{oci-bonfire-service-type} al record di configurazione del @code{sops-secrets-service-type} e valorizzare i campi con il nome dei file sul filesystem dove i secrets sono memorizzati.
+@item Il valore di default del campo @code{requirement} di @code{oci-bonfire-configuration} non contiene più il simbolo @code{sops-secrets}. Questo significa che dovrete esplicitamente menzionarlo nella vostra configurazione.
+@end itemize
+
+Questo cambiamento è stato introdotto per permettere al servizio Bonfire di supportare altri sistemi di provisioning dei secrets, evitando all'utenza di essere costretta ad usare @code{sops-guix}, ma mantenendo la possibilità di utilizzarlo per chi lo desidera.")))
   (entry (commit "0085668296d40f8f8ee7b93e41fc6c30dd045708")
          (title (en "Move channel to Github.")
                 (it "Migrazione a Github."))
