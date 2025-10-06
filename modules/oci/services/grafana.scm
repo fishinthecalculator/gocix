@@ -12,8 +12,6 @@
   #:use-module (guix i18n)
   #:use-module (oci build utils)
   #:use-module (oci services configuration)
-  #:use-module (sops services sops)
-  #:use-module (sops secrets)
   #:use-module (ice-9 match)
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
@@ -25,6 +23,7 @@
             oci-grafana-configuration-runtime
             oci-grafana-configuration-datadir
             oci-grafana-configuration-image
+            oci-grafana-configuration-shepherd-requirement
             oci-grafana-configuration-port
             oci-grafana-configuration-log-file
             oci-grafana-configuration-auto-start?
@@ -63,10 +62,6 @@
 ;; Some of this code comes from the Guix manual.
 ;; Check it out! It's pretty cool.
 
-;; FIXME: Drop this and make this configurable.
-(define %grafana-secrets-directory
-  "/run/secrets")
-
 (define grafana-tag
   "12.0.1")
 
@@ -94,7 +89,7 @@
    (boolean #f)
    "The image to use for the OCI backed Shepherd service."))
 
-(define-maybe sops-secret)
+(define-maybe string)
 
 (define-configuration grafana-smtp-configuration
   (enabled?
@@ -111,8 +106,8 @@
    "The password used to authenticate with the SMTP server."
    (serializer empty-serializer))
   (password-file
-   (maybe-sops-secret)
-   "An optional field representing a file from which Grafana
+   (maybe-string)
+   "An optional field representing a file path from which Grafana
 will read the SMTP password."
    (serializer empty-serializer))
   (from-address
@@ -124,10 +119,7 @@ will read the SMTP password."
   (define password (grafana-smtp-configuration-password value))
   (define serialized-secret
     (if (maybe-value-set? password-file)
-        (string-append "password = $__file{"
-                       %grafana-secrets-directory "/"
-                       (sops-secret->file-name password-file)
-                       "}\n")
+        (string-append "password = $__file{" password-file "}\n")
         (if (string-null? password)
             ""
             (string-append "password = " password "\n"))))
@@ -192,6 +184,9 @@ is @code{#f} Grafana has to be started manually with @command{herd start}.")
    (string "/opt/bitnami/grafana/conf/grafana.ini")
    "The container path where Grafana's configuration will be mounted.  This is
 useful especially for using images different from the Gocix default.")
+  (shepherd-requirement
+   (list-of-symbols '(user-processes))
+   "A list of Shepherd services that will be waited for before starting Vaultwarden.")
   (log-file
    (maybe-string)
    "When @code{log-file} is set, it names the file to which the service’s
@@ -209,24 +204,6 @@ to \"host\" the @code{port} field will be ignored."))
   (if (maybe-value-set? maybe-log-file)
       maybe-log-file
       "/var/log/grafana.log"))
-
-(define (%grafana-secrets config)
-  (define record (oci-grafana-configuration-grafana.ini config))
-  (if (grafana-configuration? record)
-   (let ((secret (grafana-smtp-configuration-password-file
-                  (grafana-configuration-smtp record))))
-     (if (sops-secret? secret)
-         (list secret)
-         '()))
-   '()))
-
-(define (%grafana-secret-file config secret)
-  (string-append %grafana-secrets-directory
-                 "/" (sops-secret->file-name secret)))
-
-(define (%grafana-secrets-files config)
-  (map (lambda (s) (%grafana-secret-file config s))
-       (%grafana-secrets config)))
 
 (define (oci-grafana-datadir config)
   (define maybe-datadir
@@ -287,6 +264,8 @@ to \"host\" the @code{port} field will be ignored."))
             (oci-grafana-configuration-auto-start? config))
            (datadir (oci-grafana-datadir config))
            (runtime (oci-grafana-configuration-runtime config))
+           (shepherd-requirement
+            (oci-grafana-configuration-shepherd-requirement config))
            (grafana.ini (oci-grafana-grafana.ini config))
            (grafana.ini-mount-point
             (oci-grafana-configuration-grafana.ini-mount-point config))
@@ -308,18 +287,11 @@ to \"host\" the @code{port} field will be ignored."))
            (port
             (oci-grafana-configuration-port config))
            (log-file (oci-grafana-log-file config))
-           (secrets-directories
-            (secrets-volume-mappings
-             (%grafana-secrets-files config)
-             #:mode (if (eq? 'podman runtime) "U" "ro")))
            (container-config
             (oci-container-configuration
              (auto-start? auto-start?)
              (log-file log-file)
-             (requirement
-              (if (and password-file (maybe-value-set? password-file))
-                  '(sops-secrets)
-                  '()))
+             (requirement shepherd-requirement)
              (extra-arguments (if (oci-volume-configuration? datadir)
                                   '()
                                   ;; NOTE: map container user to host user. This
@@ -341,7 +313,11 @@ to \"host\" the @code{port} field will be ignored."))
                       datadir
                       (oci-volume-configuration-name datadir))
                  . "/var/lib/grafana")
-                ,@secrets-directories
+                ,@(if (maybe-value-set? password-file)
+                      (list
+                       (string-append password-file ":" password-file ":"
+                                      (if (eq? runtime 'podman) "U" "ro")))
+                      '())
                 (,grafana.ini . ,grafana.ini-mount-point))))))
       (list
        (if (maybe-value-set? network)
@@ -363,17 +339,6 @@ to \"host\" the @code{port} field will be ignored."))
                                                          (oci-grafana-configuration->oci-container-configuration config)))))
                                   (service-extension account-service-type
                                                      grafana-accounts)
-                                  (service-extension sops-secrets-service-type
-                                                     (lambda (config)
-                                                       (define password-file
-                                                         (let ((maybe-record
-                                                                (oci-grafana-configuration-grafana.ini config)))
-                                                           (and (grafana-configuration? maybe-record)
-                                                                (grafana-smtp-configuration-password-file
-                                                                 (grafana-configuration-smtp maybe-record)))))
-                                                       (if (and password-file (maybe-value-set? password-file))
-                                                           (%grafana-secrets config)
-                                                           '())))
                                   (service-extension activation-service-type
                                                      grafana-activation)))
                 (default-value (oci-grafana-configuration))

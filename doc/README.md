@@ -380,9 +380,9 @@ The email used to authenticate with the SMTP server.
 ` password ` (default: ` "" ` ) (type: string)  
 The password used to authenticate with the SMTP server.
 
-` password-file ` (type: maybe-sops-secret)  
-An optional field representing a file from which Grafana will read the
-SMTP password.
+` password-file ` (type: maybe-string)  
+An optional field representing a file path from which Grafana will read
+the SMTP password.
 
 ` from-address ` (default: ` "alert@example.org" ` ) (type: string)  
 The sender of the email alerts Grafana will send.
@@ -419,6 +419,10 @@ This field will be serialized as graphana.ini.
 ` grafana.ini-mount-point ` (default: ` "/opt/bitnami/grafana/conf/grafana.ini" ` ) (type: string)  
 The container path where Grafana’s configuration will be mounted. This
 is useful especially for using images different from the Gocix default.
+
+` shepherd-requirement ` (default: ` (user-processes) ` ) (type: list-of-symbols)  
+A list of Shepherd services that will be waited for before starting
+Vaultwarden.
 
 ` log-file ` (type: maybe-string)  
 When ` log-file ` is set, it names the file to which the service’s
