@@ -1,5 +1,24 @@
 (channel-news
   (version 0)
+  (entry (commit "3bed9792a43699e72b3642ee6b884a04bcb46df5")
+         (title (en "Breaking changes to the @code{oci-meilisearch-service-type}.")
+                (it "Cambiamenti incompatibili nell'@code{oci-meilisearch-service-type}."))
+         (body (en "The @code{oci-meilisearch-service-type} drops hard requirement on @code{sops-guix}.  For users this means that:
+@itemize
+@item The @code{secrets-directory} field of @code{oci-meilisearch-configuration} has been dropped and must be removed from your code.
+@item All @code{sops-secret}s field types of @code{oci-meilisearch-configuration} have been replaced with @code{string} types. To migrate the fields it is sufficient to move @code{sops-secret}s records from the @code{oci-meilisearch-service-type} configuration record to the @code{sops-secrets-service-type} configuration record, and set the fields values with the file names on the filesystem where secrets files are stored.
+@item A new @code{shepherd-requirement} field has been added to @code{oci-meilisearch-configuration}. If you still wish to use @code{sops-guix}, you have to explicitly add the @code{'sops-secrets} symbol to its value in your configuration.
+@end itemize
+
+This change was done to support other means of providing secrets to the Meilisearch service without forcing users to use @code{sops-guix}, while retaining the ability to use it for those users who'd like to.")
+               (it "L'@code{oci-meilisearch-service-type} revoca il requisito forte nei confronti di @code{sops-guix}.  Per l'utenza questo implica che:
+@itemize
+@item Il campo @code{secrets-directory} di @code{oci-meilisearch-configuration} è stato rimosso e va cancellato dalle vostre configurazioni.
+@item Tutti i campi di tipo @code{sops-secret}s di @code{oci-meilisearch-configuration} sono stati sostituiti da campi di tipo @code{string}. Per migrarli è sufficiente spostare i record di tipo @code{sops-secret} dal record di configurazione del @code{oci-meilisearch-service-type} al record di configurazione del @code{sops-secrets-service-type} e valorizzare i campi con il nome dei file sul filesystem dove i secrets sono memorizzati.
+@item Un nuovo campo @code{shepherd-requirement} è stato aggiunto al record @code{oci-meilisearch-configuration}. Se volete continuare ad usare @code{sops-guix}, dovrete esplicitamente aggiungere il simbolo @code{'sops-secrets} nel valore del campo nella vostra configurazione.
+@end itemize
+
+Questo cambiamento è stato introdotto per permettere al servizio Meilisearch di supportare altri sistemi di provisioning dei secrets, evitando all'utenza di essere costretta ad usare @code{sops-guix}, ma mantenendo la possibilità di utilizzarlo per chi lo desidera.")))
   (entry (commit "5442ee99a6e3fb5da0749f0f2425b949a3593be8")
          (title (en "Breaking changes to the @code{oci-bonfire-service-type}.")
                 (it "Cambiamenti incompatibili nell'@code{oci-bonfire-service-type}."))
