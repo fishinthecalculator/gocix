@@ -18,10 +18,7 @@
                 #:prefix license:)
   #:use-module (guix packages)
   #:use-module (sops utils)
-  #:use-module (sops secrets)
-  #:use-module (sops services sops)
   #:use-module (oci build utils)
-  #:use-module (oci self)
   #:use-module (oci services configuration)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1)
@@ -49,7 +46,6 @@
             oci-bonfire-configuration-image
             oci-bonfire-configuration-upload-data-directory
             oci-bonfire-configuration-configuration
-            oci-bonfire-configuration-secrets-directory
             oci-bonfire-configuration-requirement
             oci-bonfire-configuration-auto-start?
             oci-bonfire-configuration-secret-key-base
@@ -157,8 +153,6 @@ database name and as an authentication user name.")
       (oci-volume-configuration? value)))
 (define-maybe/no-serialization string-or-volume)
 
-(define-maybe/no-serialization sops-secret)
-
 (define-configuration/no-serialization oci-bonfire-configuration
   (image
    (string (bonfire-image "social" "amd64"))
@@ -173,7 +167,7 @@ will be mapped inside the container.  By default it is @code{\"/var/lib/bonfire/
    (bonfire-configuration)
    "A bonfire-configuration record used to configure the Bonfire instance.")
   (requirement
-   (list '(user-processes postgresql postgres-roles sops-secrets))
+   (list '(user-processes postgresql postgres-roles))
    "A list of Shepherd services that will be waited for before starting Bonfire.")
   (log-file
    (maybe-string)
@@ -185,33 +179,30 @@ if it does not exist, otherwise it is appended to.  By default it is
    (boolean #t)
    "Whether Bonfire should be started automatically by the Shepherd.  If it
 is @code{#f} Bonfire has to be started manually with @command{herd start}.")
-  (secrets-directory
-   (string "/run/secrets")
-   "The directory where secrets are looked for.")
   (secret-key-base
-   (sops-secret)
-   "SECRET_KEY_BASE Bonfire secret.")
+   (string)
+   "Name of the file containing the SECRET_KEY_BASE Bonfire secret.")
   (signing-salt
-   (sops-secret)
-   "SIGNING_SALT Bonfire secret.")
+   (string)
+   "Name of the file containing the SIGNING_SALT Bonfire secret.")
   (encryption-salt
-   (sops-secret)
-   "ENCRYPTION_SALT Bonfire secret.")
+   (string)
+   "Name of the file containing the ENCRYPTION_SALT Bonfire secret.")
   (mail-key
-   (maybe-sops-secret)
-   "MAIL_KEY Bonfire secret.")
+   (maybe-string)
+   "Name of the file containing the MAIL_KEY Bonfire secret.")
   (mail-private-key
-   (maybe-sops-secret)
-   "MAIL_PRIVATE_KEY Bonfire secret.")
+   (maybe-string)
+   "Name of the file containing the MAIL_PRIVATE_KEY Bonfire secret.")
   (mail-password
-   (maybe-sops-secret)
-   "MAIL_PASSWORD Bonfire secret.")
+   (maybe-string)
+   "Name of the file containing the MAIL_PASSWORD Bonfire secret.")
   (postgres-password
-   (sops-secret)
-   "POSTGRES_PASSWORD Bonfire secret.")
+   (string)
+   "Name of the file containing the POSTGRES_PASSWORD Bonfire secret.")
   (meili-master-key
-   (sops-secret)
-   "MEILI_MASTER_KEY Bonfire secret.")
+   (string)
+   "Name of the file containing the MEILI_MASTER_KEY Bonfire secret.")
   (network
    (maybe-string)
    "The OCI network name where the bonfire container will be attached. When equal
@@ -260,21 +251,9 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
       "SIGNING_SALT"
       "ENCRYPTION_SALT")))
 
-(define (%bonfire-secret-file config secret)
-  (string-append (oci-bonfire-configuration-secrets-directory config)
-                 "/" (sops-secret->file-name secret)))
-
-(define (%bonfire-secrets-files config)
-  (map (lambda (s) (%bonfire-secret-file config s))
-       (%bonfire-secrets config)))
-
-(define (%bonfire-secrets-postgres-password-file config)
-  (%bonfire-secret-file
-   config (oci-bonfire-configuration-postgres-password config)))
-
 (define (%bonfire-secrets-specs config)
   (zip (%bonfire-secrets-variables config)
-       (%bonfire-secrets-files config)))
+       (%bonfire-secrets config)))
 
 (define (%bonfire-activation config)
   "Return an activation gexp for Bonfire."
@@ -316,7 +295,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
             (oci-bonfire-configuration-requirement config))
            (secrets-directories
             (secrets-volume-mappings
-             (%bonfire-secrets-files config)))
+             (%bonfire-secrets config)))
            (container-config
             (oci-container-configuration
              (image image)
@@ -382,7 +361,7 @@ to \"host\" the @code{port} field will not be mapped into the container's one.")
     (build-system copy-build-system)
     (arguments
      (list #:install-plan #~'(("./bonfire-iex" "/bin/"))))
-    (home-page %oci-channel-url)
+    (home-page "https://github.com/bonfire-networks/bonfire-app")
     (synopsis
      "Easily interact from the CLI with gocix' Bonfire service.")
     (description
@@ -408,9 +387,6 @@ for example by starting an interactive shell attached to the Elixir process.")
                                                         (bonfire-utils-package
                                                          config
                                                          (%bonfire-secrets-specs config)))))
-                                  (service-extension sops-secrets-service-type
-                                                     (lambda (config)
-                                                       (%bonfire-secrets config)))
                                   (service-extension postgresql-role-service-type
                                                      (lambda (oci-config)
                                                        (define config
@@ -420,7 +396,7 @@ for example by starting an interactive shell attached to the Elixir process.")
                                                             (postgresql-role
                                                              (name (bonfire-configuration-postgres-db config))
                                                              (password-file
-                                                              (%bonfire-secrets-postgres-password-file oci-config))
+                                                              (oci-bonfire-configuration-postgres-password oci-config))
                                                              (create-database? #t)))
                                                            '())))
                                   (service-extension activation-service-type

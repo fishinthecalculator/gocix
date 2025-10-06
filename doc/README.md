@@ -161,7 +161,7 @@ system which will be mapped inside the container. By default it is
 ` configuration ` (type: bonfire-configuration)  
 A bonfire-configuration record used to configure the Bonfire instance.
 
-` requirement ` (default: ` (user-processes postgresql postgres-roles sops-secrets) ` ) (type: list)  
+` requirement ` (default: ` (user-processes postgresql postgres-roles) ` ) (type: list)  
 A list of Shepherd services that will be waited for before starting
 Bonfire.
 
@@ -175,32 +175,29 @@ is ` "/var/log/bonfire.log" ` .
 Whether Bonfire should be started automatically by the Shepherd. If it
 is ` #f ` Bonfire has to be started manually with ` herd start ` .
 
-` secrets-directory ` (default: ` "/run/secrets" ` ) (type: string)  
-The directory where secrets are looked for.
+` secret-key-base ` (type: string)  
+Name of the file containing the SECRET_KEY_BASE Bonfire secret.
 
-` secret-key-base ` (type: sops-secret)  
-SECRET_KEY_BASE Bonfire secret.
+` signing-salt ` (type: string)  
+Name of the file containing the SIGNING_SALT Bonfire secret.
 
-` signing-salt ` (type: sops-secret)  
-SIGNING_SALT Bonfire secret.
+` encryption-salt ` (type: string)  
+Name of the file containing the ENCRYPTION_SALT Bonfire secret.
 
-` encryption-salt ` (type: sops-secret)  
-ENCRYPTION_SALT Bonfire secret.
+` mail-key ` (type: maybe-string)  
+Name of the file containing the MAIL_KEY Bonfire secret.
 
-` mail-key ` (type: maybe-sops-secret)  
-MAIL_KEY Bonfire secret.
+` mail-private-key ` (type: maybe-string)  
+Name of the file containing the MAIL_PRIVATE_KEY Bonfire secret.
 
-` mail-private-key ` (type: maybe-sops-secret)  
-MAIL_PRIVATE_KEY Bonfire secret.
+` mail-password ` (type: maybe-string)  
+Name of the file containing the MAIL_PASSWORD Bonfire secret.
 
-` mail-password ` (type: maybe-sops-secret)  
-MAIL_PASSWORD Bonfire secret.
+` postgres-password ` (type: string)  
+Name of the file containing the POSTGRES_PASSWORD Bonfire secret.
 
-` postgres-password ` (type: sops-secret)  
-POSTGRES_PASSWORD Bonfire secret.
-
-` meili-master-key ` (type: sops-secret)  
-MEILI_MASTER_KEY Bonfire secret.
+` meili-master-key ` (type: string)  
+Name of the file containing the MEILI_MASTER_KEY Bonfire secret.
 
 ` network ` (type: maybe-string)  
 The OCI network name where the bonfire container will be attached. When
