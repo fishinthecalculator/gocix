@@ -445,19 +445,20 @@ The image to use for the OCI backed Shepherd service.
 ` port ` (default: ` "7700" ` ) (type: string)  
 The port where meilisearch will be exposed.
 
-` master-key ` (type: sops-secret)  
-Sets the instance’s master key, automatically protecting all routes
-except GET /health. This means you will need a valid API key to access
-all other endpoints.
+` shepherd-requirement ` (default: ` (user-processes) ` ) (type: list)  
+A list of Shepherd services that will be waited for before starting
+Meilisearch.
+
+` master-key ` (type: string)  
+The file name of the secrets containing the instance’s master key,
+automatically protecting all routes except GET /health. This means you
+will need a valid API key to access all other endpoints.
 
 ` datadir ` (default: ` "/var/lib/meilisearch/meili_data" ` ) (type: string)  
 The directory where meilisearch writes state.
 
 ` database-path ` (default: ` "/var/lib/meilisearch/data.ms" ` ) (type: string)  
 The directory used by meilisearch database to store state.
-
-` secrets-directory ` (default: ` "/run/secrets" ` ) (type: string)  
-The directory where secrets are looked for.
 
 ` network ` (type: maybe-string)  
 The docker network where the meilisearch container will be attached.
@@ -915,5 +916,5 @@ needs to know whether it’s https to work properly with attachments
 
 ------------------------------------------------------------------------
 
-This document was generated on *October 6, 2025* using [*texi2html
+This document was generated on *October 10, 2025* using [*texi2html
 5.0*](http://www.nongnu.org/texi2html/) .  
