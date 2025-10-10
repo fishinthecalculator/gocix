@@ -25,6 +25,7 @@
             tandoor-configuration-fields
             tandoor-configuration-create-database?
             tandoor-configuration-db-engine
+            tandoor-configuration-tandoor-port
             tandoor-configuration-email-host
             tandoor-configuration-email-port
             tandoor-configuration-email-host-user
@@ -79,6 +80,10 @@
 (define-maybe/no-serialization string-or-volume)
 
 (define-configuration/no-serialization tandoor-configuration
+  (tandoor-port
+   (string "80")
+   "The equivalent of TANDOOR_PORT environment variable.  This is the port the
+Tandoor process will listen onto.")
   (email-host
    (maybe-string)
    "The SMTP server used by Tandoor to send emails.")
@@ -324,6 +329,8 @@ for more details."))
            (environment
             (tandoor-configuration->oci-container-environment
              tandoor-config))
+           (tandoor-port
+            (tandoor-configuration-tandoor-port tandoor-config))
            (extra-variables
             (oci-tandoor-configuration-extra-variables config))
            (network
@@ -355,7 +362,7 @@ for more details."))
                '("LANG")
                extra-variables))
              (ports
-              `((,port . "8080")))
+              `((,port . ,tandoor-port)))
              (volumes
               `(,@secrets
                 (,(if (string? staticdir)

@@ -689,7 +689,7 @@ standard output and standard error are redirected. ` log-file ` is
 created if it does not exist, otherwise it is appended to. By default it
 is ` "/var/log/tandoor.log" ` .
 
-` image ` (default: ` "docker.io/vabene1111/recipes:2.1.2" ` ) (type: string)  
+` image ` (default: ` "docker.io/vabene1111/recipes:2.3.1" ` ) (type: string)  
 The image to use for the OCI backed Shepherd service.
 
 ` port ` (default: ` "8080" ` ) (type: string)  
@@ -726,6 +726,10 @@ documentation for more details.
 
 <span id="index-tandoor_002dconfiguration"></span> Data Type: **tandoor-configuration**  
 Available ` tandoor-configuration ` fields are:
+
+` tandoor-port ` (default: ` "80" ` ) (type: string)  
+The equivalent of TANDOOR_PORT environment variable. This is the port
+the Tandoor process will listen onto.
 
 ` email-host ` (type: maybe-string)  
 The SMTP server used by Tandoor to send emails.

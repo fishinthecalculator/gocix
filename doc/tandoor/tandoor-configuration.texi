@@ -5,6 +5,10 @@
 Available @code{tandoor-configuration} fields are:
 
 @table @asis
+@item @code{tandoor-port} (default: @code{"80"}) (type: string)
+The equivalent of TANDOOR_PORT environment variable.  This is the port
+the Tandoor process will listen onto.
+
 @item @code{email-host} (type: maybe-string)
 The SMTP server used by Tandoor to send emails.
 
