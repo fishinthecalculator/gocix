@@ -63,7 +63,7 @@ Meilisearch.")
    (string "oci-container")
    "The user name under whose authority OCI runtime commands will be run.")
   (master-key
-   (string)
+   (maybe-string)
    "The file name of the secrets containing the instance's master key,
 automatically protecting all routes except GET /health.  This means you will
 need a valid API key to access all other endpoints.")
@@ -86,7 +86,10 @@ set inside the container.  Refer to the
 documentation for more details."))
 
 (define (%meilisearch-secrets config)
-  (list (oci-meilisearch-configuration-master-key config)))
+  (define maybe-master-key (oci-meilisearch-configuration-master-key config))
+  (if (maybe-value-set? maybe-master-key)
+      (list maybe-master-key)
+      '()))
 
 (define %meilisearch-secrets-variables
   '("MEILI_MASTER_KEY"))
