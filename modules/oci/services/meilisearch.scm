@@ -1,5 +1,5 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2024, 2025 Giacomo Leidi <therewasa@fishinthecalculator.me>
+;;; Copyright © 2024, 2025, 2026 Giacomo Leidi <therewasa@fishinthecalculator.me>
 
 (define-module (oci services meilisearch)
   #:use-module (gnu packages bash)
@@ -59,6 +59,9 @@
    (list '(user-processes))
    "A list of Shepherd services that will be waited for before starting
 Meilisearch.")
+  (user
+   (string "oci-container")
+   "The user name under whose authority OCI runtime commands will be run.")
   (master-key
    (string)
    "The file name of the secrets containing the instance's master key,
@@ -93,14 +96,15 @@ documentation for more details."))
 
 (define (%meilisearch-activation config)
   "Return an activation gexp for Meilisearch."
-  (let* ((datadir (oci-meilisearch-configuration-datadir config))
-         (database-path
-          (oci-meilisearch-configuration-database-path config)))
+  (let ((user (oci-meilisearch-configuration-user config))
+        (datadir (oci-meilisearch-configuration-datadir config))
+        (database-path
+         (oci-meilisearch-configuration-database-path config)))
     #~(begin
         (use-modules (guix build utils))
         (let* ((database-path #$database-path)
                (datadir #$datadir)
-               (user (getpwnam "oci-container"))
+               (user (getpwnam #$user))
                (uid (passwd:uid user))
                (gid (passwd:gid user)))
           ;; Setup datadirs
@@ -119,6 +123,8 @@ documentation for more details."))
             (oci-meilisearch-configuration-extra-variables config))
            (network
             (oci-meilisearch-configuration-network config))
+           (user
+            (oci-meilisearch-configuration-user config))
            (image
             (oci-meilisearch-configuration-image config))
            (port
@@ -130,6 +136,7 @@ documentation for more details."))
              (%meilisearch-secrets config)))
            (container-config
             (oci-container-configuration
+             (user user)
              (image image)
              (requirement requirement)
              (entrypoint "/sbin/tini")
