@@ -26,14 +26,19 @@
    (service polkit-service-type)
    (service elogind-service-type)
    (service iptables-service-type)
-   (service rootless-podman-service-type)
+   (service rootless-podman-service-type
+            (rootless-podman-configuration
+              (containers-storage
+               (mixed-text-file "storage.conf"
+                "[storage]
+driver = \"vfs\""))))
    (service oci-service-type
             (oci-configuration
              (runtime 'podman)
              (verbose? #t)))
    (service oci-meilisearch-service-type
-         (oci-meilisearch-configuration
-          (network "host")))))
+            (oci-meilisearch-configuration
+             (network "host")))))
 
 (define (run-rootless-podman-oci-meilisearch-test)
   (define os
@@ -84,21 +89,9 @@
                 (wait-for-service 'podman-meilisearch))
              marionette))
 
-          ;; (test-assert "podman-volumes running"
-          ;;   (begin
-          ;;     (define (run-test)
-          ;;       (first
-          ;;        (marionette-eval
-          ;;         `(begin
-          ;;            #$@(%oci-rootless-podman-run
-          ;;                #~((oci-object-service-available?
-          ;;                    "/run/current-system/profile/bin/podman"
-          ;;                    "volume"
-          ;;                    '("my-volume")
-          ;;                    #:verbose? #t))))
-          ;;         marionette)))
-          ;;     ;; Allow services to come up on slower machines.
-          ;;     (with-retries 80 1 (equal? '("my-volume") (run-test)))))
+          (test-assert "meilisearch listening"
+            ;; Wait until meilisearch is actually listening.
+            (wait-for-tcp-port 7700 marionette))
 
           (test-end))))
 

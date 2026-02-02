@@ -1,0 +1,44 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  pull_request:
+    paths-ignore:
+        - '.gitignore'
+        - README.*
+        - LICENSE
+        - 'etc/news.scm'
+        - 'etc/snippets/**'
+        - scripts/**
+        - .dir-locals.el
+        - .guix-authorizations
+        - .guix-channel
+
+  push:
+    # Sequence of patterns matched against refs/tags
+    branches: ["main"]
+    paths-ignore:
+        - '.gitignore'
+        - README.*
+        - LICENSE
+        - 'etc/news.scm'
+        - 'etc/snippets/**'
+        - scripts/**
+        - .dir-locals.el
+        - .guix-authorizations
+        - .guix-channel
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  run-tests:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run integration tests
+        run: guix build -L $(pwd)/modules -m etc/manifests/system-tests.scm
