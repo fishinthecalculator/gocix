@@ -67,7 +67,7 @@
 ;; Check it out! It's pretty cool.
 
 (define tandoor-tag
-  "2.3.1")
+  "2.6.0")
 
 (define tandoor-image
   (string-append "docker.io/vabene1111/recipes:" tandoor-tag))
