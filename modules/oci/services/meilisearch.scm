@@ -10,6 +10,7 @@
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
+  #:use-module (guix oci-download)
   #:use-module (sops utils)
   #:use-module (oci build utils)
   #:use-module (oci services configuration)
@@ -36,7 +37,24 @@
   "v1.14")
 
 (define meilisearch-image
-  (string-append "docker.io/getmeili/meilisearch:" meilisearch-tag))
+  (oci-image
+    (repository "docker.io/getmeili/meilisearch")
+    (tag meilisearch-tag)
+    (value
+     (origin
+       (method skopeo-fetch)
+       (uri
+        (oci-reference
+         (name "docker.io/getmeili/meilisearch")
+         (tag meilisearch-tag)
+         (digest
+          ;; You can obtain this with:
+          ;; skopeo inspect --format '{{.Digest}}' docker://docker.io/getmeili/meilisearch:v1.14
+          "sha256:8cd411ba5d9ec2dfce02e241305208eebacce0fd74a72bece21cadd03dc566ce")))
+       (file-name (skopeo-file-name uri))
+       (sha256
+        (base32
+         "01vgm6magphhk8dyamq5qqli65gqbqbpg935y1q4b6fsn3kpfvp0"))))))
 
 (define (serialize-string field-name value)
   (serialize-string-environment-variable field-name value #:prefix "MEILISEARCH_"))
