@@ -166,7 +166,7 @@ To configure Guix for using this channel you need to create a `.config/guix/chan
 ``` scheme
 (cons* (channel
         (name 'gocix)
-        (url "https://github.com/fishinthecalculator/gocix")
+        (url "https://github.com/fishinthecalculator/gocix.git")
         (branch "main")
         ;; Enable signature verification:
         (introduction
@@ -182,7 +182,7 @@ Otherwise, if you already have a `.config/guix/channels.scm` you can simply prep
 ``` scheme
 (cons* (channel
         (name 'gocix)
-        (url "https://github.com/fishinthecalculator/gocix")
+        (url "https://github.com/fishinthecalculator/gocix.git")
         (branch "main")
         ;; Enable signature verification:
         (introduction
