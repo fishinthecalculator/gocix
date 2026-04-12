@@ -1,28 +1,34 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2024, 2025, 2026 Giacomo Leidi <therewasa@fishinthecalculator.me>
+;;; Copyright © 2024-2026 Giacomo Leidi <therewasa@fishinthecalculator.me>
 
 (define-module (oci services meilisearch)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages admin)
   #:use-module (gnu services)
   #:use-module (gnu services configuration)
+  #:use-module (gnu services configuration environment-variables)
   #:use-module (gnu services containers)
   #:use-module (gnu system shadow)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix oci-download)
+  #:use-module (guix packages)
+  #:use-module (guix records)
   #:use-module (sops utils)
   #:use-module (oci build utils)
   #:use-module (oci services configuration)
   #:use-module (srfi srfi-1)
   #:use-module (guix i18n)
   #:use-module (ice-9 match)
-  #:export (oci-meilisearch-configuration
+  #:export (%default-oci-meilisearch-shepherd-requirement
+
+            oci-meilisearch-configuration
             oci-meilisearch-configuration?
             oci-meilisearch-configuration-fields
             oci-meilisearch-configuration-image
             oci-meilisearch-configuration-port
             oci-meilisearch-configuration-shepherd-requirement
+            oci-meilisearch-configuration-log-file
             oci-meilisearch-configuration-datadir
             oci-meilisearch-configuration-database-path
             oci-meilisearch-configuration-network
@@ -56,13 +62,8 @@
         (base32
          "01vgm6magphhk8dyamq5qqli65gqbqbpg935y1q4b6fsn3kpfvp0"))))))
 
-(define (serialize-string field-name value)
-  (serialize-string-environment-variable field-name value #:prefix "MEILISEARCH_"))
-
-(define serialize-maybe-string serialize-string)
-
-(define (serialize-boolean field-name value)
-  (serialize-boolean-environment-variable field-name value #:prefix "MEILISEARCH_"))
+(define %default-oci-meilisearch-shepherd-requirement
+  '(user-processes))
 
 (define-maybe string)
 
@@ -74,12 +75,15 @@
    (string "7700")
    "The port where meilisearch will be exposed.")
   (shepherd-requirement
-   (list '(user-processes))
+   (list %default-oci-meilisearch-shepherd-requirement)
    "A list of Shepherd services that will be waited for before starting
 Meilisearch.")
   (user
    (string "oci-container")
    "The user name under whose authority OCI runtime commands will be run.")
+  (log-file
+   (maybe-string)
+   "The file where meilisearch will write its logs.")
   (master-key
    (maybe-string)
    "The file name of the secrets containing the instance's master key,
@@ -134,32 +138,19 @@ documentation for more details."))
                  (chown dir uid gid))
                (list datadir database-path))))))
 
-(define oci-meilisearch-configuration->oci-container-configuration
-  (lambda (config)
-    (let* ((datadir
-            (oci-meilisearch-configuration-datadir config))
-           (database-path
-            (oci-meilisearch-configuration-database-path config))
-           (extra-variables
-            (oci-meilisearch-configuration-extra-variables config))
-           (network
-            (oci-meilisearch-configuration-network config))
-           (user
-            (oci-meilisearch-configuration-user config))
-           (image
-            (oci-meilisearch-configuration-image config))
-           (port
-            (oci-meilisearch-configuration-port config))
-           (requirement
-            (oci-meilisearch-configuration-shepherd-requirement config))
-           (secrets
+(define (oci-meilisearch-configuration->oci-container-configuration config)
+  (match-record config <oci-meilisearch-configuration>
+                (datadir database-path extra-variables network user image port
+                 log-file shepherd-requirement)
+    (let* ((secrets
             (secrets-volume-mappings
              (%meilisearch-secrets config)))
            (container-config
             (oci-container-configuration
              (user user)
              (image image)
-             (requirement requirement)
+             (log-file log-file)
+             (requirement shepherd-requirement)
              (entrypoint "/sbin/tini")
              (command
               `("--" "sh" "-c"
@@ -186,12 +177,14 @@ documentation for more details."))
 
 (define oci-meilisearch-service-type
   (service-type (name 'meilisearch)
-                (extensions (list (service-extension oci-service-type
-                                                     (lambda (config)
-                                                       (oci-extension
-                                                        (containers
-                                                         (oci-meilisearch-configuration->oci-container-configuration config)))))
-                                  (service-extension activation-service-type
-                                                     %meilisearch-activation)))
+                (extensions
+                 (list
+                  (service-extension oci-service-type
+                                     (lambda (config)
+                                       (oci-extension
+                                        (containers
+                                         (oci-meilisearch-configuration->oci-container-configuration config)))))
+                  (service-extension activation-service-type
+                                     %meilisearch-activation)))
                 (description
                  "This service install a OCI backed Meilisearch Shepherd Service.")))
