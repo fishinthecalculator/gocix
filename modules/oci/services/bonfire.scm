@@ -1,5 +1,5 @@
 ;;; SPDX-License-Identifier: GPL-3.0-or-later
-;;; Copyright © 2024, 2025 Giacomo Leidi <therewasa@fishinthecalculator.me>
+;;; Copyright © 2024, 2025, 2026 Giacomo Leidi <therewasa@fishinthecalculator.me>
 
 (define-module (oci services bonfire)
   #:use-module (gnu packages bash)
@@ -68,7 +68,7 @@
             oci-bonfire-service-type))
 
 (define %bonfire-version
-  "1.0.1")
+  "1.0.3")
 
 (define (bonfire-tag flavour system)
   (string-join (list %bonfire-version flavour system) "-"))
