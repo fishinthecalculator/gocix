@@ -15,7 +15,7 @@
   #:use-module (guix gexp)
   #:export (%oci-meilisearch-os
             %oci-meilisearch-docker-os
-                                        ;%test-oci-meilisearch-docker
+            %test-oci-meilisearch-docker
             %test-oci-meilisearch-rootless-podman))
 
 
@@ -51,20 +51,20 @@ driver = \"vfs\""))))
    (service oci-meilisearch-service-type
             meilisearch-configuration)))
 
-;; (define %oci-meilisearch-docker-os
-;;   (simple-operating-system
-;;    (service dhcpcd-service-type)
-;;    (service dbus-root-service-type)
-;;    (service polkit-service-type)
-;;    (service elogind-service-type)
-;;    (service iptables-service-type)
-;;    (service containerd-service-type)
-;;    (service docker-service-type)
-;;    (service oci-service-type
-;;             (oci-configuration
-;;              (verbose? #t)))
-;;    (service oci-meilisearch-service-type
-;;             meilisearch-configuration)))
+(define %oci-meilisearch-docker-os
+  (simple-operating-system
+   (service dhcpcd-service-type)
+   (service dbus-root-service-type)
+   (service polkit-service-type)
+   (service elogind-service-type)
+   (service iptables-service-type)
+   (service containerd-service-type)
+   (service docker-service-type)
+   (service oci-service-type
+            (oci-configuration
+             (verbose? #t)))
+   (service oci-meilisearch-service-type
+            meilisearch-configuration)))
 
 (define (run-rootless-podman-oci-meilisearch-test)
   (define os
@@ -120,15 +120,15 @@ driver = \"vfs\""))))
             ;; Wait until meilisearch is actually listening.
             (wait-for-tcp-port 7700 marionette #:timeout 120))
 
-          (test-equal "meilisearch logs"
-            ""
-            (let ((a (marionette-eval
-                      '(begin
-                         (use-modules (ice-9 textual-ports))
-                         (call-with-input-file "/var/log/meilisearch.log" get-string-all))
-                      marionette)))
-              (display a)
-              #f))
+          (test-assert "meilisearch logs"
+            (marionette-eval
+             '(begin
+                (use-modules (ice-9 textual-ports))
+                (let ((log
+                       (call-with-input-file "/var/log/meilisearch.log"
+                         get-string-all)))
+                  (not (string-null? log))))
+             marionette))
 
           (test-end))))
 
@@ -140,68 +140,66 @@ driver = \"vfs\""))))
    (description "Test rootless podman backed Meilisearch.")
    (value (run-rootless-podman-oci-meilisearch-test))))
 
-;; (define (run-docker-oci-meilisearch-test)
-;;   (define os
-;;     (marionette-operating-system
-;;      (operating-system-with-gc-roots
-;;       %oci-meilisearch-docker-os
-;;       (list))
-;;      #:imported-modules '((gnu build oci-containers)
-;;                           (gnu build dbus-service)
-;;                           (gnu services herd)
-;;                           (guix combinators))))
+(define (run-docker-oci-meilisearch-test)
+  (define os
+    (marionette-operating-system
+     (operating-system-with-gc-roots
+      %oci-meilisearch-docker-os
+      (list))
+     #:imported-modules '((gnu build oci-containers)
+                          (gnu build dbus-service)
+                          (gnu services herd)
+                          (guix combinators))))
 
-;;   (define vm
-;;     (virtual-machine
-;;      (operating-system os)
-;;      (volatile? #f)
-;;      (memory-size 1024)
-;;      (disk-image-size (* 5000 (expt 2 20)))
-;;      (port-forwardings '())))
+  (define vm
+    (virtual-machine
+     (operating-system os)
+     (volatile? #f)
+     (memory-size 1024)
+     (disk-image-size (* 5000 (expt 2 20)))
+     (port-forwardings '())))
 
-;;   (define test
-;;     (with-imported-modules '((gnu build oci-containers)
-;;                              (gnu build dbus-service)
-;;                              (gnu build marionette)
-;;                              (oci tests build marionette))
-;;       #~(begin
-;;           (use-modules (srfi srfi-1) (srfi srfi-11) (srfi srfi-64)
-;;                        (gnu build dbus-service)
-;;                        (gnu build marionette)
-;;                        ((oci tests build marionette) #:prefix local:))
+  (define test
+    (with-imported-modules '((gnu build oci-containers)
+                             (gnu build dbus-service)
+                             (gnu build marionette))
+      #~(begin
+          (use-modules (srfi srfi-1) (srfi srfi-11) (srfi srfi-64)
+                       (gnu build dbus-service)
+                       (gnu build marionette))
 
-;;           (define marionette
-;;             ;; Relax timeout to accommodate older systems and
-;;             ;; allow for pulling the image.
-;;             (local:make-marionette (list #$vm) #:timeout 60 #:user-options '("-nic" "user,model=virtio-net-pci")))
+          (define marionette
+            ;; Relax timeout to accommodate older systems and
+            ;; allow for pulling the image.
+            (make-marionette (list #$vm) #:timeout 60))
 
-;;           (test-runner-current (system-test-runner #$output))
-;;           (test-begin "docker-oci-meilisearch")
+          (test-runner-current (system-test-runner #$output))
+          (test-begin "docker-oci-meilisearch")
 
-;;           (marionette-eval
-;;            '(begin
-;;               (use-modules (gnu services herd))
-;;               (wait-for-service 'user-processes)
-;;               (wait-for-service 'dockerd #:timeout 80))
-;;            marionette)
+          (marionette-eval
+           '(begin
+              (use-modules (gnu services herd))
+              (wait-for-service 'user-processes)
+              (wait-for-service 'dockerd #:timeout 80))
+           marionette)
 
-;;           (test-assert "meilisearch running"
-;;             (marionette-eval
-;;              '(begin
-;;                 (use-modules (gnu services herd))
-;;                 (wait-for-service 'docker-meilisearch #:timeout 80))
-;;              marionette))
+          (test-assert "meilisearch running"
+            (marionette-eval
+             '(begin
+                (use-modules (gnu services herd))
+                (wait-for-service 'docker-meilisearch #:timeout 80))
+             marionette))
 
-;;           (test-assert "meilisearch listening"
-;;             ;; Wait until meilisearch is actually listening.
-;;             (wait-for-tcp-port 7700 marionette))
+          (test-assert "meilisearch listening"
+            ;; Wait until meilisearch is actually listening.
+            (wait-for-tcp-port 7700 marionette #:timeout 120))
 
-;;           (test-end))))
+          (test-end))))
 
-;;   (gexp->derivation "docker-oci-meilisearch-test" test))
+  (gexp->derivation "docker-oci-meilisearch-test" test))
 
-;; (define %test-oci-meilisearch-docker
-;;   (system-test
-;;    (name "oci-meilisearch-docker")
-;;    (description "Test docker backed Meilisearch.")
-;;    (value (run-docker-oci-meilisearch-test))))
+(define %test-oci-meilisearch-docker
+  (system-test
+   (name "oci-meilisearch-docker")
+   (description "Test docker backed Meilisearch.")
+   (value (run-docker-oci-meilisearch-test))))
