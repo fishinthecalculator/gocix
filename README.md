@@ -14,6 +14,7 @@ Services in gocix are supposed to be used to run useful stuff with Guix. They ar
 This channel exposes at `(oci services)` a set of Guix System services for many useful applications, such as:
 
 - [Bonfire Social](https://bonfirenetworks.org/app/social/)
+- [Cap](https://trycap.dev/)
 - [Forgejo](https://forgejo.org/)
 - [Grafana](https://grafana.com/)
 - [Matrix Conduit](https://conduit.rs/)
